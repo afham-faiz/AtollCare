@@ -1,251 +1,166 @@
-# AtollCare
+# AtollCare — the patient's story arrives before the patient does
 
-**AI-assisted emergency referral from remote communities to the hospital that can actually treat the patient.**
+Remote emergency transfers (island, rural, maritime, mountain) can mean 30 minutes to several hours in a boat,
+ambulance or aircraft before the patient reaches the hospital that can treat them. Usually the receiving team learns
+almost nothing until the doors open.
 
-In many low-income and geographically isolated regions, the nearest health centre is small and under-resourced, and specialist care sits in a distant capital hospital. AtollCare connects these three moments into a single, continuous flow:
+AtollCare is two connected screens:
 
-1. reaching the local health centre,
-2. agreeing a referral with the capital hospital,
-3. moving the patient there.
+- **Crew** (`/crew`): a tablet or laptop on a mount in the vehicle. **Presage** reads heart rate, breathing rate and HRV
+  from the camera, hands-free. The crew speak their notes (ElevenLabs Scribe), and the notes become a structured
+  handoff. One tap sends it.
+- **Hospital** (`/hospital`): who's arriving, how sick they are, what's been given, measurements with their source,
+  an SBAR briefing, the ETA, and one primary decision: **Accept**. Questions typed here are spoken aloud in the
+  vehicle. The acceptance, and what's being prepared, shows up on the crew screen.
 
-Information is captured once, travels with the patient, and is never lost at a hand-off.
+Region-neutral: regions are JSON data packs. The Maldives and the Scottish Western Isles ship as examples.
+Product brief: [`docs/BRIEF.md`](docs/BRIEF.md). Decision support only. Every clinical number in the demo is
+illustrative.
 
----
+## Architecture
 
-## The problem
-
-When someone falls acutely ill (for example, an elderly person with a stroke), whoever is nearby (family, a neighbour, a bystander) brings them to the local health centre. From there, the usual process is slow and fragile:
-
-- **Information is re-collected at every step.** The person accompanying the patient explains what happened, ER staff check the patient's ID, the triage nurse asks again, and then a referral form asks again.
-- **Finding the right specialist is a phone tree.** The local centre calls the capital hospital's switchboard, waits for a contact, then messages the doctor in charge.
-- **Decisions are invisible.** A referral can be declined (for example, because the patient is elderly) with no recorded reason, no escalation, and no next step.
-- **Paperwork comes last.** Transfer forms are filled in only *after* the patient is accepted, which delays dispatch.
-- **The receiving team is blind.** The capital hospital learns little about the patient until they physically arrive.
-- **Dead ends are common.** If the local centre lacks resources or expertise, the patient may simply be sent home.
-
-In time-critical conditions such as stroke, heart attack or trauma, every one of these delays costs outcomes.
-
----
-
-## How it fits together
-
-AtollCare is split into three parts that share a single **Case Record**, identified by a case ID. Each part *adds* to the record, and no part re-asks for what is already there.
-
-```mermaid
-flowchart LR
-    A[Patient becomes unwell] --> P1
-
-    subgraph P1[Part 1 · Pre-arrival]
-        direction TB
-        P1a[Face scan → vital cues]
-        P1b[Companion voice → instructions]
-        P1c[ID scan → patient details]
-    end
-
-    P1 -->|Pre-arrival packet| P2
-
-    subgraph P2[Part 2 · Health centre ↔ Capital hospital]
-        direction TB
-        P2a[Auto-drafted referral]
-        P2b[Route to right specialist]
-        P2c[Recorded decision]
-    end
-
-    P2 -->|Dispatch request| P3
-
-    subgraph P3[Part 3 · Transport to capital]
-        direction TB
-        P3a[In-transit face scan]
-        P3b[Nurse voice → reasoning summary]
-        P3c[Sensor vitals → interpretation]
-    end
-
-    P3 -->|Live updates| H[Capital hospital ready on arrival]
-
-    CR[(Shared Case Record)]
-    P1 -.-> CR
-    P2 -.-> CR
-    P3 -.-> CR
-    CR -.-> H
+```
+vehicle laptop / tablet                             Vultr VM (Docker Compose, Caddy HTTPS)
+┌──────────────────────────────┐                    ┌────────────────────────────────────────────┐
+│ browser: crew screen         │── /api (HTTPS) ───►│ engine  FastAPI · NEWS2 · alerts · SBAR     │
+│   camera frames (RGBA, WS)   │                    │         sim clock · region packs            │
+│        ▼              ▲      │                    │         adapters: gemini · elevenlabs · s3  │
+│ presage-bridge  HR/RR/HRV    │── stable vitals ──►│ db      TimescaleDB / Tiger Cloud           │
+│ (@smartspectra/node-sdk)     │   every 5 s        │         (in-memory when DATABASE_URL empty) │
+└──────────────────────────────┘                    │ web     Next.js 16                          │
+         video never leaves the vehicle             └────────────────────────────────────────────┘
+hospital browser ── /hospital ── polls /api every 2 s (SWR)
 ```
 
----
+- The **engine owns the data and the clinical logic**. Next.js only calls `/api/*`, so keys stay server-side.
+- **One source of truth for types:** Pydantic models in `engine/app/models.py` → OpenAPI → `web/src/lib/api-types.ts`
+  (`bun run gen:api`).
+- **Transfer lifecycle:** `preparing` (crew only) → `pending` (handoff sent; the hospital sees it) → `accepted` →
+  `arrived` → `closed`.
+- **Honest provenance:** every vital carries its source (`presage`, `manual` or `simulated`) and a timestamp. Simulated
+  values are labelled *Simulated* on both screens and "(simulated)" in the SBAR, and get no clinical status word.
+- **Only measured values score.** NEWS2, alerts and the deterioration forecast use Presage and crew readings only;
+  simulated readings are display-only. Prepared demo cases pre-fill nothing: the presenter types the suggested vitals.
+- **Extraction is a suggestion.** Items pulled from a voice note ("Aspirin 300 mg") can be struck by the crew.
 
-## Part 1: Pre-arrival at the local health centre
-**Owner: Percy**
+## Run locally (no Docker)
 
-Goal: by the time the patient reaches the health centre, staff already know who the patient is, what is wrong, and what to prepare.
-
-| Input | Action | Output |
-|---|---|---|
-| Video of the patient | Scan the face | Vital cues and supplementary observations |
-| Voice of the person accompanying the patient | They describe what they see and what they need | Instructions and feedback to the companion, plus supplementary observations |
-| Image of the patient's ID | Scan the details | Prompts that help the local health centre get help ready |
-
-**Hands off:** a **pre-arrival packet** (identity, early vital cues, observations, companion's account) sent to the health centre before the patient walks in. The ID and slot check is done in advance.
-
-### Running the Part 1 prototype
-
-**What exists so far**
-
-| Built | Not built yet |
-|---|---|
-| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | Speech slurring (needs the audio itself, not only the text) |
-| Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Turning the transcript into observations and instructions for the companion |
-| ID photo → name, ID number and age (Gemini vision). Unclear fields stay blank and the card is flagged "needs review" | Insurance check (an ID card does not say) |
-| **Visual signs:** frames of the video are checked for visible signs (Gemini). Every sign in a fixed catalogue is checked and answered separately; a voice account, if there is one, only marks which signs it mentioned (with a quote that must appear in it). Every "seen" cites frames you can look at, and anything the account claims but the video does not show is listed | A clinically validated sign list (the catalogue in `src/data/cue_catalogue.json` is a demo assumption) |
-| Patient video can be **uploaded or recorded with the camera in the browser**. A recording stays in the browser, and nothing goes to Google or Presage until you press Analyse | |
-| A demo web page with three boxes (video, voice, ID) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above (urgency level, what to prepare, what to tell the family) |
-
-**What you need**
-
-| Need | Notes |
-|---|---|
-| Python 3.13 | What it was built and tested on |
-| Node.js 20 or later | Presage's SDK only exists for Node. It can live inside your virtual environment (see step 3) |
-| A Presage API key | Free, from [physiology.presagetech.com](https://physiology.presagetech.com) |
-| A Gemini API key | An AI Studio key, or a Google Cloud / Agent Platform key. Optional: without one the voice part runs in mock mode |
-| A browser and a microphone | For the demo page |
-
-Presage's SDK supports Windows x64, Linux x64 and ARM64 (glibc 2.35 or newer) and Apple Silicon Macs.
-
-**Do not share the `.venv` folder.** It holds machine-specific paths and binaries, is several hundred MB, and is git-ignored. Everyone builds their own from [requirements.txt](requirements.txt). Likewise, never commit `inputs/.env`, which holds your keys.
-
-**Setup (Windows PowerShell; on Mac/Linux use `source .venv/bin/activate`)**
-
-```powershell
-# 1. Python environment and packages
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-
-# 2. Your keys: copy the template, then open inputs\.env and fill it in
-mkdir inputs
-copy env.example inputs\.env
-
-# 3. Node.js inside the same environment (skip if you installed Node 20+ yourself)
-nodeenv -p -n 24.11.0
-
-# 4. The Presage SDK
-cd presage-sidecar
-npm install
-cd ..
+```bash
+cd engine && uv sync && uv run uvicorn app.main:app --reload --port 8000
 ```
 
-If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nodejs.org) instead. Re-run the activate line in each new terminal.
-
-**What goes in `inputs/.env`** (everything is configured here and nowhere in the code; restart after editing)
-
-| Line | Meaning |
-|---|---|
-| `PRESAGE_API_KEY` | Your Presage key. `PRESAGE_MODE=mock` gives fake numbers with no key |
-| `GEMINI_API_KEY` | Your Gemini key. Leave blank for mock voice |
-| `GEMINI_USE_ENTERPRISE` | **Which kind of Gemini key you have.** `false` for a Google AI Studio key (starts with `AIza`), `true` for a Google Cloud / Gemini Agent Platform (Vertex AI) key. Teammates with different keys each set their own. An enterprise key's API restrictions must allow the Vertex AI / Agent Platform API, otherwise Google answers `API_KEY_SERVICE_BLOCKED` |
-| `GEMINI_STT_MODEL` | Speech model, currently `gemini-3.8-flash`. A model with `live` in its name streams as you speak, but Google refuses it for express-mode API keys at the moment |
-| `GEMINI_STT_FALLBACK_MODEL` | Optional backup model if the main one cannot start |
-| `GEMINI_ID_MODEL` | Vision model that reads ID photos, currently `gemini-3.8-flash` |
-| `GEMINI_CUE_PLANNER_MODEL`, `GEMINI_VQA_MODEL` | Models that choose the cues from the transcript, and inspect the video for them. Currently `gemini-3.8-flash` for both |
-| `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES` | One frame every this many seconds, and the most frames sent in total |
-| `VIDEO_RECORD_MAX_S` | The longest camera recording, in seconds. Presage needs about 45 to 60 for a reliable breathing rate |
-| `GEMINI_TIMEOUT_S`, `GEMINI_RETRY_ATTEMPTS` | Give up on a Google request that does not answer within this many seconds, and the number of tries. Without this, a stalled request would freeze the page forever |
-| `VQA_MODE` | `one_pass`: a single request with the frames, the voice account and every sign, answered one sign at a time. `two_step`: one request reads only the account and picks signs, a second sees only the frames, so it never sees the account |
-| `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
-| `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
-
-**Run**
-
-```powershell
-python run.py --serve          # demo page at http://127.0.0.1:8000 (on Windows you can double-click start.bat)
-python run.py clip.mp4         # analyse one video from the command line
-python run.py --mock           # try everything with no keys
-python transcribe_file.py note.m4a   # transcribe an audio file
-python scan_id.py card.jpg     # read the name and ID number from a photo of an ID
-python visual_cues.py clip.mp4 --latest   # look for the signs the latest transcript suggests
-python -m pytest               # tests (no keys needed, nothing is sent to Google)
+```bash
+cd web && bun install && bun run dev
 ```
 
-The page only works while that command is running. `run.py` starts the Presage sidecar for you.
+Open http://localhost:3000. It lands on the crew screen. With no keys, everything runs on mock adapters, the
+in-memory store and clearly labelled simulated HR / RR.
 
-**Using the page.** Box 1 takes the patient video, either a file or a camera recording (video only, no sound, stopping by itself after `VIDEO_RECORD_MAX_S`). The browser only allows the camera and microphone on `localhost` or an HTTPS address, so a phone opening the page by the laptop's IP address will not be able to record. Tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
+**Live Presage vitals.** Run the bridge on the machine with the camera (Node 20+):
 
-**Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
+```bash
+cd presage-bridge && npm install && PRESAGE_API_KEY=... ENGINE_URL=http://localhost:8000 npm start
+```
 
-**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan, and frames from videos you check for visual cues, are sent to Google's Gemini service using your key.
+Then open the crew screen in Chrome or Edge and allow the camera. Camera and microphone need a secure context
+(`localhost` or HTTPS). Embedded preview panes, such as an editor's built-in browser, usually block capture. Details:
+[`presage-bridge/README.md`](presage-bridge/README.md).
 
----
+### With Tiger Data locally (TimescaleDB in Docker)
 
-## Part 2: Coordination between the health centre and the capital hospital
-**Owner: [you]** · *Proposed design, open for team discussion*
+```bash
+docker run -d --name atollcare-tsdb -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=atollcare -p 5433:5432 timescale/timescaledb:latest-pg17
+```
 
-Goal: turn "call around until someone says yes" into a fast, recorded, accountable referral.
+Then set `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/atollcare` (or a Tiger Cloud URL) and start the
+engine. Or run everything in containers: `cp .env.example .env && docker compose up`.
 
-| Input | Action | Output |
+### Checks
+
+```bash
+cd engine && uv run pytest && uv run ruff check app tests ../scripts
+```
+
+```bash
+cd engine && TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/atollcare_test uv run pytest
+```
+
+```bash
+cd web && bun run test && bun run typecheck && bun run lint && bun run build
+```
+
+```bash
+uv run --project engine python scripts/demo_e2e.py --base http://localhost:8000
+```
+
+The e2e script plays the story through the API: create → Presage + crew vitals → voice note → handoff (asserting the
+hospital can't see the transfer before it) → question and answer → accept → fast-forward to arrival → close.
+
+## Demo
+
+Press **Ctrl + .** (⌘ + . on a Mac) anywhere, or use the sliders icon in the top bar, to open the presenter panel:
+prepared cases (each with a line to say and the vitals to type), region, journey speed (1× / 10× / 30× / 60×), service
+status (including which database and host are live), network insights with *Seed 60 days of history*, and reset. The
+same tools live at `/demo`. The 3-minute script is in [`docs/PITCH.md`](docs/PITCH.md).
+
+**Network insights** (`/insights`, for operations leads, not a clinical screen): handoffs, median and 90th-percentile
+time to acceptance, journey times, alerts and hospital questions per day, slowest-accepting hospitals. Answered from
+Tiger Data continuous aggregates, with the storage, compression and a live aggregate-vs-raw benchmark beside them.
+
+## Environment
+
+See [`.env.example`](.env.example). Each adapter has a `mock` mode, and a missing key falls back to mock with a log line.
+
+| Variable | Read by | Meaning |
 |---|---|---|
-| Pre-arrival packet + local triage notes | AI drafts a structured referral (SBAR: Situation, Background, Assessment, Recommendation) and pre-fills the transfer form | A referral ready to send *before* the capital hospital is contacted, with no late form-filling |
-| Patient condition, urgency, and the capital hospital's on-call roster | Route automatically to the right specialist | The doctor in charge is contacted directly with the full referral attached, with no switchboard phone tree |
-| Doctor's response (accept / decline / need more info / remote advice) | Record the decision and its reason. If declined, trigger escalation or a second opinion instead of taking no action | An auditable decision. On accept, a **dispatch request** goes to transport (Part 3) |
-| The local centre has the facility but lacks the expertise | Open a teleconsult with the capital specialist, sharing the case | Remote advice or guided intervention, logged to the case |
-| The local centre lacks the resources | Suggest the nearest alternative facility, or a teleconsult, before sending the patient home | Fewer patients sent home with no plan |
+| `DATABASE_URL` | engine | Postgres / TimescaleDB / Tiger Cloud. Empty → in-memory store |
+| `GEMINI_MODE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | engine | `real` → Gemini writes the SBAR and extracts interventions (fallback model when the primary is overloaded); otherwise template + rules |
+| `ELEVENLABS_MODE`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_CREW`, `ELEVENLABS_VOICE_HOSPITAL` | engine | `real` → Scribe transcribes voice notes; hospital messages are spoken with ElevenLabs TTS. Otherwise the browser's own speech recognition and synthesis |
+| `STORAGE_MODE` (`local`/`s3`), `S3_*` | engine | Where TTS audio is cached |
+| `DEFAULT_REGION`, `DEFAULT_SPEED_MULTIPLIER` | engine | Demo defaults |
+| `HOST_LABEL`, `HOST_REGION` | engine | Only if Vultr's metadata service isn't reachable from the container |
+| `NEXT_PUBLIC_ENGINE_URL`, `ENGINE_INTERNAL_URL` | web | API base for the browser / for the Next.js proxy |
+| `NEXT_PUBLIC_PRESAGE_BRIDGE_URL` | web | Default `ws://localhost:8787/ws` |
+| `PRESAGE_API_KEY`, `ENGINE_URL`, `PORT` | presage-bridge | `node --env-file=../.env src/index.js`, or set in its shell |
 
-**Hands off:** an accepted referral plus a dispatch request (destination, receiving doctor, urgency, transport type) to Part 3.
+## Tiger Data
 
----
+Put a Tiger Cloud service URL in `DATABASE_URL` (keep `?sslmode=require`) and start the engine. Migrations in
+`engine/app/migrations/` run idempotently:
 
-## Part 3: Transport to the capital hospital
-**Owner: Ray**
+| Object | What it does |
+|---|---|
+| `vitals_readings`, `transfer_notes` | Hypertables with one-day chunks: every reading and every timeline entry |
+| `vitals_1m` | Continuous aggregate (real-time) of **measured** readings → the hospital's trend chart and the deterioration forecast. The chart shows which aggregate answered and how many ms it took |
+| `network_vitals_1h`, `network_events_1d` | Continuous aggregates behind Network insights (reading volume, alerts, questions) |
+| Compression | Columnar compression after 7 days, segmented by transfer: 71 MB → 12 MB (83%) on 60 days of seeded history |
+| `transfers` | Relational document per transfer in the same database (outcomes, time to acceptance via `percentile_cont`) |
 
-Goal: the receiving doctor reads the patient's story and live condition *before* the vehicle (ambulance, boat or aircraft) arrives. Think of delivery tracking, but for hospitals.
+Measured on a laptop with 60 days of seeded history (351k readings): every insights query 1–5 ms; readings per hour
+over 30 days from `network_vitals_1h` in 2.6 ms vs 22.8 ms scanning 189k raw rows (8.8×). Seeding takes 10–20 s.
 
-| Input | Action | Output |
+## Deploy to Vultr
+
+Step-by-step runbook: [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md). In short: a 2 vCPU / 4 GB Ubuntu instance, ports
+80/443 open, real keys in `.env`, then `VULTR_HOST=<ip> ./scripts/deploy_vultr.sh`. Caddy gets a certificate for
+`<ip>.sslip.io` automatically; the engine reads Vultr's instance metadata and the presenter panel shows the region it
+is running in. Both production images are built and smoke-tested (web → engine → TimescaleDB). The bridge stays in the
+vehicle and points its `ENGINE_URL` at the public HTTPS URL.
+
+## Sponsor tracks
+
+| Track | Role | Where |
 |---|---|---|
-| Camera footage inside the ambulance | Scan the face | Vital cues and supplementary observations |
-| Nurse's actions | (i) The nurse speaks to the AI; (ii) the AI detects and logs actions | A summary of the nurse's reasoning for the doctor |
-| Sensor vitals | (i) Summarise (e.g. heart rate, heart-rate variability); (ii) interpret them as health signals | A briefing the doctor reads before the ambulance arrives |
+| **Presage** (main) | Live HR, RR, HRV, breathing waveform and framing hints from a mounted camera | `presage-bridge/`, `web/src/lib/presage.ts`, `crew/[transferId]/CameraInstrument.tsx` |
+| ElevenLabs | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
+| Gemini | Live SBAR from vitals + notes; interventions extracted from speech | `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
+| Tiger Data | Hypertables, measured-only `vitals_1m` → trend + forecast, network aggregates, columnar compression, Network insights with a live benchmark | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |
+| Vultr | Compute + Caddy HTTPS, region shown from instance metadata, optional Object Storage | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh`, `docs/DEPLOY_VULTR.md` |
 
-**Hands off:** live case updates and an arrival briefing for the capital hospital team.
+## Docs
 
----
-
-## Hand-off contract: the shared Case Record
-
-| Field | Written by | Read by |
-|---|---|---|
-| Case ID, patient identity (from ID scan) | Part 1 | Parts 2, 3, capital hospital |
-| Early vital cues and observations | Part 1 | Parts 2, 3 |
-| Companion's account | Part 1 | Part 2 |
-| Local triage notes | Part 2 (health centre) | Part 2 (capital), Part 3 |
-| Structured referral (SBAR) and transfer form | Part 2 | Capital hospital, Part 3 |
-| Referral decision and reason | Part 2 | Health centre, audit |
-| Dispatch request | Part 2 | Part 3 |
-| In-transit vitals and interpretation | Part 3 | Capital hospital |
-| Nurse reasoning summary | Part 3 | Capital hospital |
-
----
-
-## End-to-end example
-
-> An elderly woman in a remote village shows signs of a stroke. Her neighbour helps her to the local health centre.
->
-> 1. **Part 1:** On the way, the neighbour films her face and describes what happened. AtollCare flags facial asymmetry, coaches the neighbour on what to do, and scans her ID. The health centre receives a pre-arrival packet and prepares for a suspected stroke.
-> 2. **Part 2:** Triage confirms the centre has no stroke specialist. AtollCare drafts an SBAR referral, routes it straight to the on-call neurologist at the capital hospital, and records the acceptance. The transfer form is already complete, and a dispatch request goes out immediately.
-> 3. **Part 3:** In the ambulance, the camera and sensors stream vitals, and the nurse narrates interventions. The neurologist reads a live briefing and has the stroke team ready when she arrives.
-
----
-
-## Team
-
-| Part | Scope | Owner |
-|---|---|---|
-| 1 | Pre-arrival at the local health centre | Percy |
-| 2 | Health centre ↔ capital hospital coordination | [you] |
-| 3 | Transport to the capital hospital | Ray |
-
-## Status and next steps
-
-- [ ] Agree on the Case Record schema (the hand-off contract above)
-- [x] Part 1 prototype: face scan (Presage heart and breathing rate, upload or camera), voice account (record or file), ID scan, visual signs checked by Gemini
-- [ ] Part 1: the pre-arrival summary that turns those four outputs into an urgency level and an action list
-- [ ] Part 1: speech slurring (needs the audio itself), signs that depend on movement, a clinically validated sign list
-- [ ] Part 2 prototype: referral drafting, specialist routing, decision log
-- [ ] Part 3 prototype: in-transit vitals, nurse voice summary
-- [ ] Join the three parts into one end-to-end demo
+[`docs/BRIEF.md`](docs/BRIEF.md) product brief · [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md) deploy runbook ·
+[`docs/FEATURES.md`](docs/FEATURES.md) what's built and how it was
+verified · [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) what isn't verified · [`docs/PITCH.md`](docs/PITCH.md) demo
+script · [`docs/DEV_POST.md`](docs/DEV_POST.md) write-up draft · [`docs/CONCEPT.md`](docs/CONCEPT.md) and
+[`docs/PRD.md`](docs/PRD.md) the original v1 concept and PRD (historical).

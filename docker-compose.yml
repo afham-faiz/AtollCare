@@ -1,0 +1,49 @@
+# F-M7.1 Local dev: TimescaleDB + engine (uv, hot reload) + web (bun dev). Works with no API keys.
+#   cp .env.example .env && docker compose up
+services:
+  db:
+    image: timescale/timescaledb:latest-pg17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: atollcare
+    ports: ["5432:5432"]
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d atollcare"]
+      interval: 3s
+      retries: 20
+
+  engine:
+    build: ./engine
+    env_file: [.env]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/atollcare}
+      CORS_ORIGINS: http://localhost:3000
+      STORAGE_LOCAL_DIR: /engine/var/storage
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      - ./engine/app:/engine/app
+      - ./engine/tests:/engine/tests
+      - ./var/storage:/engine/var/storage
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    image: oven/bun:1.3
+    working_dir: /web
+    command: ["sh", "-c", "bun install && bun run dev --hostname 0.0.0.0"]
+    environment:
+      ENGINE_INTERNAL_URL: http://engine:8000
+      NEXT_PUBLIC_ENGINE_URL: /api
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./web:/web
+      - web_node_modules:/web/node_modules
+    ports: ["3000:3000"]
+    depends_on: [engine]
+
+volumes:
+  dbdata:
+  web_node_modules:

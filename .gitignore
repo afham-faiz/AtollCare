@@ -1,8 +1,25 @@
-.venv/
-node_modules/
-.env
+# Python
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+engine/var/
+var/
+
+# Env — keys never leave the machine
+.env
+.env.*
+!.env.example
 inputs/
+
+# Recordings, ID photos and logs from intake runs (patient data: never commit)
 logs/
 recordings/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
