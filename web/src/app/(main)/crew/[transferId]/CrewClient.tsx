@@ -3,6 +3,7 @@
 
 import { ArrowUpRight, Check, CheckCircle2, Clock3, Flag, ListChecks, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { mutate } from "swr";
 import { twMerge } from "tailwind-merge";
@@ -31,12 +32,14 @@ import VitalsSheet from "./VitalsSheet";
 import VoiceCapture from "./VoiceCapture";
 
 export default function ({ transferId }: { transferId: string }) {
+  const router = useRouter();
   const { data: t, error } = useTransfer(transferId);
   const { data: meta } = useMeta();
   const region = meta?.regions.find((r) => r.id === t?.region_id);
   const [voiceOn, setVoiceOn] = useState(true);
   const [sheet, setSheet] = useState<null | "handoff" | "vitals" | "notes">(null);
   const [justSent, setJustSent] = useState(false);
+  const [startingDemo, setStartingDemo] = useState(false);
 
   // ── contactless instrument ────────────────────────────────────────────────
   const active = !!t && (t.status === "preparing" || t.status === "pending" || t.status === "accepted");
@@ -87,13 +90,29 @@ export default function ({ transferId }: { transferId: string }) {
 
   const refresh = useCallback((next?: Transfer) => mutate(`/transfers/${transferId}`, next, { revalidate: !next }), [transferId]);
 
+  // old links die when the demo is reset or the in-memory engine restarts — offer a way straight back in
   if (error && !t) {
+    const startDemo = async () => {
+      setStartingDemo(true);
+      try {
+        router.push(`/crew/${(await post<Transfer>("/demo/example")).id}`);
+      } catch (err) {
+        toastError(err);
+        setStartingDemo(false);
+      }
+    };
     return (
-      <div className="m-auto text-center">
+      <div className="m-auto flex max-w-[26rem] flex-col items-center gap-[.5rem] text-center">
         <p className="text-[1.125rem] font-[600]">This transfer isn’t available.</p>
-        <Link href="/crew" className="mt-[.5rem] inline-block text-accent">
-          Back to transfers
-        </Link>
+        <p className="text-[0.9375rem] text-ink-2">It may have been closed, or the demo was reset.</p>
+        <div className="mt-[.75rem] flex gap-[.5rem]">
+          <ButtonPrimary onClick={startDemo} disabled={startingDemo}>
+            {startingDemo ? "Starting…" : "Start a demo case"}
+          </ButtonPrimary>
+          <Link href="/crew" className="inline-flex items-center rounded-[.75rem] px-[1rem] font-[600] text-accent hover:bg-accent-soft">
+            All transfers
+          </Link>
+        </div>
       </div>
     );
   }

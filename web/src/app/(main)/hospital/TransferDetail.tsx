@@ -2,6 +2,7 @@
 "use client";
 
 import { Check, CheckCircle2, MessageCircleQuestion, Send } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
 import { twMerge } from "tailwind-merge";
@@ -77,7 +78,7 @@ function Vital({ label, unit, lv, assess, now }: { label: string; unit: string; 
 }
 
 export default function ({ transferId }: { transferId: string }) {
-  const { data: t } = useTransfer(transferId);
+  const { data: t, error } = useTransfer(transferId);
   const { data: meta } = useMeta();
   const [tab, setTab] = useState<"handoff" | "trend" | "timeline" | "transport">("handoff");
   const { data: trend } = useTrend(tab === "trend" ? transferId : undefined);
@@ -85,6 +86,17 @@ export default function ({ transferId }: { transferId: string }) {
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
 
+  if (error && !t) {
+    return (
+      <div className={styles.missing}>
+        <p className="text-[1.0625rem] font-[600]">This transfer isn’t available.</p>
+        <p className="text-[0.9375rem] text-ink-2">It may have been closed, or the demo was reset.</p>
+        <Link href="/hospital" className="mt-[.5rem] font-[600] text-accent">
+          Show incoming transfers
+        </Link>
+      </div>
+    );
+  }
   if (!t || !meta) {
     return (
       <div className="flex flex-col gap-[1.25rem]">
