@@ -61,6 +61,7 @@ def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
         return RppgEstimates(issues=[f"bridge_unavailable: {exc.__class__.__name__}"])
 
     diagnostics = data.get("diagnostics") or {}
+    diagnostics["hints"] = data.get("hints") or []  # Presage's own plain-language framing hints, for the screen
     hr, hr_q = _vital(diagnostics.get("pulse_series"), data.get("heart_rate_bpm"), data.get("confidence"))
     rr, rr_q = _vital(diagnostics.get("breathing_series"), data.get("respiration_rate_bpm"), data.get("confidence"))
 

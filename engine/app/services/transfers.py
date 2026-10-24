@@ -35,8 +35,10 @@ from app.models import (
     NoteKind,
     NoteRequest,
     Patient,
+    PreArrival,
     Region,
     RemoveInterventionRequest,
+    Scan,
     SimProfile,
     Transfer,
     TransferListItem,
@@ -90,8 +92,9 @@ def profile_for(complaint: str) -> SimProfile:
 
 
 class TransferService:
-    def __init__(self, svc: Services) -> None:
+    def __init__(self, svc: Services, runner=None) -> None:
         self.svc = svc
+        self.runner = runner  # ScanRunner (app.services.intakes), shared with pre-arrival packets
         self.repo = svc.repo
         self.locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._gemini_at: dict[UUID, float] = {}
@@ -344,6 +347,73 @@ class TransferService:
             await self._save(t)
         self._schedule_briefing(transfer_id, force=True)
         return await self.get(transfer_id)
+
+    # ---------------------------------------------------------------- pre-arrival packet and scans
+    async def _record_scan_vitals(self, t: Transfer, scan: Scan) -> None:
+        """A finished scan's heart and breathing rate become two Presage readings (each carries its own quality),
+        timed when the clip was recorded. Mock or unavailable results never become readings."""
+        v = scan.vitals
+        if scan.recorded or v is None:
+            return
+        if v.source == "presage":
+            for field, value, quality in (("heart_rate", v.heart_rate_bpm, v.heart_rate_quality),
+                                          ("resp_rate", v.respiration_rate_bpm, v.respiration_quality)):
+                if value is not None:
+                    await self._ingest(t, VitalsRequest(source=VitalsSource.presage, recorded_at=scan.at,
+                                                        confidence=round(quality or 0.0, 3), **{field: value}))
+        scan.recorded = True
+
+    async def attach_pre_arrival(self, transfer_id: UUID, packet: PreArrival) -> None:
+        async with self.locks[transfer_id]:
+            t = await self._load(transfer_id)
+            t.pre_arrival = packet
+            if packet.account:
+                await self._note(t, Author.companion, NoteKind.text, packet.account, at=packet.sent_at or self.now())
+            for s in packet.scans:
+                await self._record_scan_vitals(t, s)
+            await self._template_briefing(t, keep_gemini=True)
+            await self._save(t)
+        self._schedule_briefing(transfer_id, force=True)
+
+    async def sync_pre_arrival_scan(self, transfer_id: UUID, scan: Scan) -> None:
+        """A pre-arrival scan finished after the transfer started: update the transfer's copy and record its vitals."""
+        async with self.locks[transfer_id]:
+            t = await self._load(transfer_id)
+            if t.pre_arrival is None:
+                return
+            mine = next((s for s in t.pre_arrival.scans if s.id == scan.id), None)
+            copy = scan.model_copy(deep=True, update={"recorded": mine.recorded if mine else False})
+            t.pre_arrival.scans = [copy if s.id == scan.id else s for s in t.pre_arrival.scans]
+            await self._record_scan_vitals(t, copy)
+            await self._save(t)
+
+    async def add_scan(self, transfer_id: UUID, video: bytes) -> Transfer:
+        if not video:
+            raise AppError("empty_upload", "No video was received", 400)
+        if self.runner is None:
+            raise AppError("scans_unavailable", "Scanning is not set up on this engine", 501)
+        async with self.locks[transfer_id]:
+            t = await self._load(transfer_id)
+            if t.status in (TransferStatus.arrived, TransferStatus.closed):
+                raise AppError("finished", "This transfer has finished", 409)
+            scan = Scan(id=uuid4(), at=self.now(), stage="Uploading")
+            t.scans.append(scan)
+            await self._save(t)
+        self.runner.start(scan, video, t.complaint, t.patient.age, self._mutate_scan(transfer_id))
+        return await self.get(transfer_id)
+
+    def _mutate_scan(self, transfer_id: UUID):
+        async def mutate(scan_id: UUID, fn) -> None:
+            async with self.locks[transfer_id]:
+                t = await self._load(transfer_id)
+                scan = next((s for s in t.scans if s.id == scan_id), None)
+                if scan is None:
+                    return
+                fn(scan)
+                await self._record_scan_vitals(t, scan)
+                await self._save(t)
+
+        return mutate
 
     async def remove_intervention(self, transfer_id: UUID, req: RemoveInterventionRequest) -> Transfer:
         async with self.locks[transfer_id]:

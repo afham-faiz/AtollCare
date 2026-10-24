@@ -1,11 +1,19 @@
-// AtollCare Presage bridge — runs next to the camera (the "edge device" in the vehicle).
+// AtollCare Presage bridge. Two ways in, one SmartSpectra SDK:
 //
-//   browser (crew screen) ──RGBA frames over WebSocket──► bridge ──sendFrame──► Presage SmartSpectra SDK
-//   browser ◄── live HR / RR / HRV / breathing trace / framing hints ── bridge
-//   bridge ──every 5 s──► AtollCare engine  POST /api/transfers/{id}/vitals  (numbers only; video never leaves)
+// Live (a laptop or tablet camera on a mount):
+//   browser ──RGBA frames over WebSocket──► bridge ──sendFrame──► SDK ──► live HR / RR / HRV / trace / hints
+//   bridge ──every 5 s──► engine  POST /api/transfers/{id}/vitals  (numbers only; video never leaves)
+//
+// File (a phone records ~60 s; the engine converts it to MJPEG and posts it here):
+//   engine ──POST /vitals/file (.avi bytes)──► bridge ──useFile, real-time playback──► SDK ──► whole sample trace
+//   (Percy's presage-sidecar, merged in: real-time pace, because faster playback drops frames and loses the face)
 //
 // Env: PRESAGE_API_KEY (physiology.presagetech.com), ENGINE_URL (default http://localhost:8000), PORT (8787).
+import crypto from "node:crypto";
+import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 
 import { WebSocketServer } from "ws";
 
@@ -191,11 +199,157 @@ function handleFrame(session, data) {
   }
 }
 
+// ── file mode: recorded clips from phones ─────────────────────────────────────
+const FILE_TIMEOUT_MS = Number(process.env.PRESAGE_TIMEOUT_MS ?? 240_000);
+const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
+let queue = Promise.resolve(); // one SDK at a time: clips wait their turn
+let fileJobs = 0;
+
+function exclusive(fn) {
+  const run = queue.then(fn, fn);
+  queue = run.catch(() => {});
+  return run;
+}
+
+// Keep responses small: at most ~200 points per series.
+function thin(series, max = 200) {
+  if (series.length <= max) return series;
+  const step = Math.ceil(series.length / max);
+  return series.filter((_, i) => i % step === 0 || i === series.length - 1);
+}
+
+async function fileVitals(clipPath) {
+  const { SmartSpectraSDK, ValidationCode, ProcessingStatus, breathingMetrics, cardioMetrics } = sdkModule;
+  const codeNames = Object.fromEntries(Object.entries(ValidationCode).map(([name, code]) => [code, name]));
+  const issues = new Set();
+  const hints = new Set();
+  const validationCounts = {};
+  const pulseSeries = [];
+  const breathingSeries = [];
+  let firstTs = null;
+  let pulse = null;
+  let breathing = null;
+
+  const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: [...breathingMetrics, ...cardioMetrics], enableTelemetry: false });
+  const sample = (m) => (m && m.value != null ? { value: m.value, confidence: (m.confidence ?? 0) / 100, stable: !!m.stable } : null);
+  try {
+    const done = new Promise((resolve, reject) => {
+      let sawRunning = false;
+      const timer = setTimeout(() => reject(new Error("SDK timed out")), FILE_TIMEOUT_MS);
+      const finish = (fn, arg) => {
+        clearTimeout(timer);
+        fn(arg);
+      };
+      sdk.on("processingStatus", (status) => {
+        if (status === ProcessingStatus.kRunning) sawRunning = true;
+        if (status === ProcessingStatus.kError) finish(reject, new Error("SDK processing error"));
+        if (status === ProcessingStatus.kIdle && sawRunning) finish(resolve);
+      });
+      sdk.on("error", (code, message) => finish(reject, new Error("SDK error " + code + ": " + message)));
+      sdk.on("validationStatus", (code, _ts, hint) => {
+        const name = codeNames[code] || "code_" + code;
+        validationCounts[name] = (validationCounts[name] || 0) + 1;
+        if (code !== ValidationCode.kOk) {
+          issues.add(name);
+          hints.add(hint || HINTS[code] || name);
+        }
+      });
+      sdk.on("metrics", (buf, timestampUs) => {
+        let m;
+        try {
+          m = decodeMetrics(buf);
+        } catch {
+          return;
+        }
+        if (firstTs === null) firstTs = timestampUs;
+        const t_s = Math.round(((timestampUs - firstTs) / 1e6) * 10) / 10;
+        const p = sample(last(m.cardio?.pulseRate));
+        const b = sample(last(m.breathing?.rate));
+        if (p) {
+          pulse = p;
+          pulseSeries.push({ t_s, ...p });
+        }
+        if (b) {
+          breathing = b;
+          breathingSeries.push({ t_s, ...b });
+        }
+      });
+    });
+    done.catch(() => {}); // start() can emit synchronously; mark `done` handled before it can reject
+    sdk.useFile(clipPath, { interframeDelayMs: 33 });
+    sdk.start();
+    await done;
+  } finally {
+    await sdk.destroy().catch(() => {});
+  }
+
+  const confidences = [pulse, breathing].filter(Boolean).map((x) => x.confidence);
+  return {
+    mode: "sdk",
+    heart_rate_bpm: pulse ? Math.round(pulse.value) : null,
+    respiration_rate_bpm: breathing ? Math.round(breathing.value) : null,
+    confidence: confidences.length ? Math.min(...confidences) : 0,
+    issues: [...issues],
+    hints: [...hints],
+    diagnostics: { validation_counts: validationCounts, pulse_series: thin(pulseSeries), breathing_series: thin(breathingSeries) },
+  };
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > MAX_UPLOAD_BYTES) {
+        reject(new Error("payload too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function json(res, status, body) {
+  res.writeHead(status, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(body));
+}
+
+async function handleFile(req, res) {
+  if (sdkState !== "ready") return json(res, 503, { error: sdkMessage, sdk: sdkState });
+  const clip = path.join(os.tmpdir(), "presage-" + crypto.randomUUID() + ".avi");
+  try {
+    const body = await readBody(req);
+    if (!body.length) return json(res, 400, { error: "empty video body" });
+    fs.writeFileSync(clip, body);
+    fileJobs += 1;
+    const result = await exclusive(async () => {
+      if (active) {
+        send(active.ws, { type: "status", state: "taken_over", message: "A recorded scan is using Presage" });
+        await stopSession(active);
+      }
+      return fileVitals(clip);
+    });
+    console.log("[bridge] clip measured: HR " + (result.heart_rate_bpm ?? "-") + " RR " + (result.respiration_rate_bpm ?? "-"));
+    return json(res, 200, result);
+  } catch (err) {
+    return json(res, 500, { error: String(err.message || err) });
+  } finally {
+    fileJobs = Math.max(0, fileJobs - 1);
+    fs.rm(clip, { force: true }, () => {});
+  }
+}
+
 const server = http.createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   if (req.url === "/health") {
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ ok: true, sdk: sdkState, message: sdkMessage, session: active?.transferId ?? null }));
+    return json(res, 200, { ok: true, sdk: sdkState, message: sdkMessage, session: active?.transferId ?? null, file_jobs: fileJobs });
+  }
+  if (req.method === "POST" && req.url === "/vitals/file") {
+    handleFile(req, res);
     return;
   }
   res.statusCode = 404;

@@ -4,7 +4,7 @@
 
 	handle /api/* {
 		request_body {
-			max_size 64MB
+			max_size 160MB
 		}
 		reverse_proxy engine:8000
 	}

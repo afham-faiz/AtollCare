@@ -28,6 +28,10 @@ class GeminiExtraction(BaseModel):
     interventions: list[str]
 
 
+class GeminiComplaint(BaseModel):
+    complaint: str
+
+
 BRIEFING_SYSTEM = """You write a live SBAR handover for the hospital team receiving an emergency transfer.
 Rules:
 - At most 110 words across the four fields. Plain clinical English, no markdown.
@@ -36,6 +40,10 @@ Rules:
 - Values with source "simulated" are simulated for a demo, not measurements: always write "(simulated)" after them.
 - suspected_condition: a short working impression supported by the JSON, or null.
 - recommendation: what the receiving team should prepare (team, imaging, theatre, blood), not treatment orders."""
+
+COMPLAINT_SYSTEM = """A companion has described, in their own words, a person who suddenly became unwell.
+Write ONE short line (under 100 characters) for an emergency transfer's "what's happening" field: the main problem and
+how long, in plain clinical English. Use only what the account says. No diagnosis, no advice, no names."""
 
 EXTRACT_SYSTEM = """Extract from an ambulance crew's spoken note:
 - interventions: things the crew DID (drugs with dose, oxygen, fluids, procedures), short, e.g. "Aspirin 300 mg".
@@ -105,6 +113,17 @@ class GeminiAdapter:
             BRIEFING_SYSTEM, json.dumps(data, default=str, ensure_ascii=False), GeminiBriefing, self.settings.gemini_timeout_s
         )
         return result, err  # type: ignore[return-value]
+
+    async def condense_account(self, account: str) -> str | None:
+        """One line for the transfer's complaint, from the companion's own words. None → caller's plain fallback."""
+        budget = self.settings.gemini_extract_timeout_s
+        try:
+            result, _err = await asyncio.wait_for(
+                self._generate(COMPLAINT_SYSTEM, account, GeminiComplaint, budget, fast_first=True), timeout=budget)
+        except TimeoutError:
+            return None
+        text = (result.complaint.strip() if result else "")  # type: ignore[union-attr]
+        return text[:140] or None
 
     async def extract(self, text: str) -> tuple[GeminiExtraction | None, str | None]:
         """The crew is watching a spinner: lighter model first, one overall deadline, then the caller's rules."""

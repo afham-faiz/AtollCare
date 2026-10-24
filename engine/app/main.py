@@ -16,7 +16,7 @@ from app.config import ENGINE_VERSION, get_settings
 from app.core.infra import detect_host
 from app.logging_setup import case_id_var, setup_logging
 from app.models import InfraStatus
-from app.routers import insights, system, transfers
+from app.routers import insights, intakes, system, transfers
 from app.services.context import AppError
 from app.services.hub import build_hub
 
@@ -91,7 +91,7 @@ def create_app() -> FastAPI:
         log.exception("unhandled error")
         return err(500, "internal_error", f"{type(exc).__name__}: {exc}")
 
-    for r in (system, transfers, insights):
+    for r in (system, transfers, insights, intakes):
         app.include_router(r.router)
     return app
 

@@ -77,6 +77,12 @@ async def message(transfer_id: UUID, body: MessageRequest, h: Hub = Depends(hub)
     return await h.transfers.message(transfer_id, body)
 
 
+@router.post("/{transfer_id}/scans", response_model=Transfer)
+async def add_scan(transfer_id: UUID, video: UploadFile = File(...), h: Hub = Depends(hub)):
+    """A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background."""
+    return await h.transfers.add_scan(transfer_id, await video.read())
+
+
 @router.post("/{transfer_id}/interventions/remove", response_model=Transfer)
 async def remove_intervention(transfer_id: UUID, body: RemoveInterventionRequest, h: Hub = Depends(hub)):
     return await h.transfers.remove_intervention(transfer_id, body)

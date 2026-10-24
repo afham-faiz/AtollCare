@@ -9,6 +9,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.intake.schemas import Demographics, RppgEstimates, VisualCueReport
+
 
 # ---------------------------------------------------------------- enums
 class TransferStatus(str, Enum):
@@ -60,6 +62,7 @@ class Author(str, Enum):
     crew = "crew"
     hospital = "hospital"
     system = "system"
+    companion = "companion"  # the person with the patient, from the pre-arrival phone
 
 
 class AlertLevel(str, Enum):
@@ -260,6 +263,8 @@ class Transfer(BaseModel):
     notes: list[Note] = []
     vitals: list[VitalsReading] = []  # most recent 120, oldest first
     arrived_at: datetime | None = None
+    pre_arrival: PreArrival | None = None  # the companion's packet this transfer started from, as it arrived
+    scans: list[Scan] = []  # recorded clips during the transfer (phone): vitals + visible signs
 
 
 class TransferListItem(BaseModel):
@@ -283,6 +288,85 @@ class TransferListItem(BaseModel):
     monitoring: MonitoringSource
     unanswered_questions: int
     updated_at: datetime
+
+
+# ---------------------------------------------------------------- pre-arrival (Part 1) and scans
+class ScanStatus(str, Enum):
+    processing = "processing"
+    done = "done"
+    failed = "failed"
+
+
+class Scan(BaseModel):
+    """One recorded clip (about 60 s, phone propped up): Presage heart and breathing rate and Gemini's check for
+    visible signs, both from the same video. The video itself is not kept; only frames a finding cites are."""
+
+    id: UUID
+    at: datetime  # when it was recorded
+    status: ScanStatus = ScanStatus.processing
+    stage: str | None = None  # what is happening now, in words, for the screen
+    vitals: RppgEstimates | None = None
+    vitals_note: str | None = None  # why there are no vitals, if so
+    signs: VisualCueReport | None = None
+    evidence: dict[str, str] = {}  # frame number → image URL, only for frames a finding cites
+    error: str | None = None
+    seconds: dict[str, float] = {}
+    recorded: bool = False  # its vitals are already in the transfer's readings (written exactly once)
+
+
+class IntakeStatus(str, Enum):
+    draft = "draft"  # the companion is still filling it in
+    sent = "sent"  # sent to the health centre; waiting for someone to start a transfer
+    started = "started"  # a transfer was started from it
+
+
+class Intake(BaseModel):
+    """The pre-arrival packet from the companion's phone: who the patient is, what happened in their own words,
+    and what one recorded clip showed. Captured once, then carried into the transfer and never asked again."""
+
+    id: UUID
+    code: str  # e.g. "PA-7K2Q"
+    region_id: str
+    status: IntakeStatus = IntakeStatus.draft
+    created_at: datetime
+    updated_at: datetime
+    health_centre_id: str | None = None  # where they are heading
+    patient: Patient = Patient()
+    account: str | None = None  # the companion's own words (transcribed or typed)
+    account_source: Literal["voice", "text"] | None = None
+    complaint: str | None = None  # one line, condensed from the account
+    identity: Demographics | None = None  # read from an ID photo; needs_review unless every field was clear
+    scans: list[Scan] = []
+    sent_at: datetime | None = None
+    transfer_id: UUID | None = None
+
+
+class PreArrival(BaseModel):
+    """The packet as the transfer received it (a copy, so later edits to the intake don't rewrite history)."""
+
+    intake_id: UUID
+    code: str
+    sent_at: datetime | None = None
+    account: str | None = None
+    identity: Demographics | None = None
+    scans: list[Scan] = []
+
+
+class CreateIntakeRequest(BaseModel):
+    region_id: str | None = None  # default: the active region
+    health_centre_id: str | None = None
+
+
+class UpdateIntakeRequest(BaseModel):
+    patient: Patient | None = None
+    health_centre_id: str | None = None
+    account: str | None = Field(None, max_length=4000)  # typed instead of spoken
+
+
+class StartTransferRequest(BaseModel):
+    origin_id: str | None = None  # default: the intake's health centre
+    destination_id: str
+    mode: TransportMode
 
 
 # ---------------------------------------------------------------- requests
@@ -535,3 +619,7 @@ class ErrorBody(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorBody
+
+
+# forward references (Transfer → PreArrival, Scan) resolve once every class above exists
+Transfer.model_rebuild()

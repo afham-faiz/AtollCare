@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from app.models import DemoState, Note, Transfer, TrendBucket, VitalsReading
+from app.models import DemoState, Intake, Note, Transfer, TrendBucket, VitalsReading
 
 log = logging.getLogger("atollcare.db")
 MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
@@ -84,6 +84,18 @@ class Repo(ABC):
     @abstractmethod
     async def reset(self) -> None: ...
 
+    # ---- pre-arrival packets
+    @abstractmethod
+    async def save_intake(self, intake: Intake) -> None:
+        """Insert or replace."""
+
+    @abstractmethod
+    async def get_intake(self, intake_id: UUID) -> Intake | None: ...
+
+    @abstractmethod
+    async def list_intakes(self) -> list[Intake]:
+        """Newest first."""
+
     # ---- network analytics (Tiger Data only; the in-memory store has no history to analyse)
     async def database_info(self) -> tuple[str, str | None]:
         return "In-memory", None
@@ -107,6 +119,7 @@ class MemoryRepo(Repo):
         self.transfers: dict[UUID, Transfer] = {}
         self.vitals: dict[UUID, list[VitalsReading]] = defaultdict(list)
         self.notes: dict[UUID, list[Note]] = defaultdict(list)
+        self.intakes: dict[UUID, Intake] = {}
         self.demo: DemoState | None = None
 
     async def ping(self) -> bool:
@@ -159,6 +172,17 @@ class MemoryRepo(Repo):
         self.transfers.clear()
         self.vitals.clear()
         self.notes.clear()
+        self.intakes.clear()
+
+    async def save_intake(self, intake: Intake) -> None:
+        self.intakes[intake.id] = intake.model_copy(deep=True)
+
+    async def get_intake(self, intake_id: UUID) -> Intake | None:
+        i = self.intakes.get(intake_id)
+        return i.model_copy(deep=True) if i else None
+
+    async def list_intakes(self) -> list[Intake]:
+        return sorted((i.model_copy(deep=True) for i in self.intakes.values()), key=lambda i: i.updated_at, reverse=True)
 
 
 # ---------------------------------------------------------------- postgres / timescale
@@ -325,6 +349,26 @@ class PgRepo(Repo):
         # live demo rows only — seeded network history stays; their readings and notes go with them (ON DELETE CASCADE)
         async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM transfers WHERE NOT seeded")
+            await conn.execute("DELETE FROM intakes")
+
+    async def save_intake(self, intake: Intake) -> None:
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO intakes (id, code, region_id, status, created_at, updated_at, doc) VALUES ($1,$2,$3,$4,$5,$6,$7) "
+                "ON CONFLICT (id) DO UPDATE SET status=EXCLUDED.status, updated_at=EXCLUDED.updated_at, doc=EXCLUDED.doc",
+                intake.id, intake.code, intake.region_id, intake.status.value, intake.created_at, intake.updated_at,
+                intake.model_dump(mode="json"),
+            )
+
+    async def get_intake(self, intake_id: UUID) -> Intake | None:
+        async with self.pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT doc FROM intakes WHERE id=$1", intake_id)
+        return Intake.model_validate(row["doc"]) if row else None
+
+    async def list_intakes(self) -> list[Intake]:
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("SELECT doc FROM intakes ORDER BY updated_at DESC LIMIT 100")
+        return [Intake.model_validate(r["doc"]) for r in rows]
 
 
     # ---------------------------------------------------------------- network analytics
