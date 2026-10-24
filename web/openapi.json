@@ -3381,6 +3381,7 @@
         "enum": [
           "presage",
           "simulated",
+          "scan",
           "off"
         ],
         "title": "MonitoringSource"
@@ -3795,6 +3796,21 @@
             ],
             "title": "Account"
           },
+          "account_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "voice",
+                  "text"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Source"
+          },
           "identity": {
             "anyOf": [
               {
@@ -4074,6 +4090,11 @@
           "recorded": {
             "type": "boolean",
             "title": "Recorded",
+            "default": false
+          },
+          "noted": {
+            "type": "boolean",
+            "title": "Noted",
             "default": false
           }
         },

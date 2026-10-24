@@ -39,6 +39,7 @@ from app.models import (
     Region,
     RemoveInterventionRequest,
     Scan,
+    ScanStatus,
     SimProfile,
     Transfer,
     TransferListItem,
@@ -57,6 +58,30 @@ CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 NEWS2_LOOKBACK_MIN = 60
 GEMINI_MIN_INTERVAL_S = 20.0
 PREPARE_OPTIONS = ["Cath lab", "Stroke team + CT", "Trauma team", "Theatre", "ICU bed", "Blood products", "Resus bay"]
+
+
+def scan_summary(scan: Scan) -> str:
+    """One line for the timeline: Presage numbers (weak ones marked unscored) and the signs Gemini saw on the video."""
+    parts: list[str] = []
+    v = scan.vitals
+    if v is not None and v.source == "presage":
+        for label, value, unit, quality in (("heart rate", v.heart_rate_bpm, " bpm", v.heart_rate_quality),
+                                            ("breathing", v.respiration_rate_bpm, "/min", v.respiration_quality)):
+            if value is not None:
+                weak = (quality or 0.0) < LOW_CONFIDENCE
+                parts.append(f"{label} {value}{unit}" + (" (weak signal, not scored)" if weak else ""))
+    measured = "; ".join(parts) if parts else "heart and breathing rate not measured"
+    if scan.signs is None or any(i.startswith("inspection_failed") for i in scan.signs.issues):
+        return f"{measured}. Visible signs not checked."
+    seen = [f.label for f in scan.signs.findings if f.finding == "present"]
+    described = {c.cue_id for c in scan.signs.plan.cues if c.source == "transcript"}
+    missing = [f.label for f in scan.signs.findings if f.finding == "absent" and f.cue_id in described]
+    checked = any(f.finding == "absent" for f in scan.signs.findings)
+    signs = (f"Seen on video: {', '.join(seen)}." if seen else "No checklist signs seen." if checked
+             else "The video didn't show enough to check visible signs.")
+    if missing:
+        signs += f" Described but not seen: {', '.join(missing)}."
+    return f"{measured}. {signs}"
 
 # simulated contactless profile picked from the complaint (DEMO ASSUMPTION)
 PROFILES = [
@@ -198,7 +223,7 @@ class TransferService:
             await self._save(t)
             return VitalsAck(news2=t.news2, alerts=t.alerts, monitoring=t.monitoring)
 
-    async def _ingest(self, t: Transfer, req: VitalsRequest) -> VitalsReading:
+    async def _ingest(self, t: Transfer, req: VitalsRequest, *, live: bool = True) -> VitalsReading:
         now = self.now()
         data = req.model_dump(exclude={"recorded_at", "hint"})
         reading = VitalsReading(
@@ -210,10 +235,10 @@ class TransferService:
             raise AppError("empty_reading", "No vitals in the reading", 422)
         await self.repo.add_vitals(reading)
         t.latest = update_latest(t.latest, reading)
-        if reading.source == VitalsSource.presage:
+        if reading.source == VitalsSource.presage and live:  # a scan's reading says nothing about the live camera
             t.monitoring.source = MonitoringSource.presage
             t.monitoring.hint = req.hint
-        if reading.source in (VitalsSource.presage, VitalsSource.simulated):
+        if reading.source in (VitalsSource.presage, VitalsSource.simulated) and live:
             t.monitoring.last_reading_at = reading.recorded_at
         if reading.source == VitalsSource.manual:
             await self._note(t, Author.crew, NoteKind.event, "Vitals entered: " + describe(reading), at=reading.recorded_at)
@@ -269,6 +294,7 @@ class TransferService:
                 text = {
                     MonitoringSource.presage: "Contactless monitoring: Presage camera connected",
                     MonitoringSource.simulated: "Contactless monitoring: simulated (Presage bridge not connected)",
+                    MonitoringSource.scan: "Contactless monitoring: 60-second Presage scans",
                     MonitoringSource.off: "Contactless monitoring paused",
                 }[source]
                 await self._note(t, Author.system, NoteKind.event, text)
@@ -360,8 +386,17 @@ class TransferService:
                                           ("resp_rate", v.respiration_rate_bpm, v.respiration_quality)):
                 if value is not None:
                     await self._ingest(t, VitalsRequest(source=VitalsSource.presage, recorded_at=scan.at,
-                                                        confidence=round(quality or 0.0, 3), **{field: value}))
+                                                        confidence=round(quality or 0.0, 3), **{field: value}),
+                                       live=False)
         scan.recorded = True
+
+    async def _note_scan(self, t: Transfer, scan: Scan, what: str) -> None:
+        """Once a scan is finished, one line on the timeline: what was measured and what was seen. The briefing reads
+        the timeline, so this is also how a scan reaches it."""
+        if scan.noted or scan.status != ScanStatus.done:
+            return
+        scan.noted = True
+        await self._note(t, Author.system, NoteKind.event, f"{what}: {scan_summary(scan)}", at=scan.at)
 
     async def attach_pre_arrival(self, transfer_id: UUID, packet: PreArrival) -> None:
         async with self.locks[transfer_id]:
@@ -371,6 +406,7 @@ class TransferService:
                 await self._note(t, Author.companion, NoteKind.text, packet.account, at=packet.sent_at or self.now())
             for s in packet.scans:
                 await self._record_scan_vitals(t, s)
+                await self._note_scan(t, s, "Pre-arrival video")
             await self._template_briefing(t, keep_gemini=True)
             await self._save(t)
         self._schedule_briefing(transfer_id, force=True)
@@ -382,9 +418,11 @@ class TransferService:
             if t.pre_arrival is None:
                 return
             mine = next((s for s in t.pre_arrival.scans if s.id == scan.id), None)
-            copy = scan.model_copy(deep=True, update={"recorded": mine.recorded if mine else False})
+            copy = scan.model_copy(deep=True, update={"recorded": mine.recorded if mine else False,
+                                                      "noted": mine.noted if mine else False})
             t.pre_arrival.scans = [copy if s.id == scan.id else s for s in t.pre_arrival.scans]
             await self._record_scan_vitals(t, copy)
+            await self._note_scan(t, copy, "Pre-arrival video")
             await self._save(t)
 
     async def add_scan(self, transfer_id: UUID, video: bytes) -> Transfer:
@@ -411,6 +449,7 @@ class TransferService:
                     return
                 fn(scan)
                 await self._record_scan_vitals(t, scan)
+                await self._note_scan(t, scan, "Crew scan")
                 await self._save(t)
 
         return mutate

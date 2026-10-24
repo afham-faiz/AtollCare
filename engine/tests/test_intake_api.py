@@ -96,6 +96,20 @@ def test_scan_during_a_transfer(client, clip):
     assert t["scans"][0]["status"] == "processing"
     scan = wait_scans(client, f"/api/transfers/{t['id']}")[0]
     assert scan["status"] == "done" and scan["signs"] is not None
+    # one line on the timeline, said plainly: nothing measured, nothing checked (no bridge, no Gemini)
+    lines = [n["text"] for n in ok(client.get(f"/api/transfers/{t['id']}"))["notes"] if n["text"].startswith("Crew scan:")]
+    assert lines == ["Crew scan: heart and breathing rate not measured. Visible signs not checked."]
+
+
+def test_scan_mode_stops_simulated_readings(client):
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    t = ok(client.post(f"/api/transfers/{t['id']}/monitoring", json={"source": "scan"}))
+    assert t["monitoring"]["source"] == "scan"
+    assert any(n["text"] == "Contactless monitoring: 60-second Presage scans" for n in t["notes"])
+    before = len(ok(client.get(f"/api/transfers/{t['id']}"))["vitals"])
+    client.portal.call(get_hub().transfers.tick)
+    assert len(ok(client.get(f"/api/transfers/{t['id']}"))["vitals"]) == before
 
 
 @pytest.mark.parametrize("source, expected_readings", [("presage", 2), ("mock", 0)])
@@ -113,6 +127,8 @@ def test_scan_vitals_become_readings_once(client, source, expected_readings):
             doc = await svc._load(UUID(t["id"]))
             await svc._record_scan_vitals(doc, scan)
             await svc._record_scan_vitals(doc, scan)  # a second call is a no-op
+            await svc._note_scan(doc, scan, "Crew scan")
+            await svc._note_scan(doc, scan, "Crew scan")
             await svc._save(doc)
 
     client.portal.call(run)
@@ -124,3 +140,29 @@ def test_scan_vitals_become_readings_once(client, source, expected_readings):
         assert {(v["heart_rate"], v["resp_rate"], round(v["confidence"], 3)) for v in presage} == {(96, None, 0.8),
                                                                                                     (None, 22, 0.7)}
         assert t["latest"]["heart_rate"]["source"] == "presage" and t["news2"] is not None
+    # a scan is not a live camera: the monitoring state is left as it was
+    assert t["monitoring"]["source"] == "simulated"
+    lines = [n["text"] for n in t["notes"] if n["text"].startswith("Crew scan:")]
+    assert len(lines) == 1
+    if expected_readings:
+        assert lines[0].startswith("Crew scan: heart rate 96 bpm; breathing 22/min.")
+
+
+def test_scan_summary_marks_weak_readings_and_contradictions():
+    from app.intake.schemas import CueFinding, CuePlan, PlannedCue, VisualCueReport
+    from app.services.transfers import scan_summary
+
+    plan = CuePlan(presentations=["stroke"], cues=[
+        PlannedCue(cue_id="face_droop", label="Face droop", question="?", source="transcript", why="said"),
+        PlannedCue(cue_id="arm_weakness", label="Arm weakness", question="?", source="baseline", why="std"),
+    ])
+    signs = VisualCueReport(plan=plan, findings=[
+        CueFinding(cue_id="face_droop", label="Face droop", finding="absent", reason="symmetric"),
+        CueFinding(cue_id="arm_weakness", label="Arm weakness", finding="present", reason="left arm limp",
+                   evidence_frames=[3]),
+    ])
+    scan = Scan(id=uuid4(), at=get_hub().transfers.now(), status=ScanStatus.done, signs=signs,
+                vitals=RppgEstimates(heart_rate_bpm=88, respiration_rate_bpm=30, heart_rate_quality=0.9,
+                                     respiration_quality=0.3, source="presage"))
+    assert scan_summary(scan) == ("heart rate 88 bpm; breathing 30/min (weak signal, not scored). "
+                                  "Seen on video: Arm weakness. Described but not seen: Face droop.")

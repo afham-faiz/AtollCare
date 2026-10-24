@@ -1267,7 +1267,7 @@ export interface components {
          * MonitoringSource
          * @enum {string}
          */
-        MonitoringSource: "presage" | "simulated" | "off";
+        MonitoringSource: "presage" | "simulated" | "scan" | "off";
         /**
          * NeurologicalCues
          * @description PRD contract. None means 'not assessed', which is different from False ('looked, not seen').
@@ -1412,6 +1412,8 @@ export interface components {
             sent_at?: string | null;
             /** Account */
             account?: string | null;
+            /** Account Source */
+            account_source?: ("voice" | "text") | null;
             identity?: components["schemas"]["Demographics"] | null;
             /**
              * Scans
@@ -1536,6 +1538,11 @@ export interface components {
              * @default false
              */
             recorded: boolean;
+            /**
+             * Noted
+             * @default false
+             */
+            noted: boolean;
         };
         /**
          * ScanStatus

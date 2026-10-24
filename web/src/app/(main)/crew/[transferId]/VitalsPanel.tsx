@@ -109,7 +109,9 @@ export default function ({
   trace: number[];
   onAddVitals: () => void;
 }) {
-  const L = t.latest;
+  // a simulated number is only shown while the simulator is what's running: once scans (or a pause) take over, an
+  // old simulated value would read as the patient's current state
+  const L = t.monitoring.source === "simulated" ? t.latest : Object.fromEntries(Object.entries(t.latest).filter(([, v]) => v?.source !== "simulated"));
   const hrValue = live ? (hr?.stable ? hr.value : null) : numeric(L.heart_rate);
   const rrValue = live ? (rr?.stable ? rr.value : null) : numeric(L.resp_rate);
   const contact = (field: "heart_rate" | "resp_rate", reading: LiveReading) =>
@@ -210,7 +212,7 @@ export default function ({
           {[
             crewAt && `Crew-entered ${freshness(crewAt, now)}`,
             // HRV only when measured — a simulated HRV adds noise, not information
-            hrv !== null && (live || L.hrv_rmssd?.source !== "simulated") && `HRV ${Math.round(hrv)} ms`,
+            hrv !== null && (live || (L.hrv_rmssd && L.hrv_rmssd.source !== "simulated")) && `HRV ${Math.round(hrv)} ms`,
           ]
             .filter(Boolean)
             .join(" · ")}

@@ -151,7 +151,7 @@ export default function ({ intakeId }: { intakeId: string }) {
           </>
         ) : (
           <div className={styles.card}>
-            <ScanResult scan={scan} tz={region?.timezone} title="Your video" />
+            <ScanResult scan={scan} tz={region?.timezone} title="Your video" coach />
             <button type="button" className={styles.link} onClick={() => setRecordAgain(true)}>
               Record again
             </button>

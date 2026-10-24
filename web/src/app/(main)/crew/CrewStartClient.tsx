@@ -1,4 +1,4 @@
-// Crew home: continue an active transfer, or start one in a single calm composer.
+// Crew home: continue an active transfer, pick up a packet a companion sent ahead, or start one from scratch.
 "use client";
 
 import { ArrowRight, Loader2, Mic, Square } from "lucide-react";
@@ -15,9 +15,10 @@ import { post, type Transfer, type TransportMode } from "@/lib/api";
 import { patientTitle } from "@/lib/clinical";
 import { useDictation } from "@/lib/dictation";
 import { fmtMin, MODE_LABEL, minutesUntil, place } from "@/lib/format";
-import { useMeta, useTransfers } from "@/lib/swr";
+import { useIntakes, useMeta, useTransfers } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
 
+import SentAhead from "./SentAhead";
 import styles from "./Start.module.scss";
 
 type Sex = "F" | "M" | "X";
@@ -26,6 +27,7 @@ export default function () {
   const router = useRouter();
   const { data: meta } = useMeta();
   const { data: active } = useTransfers("preparing,pending,accepted");
+  const { data: sent } = useIntakes("sent");
   const region = meta?.region;
   const [age, setAge] = useState("");
   const [sex, setSex] = useState<Sex | null>(null);
@@ -96,6 +98,8 @@ export default function () {
           </ul>
         </section>
       )}
+
+      {!!sent?.length && meta && <SentAhead intakes={sent} meta={meta} />}
 
       <section className={styles.composer}>
         <header>

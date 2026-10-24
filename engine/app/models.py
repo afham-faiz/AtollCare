@@ -35,8 +35,9 @@ class VitalsSource(str, Enum):
 
 
 class MonitoringSource(str, Enum):
-    presage = "presage"
+    presage = "presage"  # live camera stream through the bridge
     simulated = "simulated"
+    scan = "scan"  # vitals come from 60 s scans (phone); nothing streams or is simulated between them
     off = "off"
 
 
@@ -312,6 +313,7 @@ class Scan(BaseModel):
     error: str | None = None
     seconds: dict[str, float] = {}
     recorded: bool = False  # its vitals are already in the transfer's readings (written exactly once)
+    noted: bool = False  # its one-line summary is already on the transfer's timeline
 
 
 class IntakeStatus(str, Enum):
@@ -348,6 +350,7 @@ class PreArrival(BaseModel):
     code: str
     sent_at: datetime | None = None
     account: str | None = None
+    account_source: Literal["voice", "text"] | None = None
     identity: Demographics | None = None
     scans: list[Scan] = []
 

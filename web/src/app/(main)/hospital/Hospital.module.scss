@@ -502,3 +502,34 @@
     }
   }
 }
+
+.seen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0 -0.5rem;
+}
+
+.seenRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  transition: background-color var(--dur-1) var(--ease-out);
+
+  &:hover {
+    background: var(--well);
+  }
+}
+
+.seenThumb {
+  width: 3.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background: var(--well);
+}

@@ -214,7 +214,16 @@ class IntakeService:
     async def _set_account(self, i: Intake, text: str, source: str) -> None:
         i.account = text or None
         i.account_source = source if text else None  # type: ignore[assignment]
-        i.complaint = (await self.svc.gemini.condense_account(text) or first_sentence(text)) if text else None
+        if not text:
+            i.complaint = None
+            return
+        condensed = await self.svc.gemini.condense_account(text)
+        i.complaint = condensed.complaint if condensed else first_sentence(text)
+        # age and sex the companion said out loud fill only what nobody has entered (typed, or read from the ID)
+        if condensed and condensed.age is not None and i.patient.age is None and 0 <= condensed.age < 130:
+            i.patient.age = condensed.age
+        if condensed and condensed.sex and i.patient.sex is None:
+            i.patient.sex = condensed.sex
 
     def _recheck(self, i: Intake) -> None:
         for s in i.scans:
@@ -315,7 +324,8 @@ class IntakeService:
                 patient=i.patient, complaint=i.complaint or first_sentence(i.account or "") or "Pre-arrival packet",
                 origin_id=origin, destination_id=req.destination_id, mode=req.mode,
             ))
-            packet = PreArrival(intake_id=i.id, code=i.code, sent_at=i.sent_at, account=i.account, identity=i.identity,
+            packet = PreArrival(intake_id=i.id, code=i.code, sent_at=i.sent_at, account=i.account,
+                                account_source=i.account_source, identity=i.identity,
                                 scans=i.scans)
             await self.transfers.attach_pre_arrival(t.id, packet)
             i.status, i.transfer_id = IntakeStatus.started, t.id

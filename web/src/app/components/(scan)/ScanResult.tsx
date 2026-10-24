@@ -59,7 +59,8 @@ function Frames({ finding, scan }: { finding: CueFinding; scan: Scan }) {
   );
 }
 
-export default function ({ scan, tz, title }: { scan: Scan; tz?: string; title?: string }) {
+// coach: the person who recorded is looking, so say how to get a better clip
+export default function ({ scan, tz, title, coach }: { scan: Scan; tz?: string; title?: string; coach?: boolean }) {
   const signs = scan.signs;
   const notChecked = signs?.issues.some((i) => i.startsWith("inspection_failed"));
   const present = signs?.findings.filter((f) => f.finding === "present") ?? [];
@@ -155,7 +156,7 @@ export default function ({ scan, tz, title }: { scan: Scan; tz?: string; title?:
               <p className={styles.note}>
                 {absent.length > 0
                   ? "None of the signs checked were seen."
-                  : "The video didn't show enough to check these signs — keep their face and upper body in view."}
+                  : `The video didn't show enough to check these signs${coach ? " — keep their face and upper body in view" : ""}.`}
               </p>
             )}
             {absent.length > 0 && (
