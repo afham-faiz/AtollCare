@@ -48,4 +48,5 @@ class DemoService:
             demo_state=state,
             now=self.svc.clock.now(),
             prepare_options=PREPARE_OPTIONS,
+            infra=self.svc.infra,
         )

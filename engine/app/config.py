@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     s3_secret_key: str = ""
     s3_region: str = "us-east-1"
 
+    # Hosting. Normally detected from the Vultr instance metadata service; set these to override the presenter label.
+    host_label: str = ""  # e.g. "Vultr"
+    host_region: str = ""  # e.g. "lhr"
+    metadata_url: str = "http://169.254.169.254/v1.json"
+    metadata_timeout_s: float = 1.0
+
     # Demo
     default_speed_multiplier: float = 1.0
     default_region: str = "maldives"

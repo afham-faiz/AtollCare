@@ -4,6 +4,8 @@ WORKDIR /web
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY . .
+# public/ is optional in the repo; the runtime stage copies it, so make sure it exists
+RUN mkdir -p public
 ARG NEXT_PUBLIC_ENGINE_URL=/api
 ARG ENGINE_INTERNAL_URL=http://engine:8000
 ENV NEXT_PUBLIC_ENGINE_URL=$NEXT_PUBLIC_ENGINE_URL ENGINE_INTERNAL_URL=$ENGINE_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1

@@ -1,7 +1,8 @@
 // Presenter tools: prepared cases, region pack, time, integration status, reset. Never part of the clinical UI.
 "use client";
 
-import { ArrowRight, Copy, Loader2, RotateCcw } from "lucide-react";
+import { ArrowRight, Copy, Database, Loader2, RotateCcw } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { mutate } from "swr";
@@ -11,7 +12,7 @@ import ButtonGhost from "@/app/components/(buttons)/ButtonGhost";
 import LiveDot from "@/app/components/(controls)/LiveDot";
 import Segmented from "@/app/components/(controls)/Segmented";
 import ModeIcon from "@/app/components/(transfer)/ModeIcon";
-import { patch, post, type DemoCase, type Transfer } from "@/lib/api";
+import { patch, post, type DemoCase, type SeedResponse, type Transfer } from "@/lib/api";
 import { patientTitle } from "@/lib/clinical";
 import { place } from "@/lib/format";
 import { setPresenterOpen } from "@/lib/presenter";
@@ -61,7 +62,17 @@ export default function ({ onDone }: { onDone?: () => void }) {
     { name: "Presage", live: meta.adapters.presage === "live", text: meta.bridge.connected ? (meta.bridge.sdk === "ready" ? "Bridge connected" : meta.bridge.message ?? "Bridge connected, SDK not ready") : "Bridge not running · vitals simulated" },
     { name: "ElevenLabs", live: meta.adapters.elevenlabs === "real", text: meta.adapters.elevenlabs === "real" ? "Scribe + voice" : "Browser speech" },
     { name: "Gemini", live: meta.adapters.gemini === "real", text: meta.adapters.gemini === "real" ? "Live handoff drafting" : "Template drafting" },
+    { name: "Database", live: meta.infra.database_kind !== "memory", text: meta.infra.database },
+    { name: "Host", live: meta.infra.host_provider !== null && meta.infra.host_provider !== undefined, text: meta.infra.host },
   ];
+
+  const seed = () =>
+    run("seed", async () => {
+      const res = await post<SeedResponse>("/insights/seed?days=60");
+      toast(`Seeded ${res.inserted} transfers in ${(res.elapsed_ms / 1000).toFixed(1)} s`);
+      setPresenterOpen(false);
+      router.push("/insights");
+    });
 
   return (
     <div>
@@ -138,6 +149,18 @@ export default function ({ onDone }: { onDone?: () => void }) {
             </li>
           ))}
         </ul>
+      </Section>
+
+      <Section title="Network insights">
+        <div className="flex flex-wrap items-center gap-[.5rem]">
+          <ButtonGhost size="sm" disabled={busy !== null} onClick={seed}>
+            {busy === "seed" ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />} Seed 60 days of history
+          </ButtonGhost>
+          <Link href="/insights" onClick={() => setPresenterOpen(false)} className="inline-flex items-center gap-[.375rem] text-[0.875rem] font-[550] text-accent-strong">
+            Open insights <ArrowRight size={14} />
+          </Link>
+        </div>
+        <p className="mt-[.5rem] text-[0.8125rem] text-ink-3">Synthetic, clearly flagged history in the transfer log. Re-seeding replaces it; live transfers are kept.</p>
       </Section>
 
       <Section title="Reset">

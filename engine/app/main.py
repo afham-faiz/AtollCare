@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import ENGINE_VERSION, get_settings
+from app.core import infra
 from app.logging_setup import case_id_var, setup_logging
 from app.routers import system, transfers
 from app.services.context import AppError
@@ -36,7 +37,12 @@ async def lifespan(app: FastAPI):
             log.warning("database not ready (%s) — retrying", exc)
             await asyncio.sleep(2)
     await hub.demo.load_state()
-    log.info("engine started: db=%s adapters=%s", hub.svc.repo.kind, hub.svc.adapter_status().model_dump())
+    try:
+        hub.svc.infra = await infra.detect(settings, hub.svc.repo)
+    except Exception as exc:  # noqa: BLE001 — cosmetic; never block startup
+        log.warning("infra detection failed: %s", exc)
+    log.info("engine started: db=%s (%s) host=%s adapters=%s", hub.svc.repo.kind, hub.svc.infra.database,
+             hub.svc.infra.host, hub.svc.adapter_status().model_dump())
     if not settings.disable_background_tasks:
         hub.loop.start()
     yield

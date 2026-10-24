@@ -11,8 +11,10 @@ from app.models import (
     DemoState,
     DemoStatePatch,
     HealthResponse,
+    InsightsResponse,
     MetaResponse,
     OkResponse,
+    SeedResponse,
     SpeakRequest,
     SpeakResponse,
     Transfer,
@@ -32,7 +34,25 @@ async def meta(h: Hub = Depends(hub)):
 @router.get("/health", response_model=HealthResponse)
 async def health(h: Hub = Depends(hub)):
     ok = await h.svc.repo.ping()
-    return HealthResponse(ok=ok, db=f"{h.svc.repo.kind}:{'ok' if ok else 'down'}", adapters=h.svc.adapter_status())
+    return HealthResponse(ok=ok, db=f"{h.svc.repo.kind}:{'ok' if ok else 'down'}", adapters=h.svc.adapter_status(),
+                          infra=h.svc.infra)
+
+
+@router.get("/insights", response_model=InsightsResponse)
+async def insights(days: int = 60, region_id: str | None = None, h: Hub = Depends(hub)):
+    return await h.insights.get(days, region_id)
+
+
+@router.post("/insights/seed", response_model=SeedResponse)
+async def seed_insights(days: int = 60, region_id: str | None = None, h: Hub = Depends(hub)):
+    """Synthetic network history for the demo, flagged `seeded`; replaces earlier seeded rows for the region."""
+    return await h.insights.seed(days, region_id)
+
+
+@router.delete("/insights/seed", response_model=OkResponse)
+async def clear_insights(region_id: str | None = None, h: Hub = Depends(hub)):
+    await h.insights.clear(region_id)
+    return OkResponse()
 
 
 @router.post("/presage/heartbeat", response_model=OkResponse)

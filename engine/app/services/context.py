@@ -10,7 +10,7 @@ from app.adapters.storage import StorageAdapter
 from app.config import Settings
 from app.core.clock import Clock, clock, real_now
 from app.db import Repo, make_repo
-from app.models import AdapterStatus, BridgeHeartbeat, BridgeStatus
+from app.models import AdapterStatus, BridgeHeartbeat, BridgeStatus, InfraStatus
 
 BRIDGE_TIMEOUT = timedelta(seconds=15)
 
@@ -36,6 +36,9 @@ class Services:
     bridge: BridgeHeartbeat | None = None
     bridge_seen: datetime | None = None
     caches: dict[str, object] = field(default_factory=dict)
+    infra: InfraStatus = field(
+        default_factory=lambda: InfraStatus(database="Detecting…", database_kind="memory", host="Detecting…")
+    )
 
     def bridge_status(self) -> BridgeStatus:
         live = self.bridge is not None and self.bridge_seen is not None and real_now() - self.bridge_seen < BRIDGE_TIMEOUT

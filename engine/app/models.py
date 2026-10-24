@@ -376,6 +376,17 @@ class BridgeStatus(BaseModel):
     last_seen: datetime | None = None
 
 
+class InfraStatus(BaseModel):
+    """Where this engine is running and what it stores data in — detected, not assumed."""
+
+    database: str  # "Tiger Cloud · TimescaleDB 2.17" | "TimescaleDB 2.17" | "PostgreSQL 16" | "In-memory (demo)"
+    database_kind: Literal["tiger_cloud", "timescaledb", "postgres", "memory"]
+    host: str  # "Vultr · LHR" | "This computer"
+    host_provider: str | None = None  # "vultr" when detected from the instance metadata service
+    host_region: str | None = None
+    host_source: Literal["metadata", "env", "none"] = "none"
+
+
 class MetaResponse(BaseModel):
     region: Region  # active region for new transfers
     regions: list[Region]  # every installed pack (existing transfers may belong to another)
@@ -385,12 +396,94 @@ class MetaResponse(BaseModel):
     demo_state: DemoState
     now: datetime
     prepare_options: list[str]
+    infra: InfraStatus
 
 
 class HealthResponse(BaseModel):
     ok: bool
     db: str
     adapters: AdapterStatus
+    infra: InfraStatus | None = None
+
+
+# ---------------------------------------------------------------- network insights (Tiger Data)
+class TransferLogRow(BaseModel):
+    """One completed transfer in the `transfer_log` hypertable."""
+
+    transfer_id: UUID
+    departed_at: datetime
+    region_id: str
+    origin_id: str
+    destination_id: str
+    mode: TransportMode
+    channel: Literal["atollcare", "radio"]
+    condition: str | None = None
+    handoff_at: datetime | None = None
+    accepted_at: datetime | None = None
+    arrived_at: datetime
+    journey_min: float
+    warning_min: float | None = None
+    accept_min: float | None = None
+    prepared: bool = False
+    peak_news2: int | None = None
+    seeded: bool = False
+
+
+class InsightsTotals(BaseModel):
+    transfers: int
+    seeded: int
+    warning_hours: float  # total hours receiving teams knew a patient was coming before arrival
+    median_warning_min: float | None
+    median_accept_min: float | None
+    p90_accept_min: float | None
+    median_journey_min: float | None
+    prepared_pct: float | None
+
+
+class InsightsDay(BaseModel):
+    day: datetime
+    transfers: int
+    atollcare: int
+    radio: int
+    avg_warning_min: float | None
+    avg_accept_min: float | None
+
+
+class InsightsChannel(BaseModel):
+    channel: Literal["atollcare", "radio"]
+    transfers: int
+    median_warning_min: float | None
+    median_accept_min: float | None
+    prepared_pct: float | None
+
+
+class InsightsGroup(BaseModel):
+    key: str  # mode, destination id or local hour
+    transfers: int
+    median_journey_min: float | None = None
+    median_warning_min: float | None = None
+    median_accept_min: float | None = None
+
+
+class InsightsResponse(BaseModel):
+    region_id: str
+    days: int
+    since: datetime
+    source: Literal["transfer_daily", "raw", "memory"]  # daily series from the continuous aggregate when available
+    query_ms: float
+    totals: InsightsTotals
+    daily: list[InsightsDay]
+    channels: list[InsightsChannel]
+    by_mode: list[InsightsGroup]
+    by_destination: list[InsightsGroup]
+    by_hour: list[InsightsGroup]  # local hour of departure, "00".."23"
+
+
+class SeedResponse(BaseModel):
+    inserted: int
+    days: int
+    region_id: str
+    elapsed_ms: float
 
 
 class OkResponse(BaseModel):

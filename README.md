@@ -115,12 +115,25 @@ aggregate (real-time aggregation on) that feeds the trend chart and the deterior
 
 ## Deploy to Vultr
 
-1. Ubuntu Cloud Compute instance; open ports 80 and 443.
-2. Real keys in `.env`; `PUBLIC_HOST=<ip>.sslip.io` (instant HTTPS) or your domain.
-3. `VULTR_HOST=<ip> ./scripts/deploy_vultr.sh` installs Docker if needed, syncs the repo, and runs
-   `docker compose -f docker-compose.prod.yml up -d --build`.
+Full runbook: [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md). In short: Ubuntu 24.04 Cloud Compute (2 vCPU / 4 GB),
+ports 22/80/443 open, real keys in `.env`, then
 
-The bridge stays in the vehicle. Point its `ENGINE_URL` at the public HTTPS URL.
+```bash
+VULTR_HOST=<server-ip> ./scripts/deploy_vultr.sh
+```
+
+It ships the committed tree, installs Docker, fills `PUBLIC_HOST=<ip>.sslip.io`, starts the bundled TimescaleDB only
+when `DATABASE_URL` doesn't point elsewhere, and waits for `/api/health`. The presenter panel then shows the detected
+host (`Vultr · LHR`, from the instance metadata service) and database. The bridge stays in the vehicle: point its
+`ENGINE_URL` at the public HTTPS URL.
+
+## Network insights (Tiger Data)
+
+`/insights` answers "how long did the receiving team know a patient was coming?" across every completed transfer.
+Each arrival is written to the `transfer_log` hypertable; a `transfer_daily` continuous aggregate feeds the daily
+chart, and history older than 30 days is compressed. For the demo, **Presenter → Seed 60 days of history** adds
+synthetic transfers (flagged `seeded`, labelled in the UI): a radio/phone pre-alert baseline followed by AtollCare
+handoffs. `GET /api/insights?days=60`, `POST /api/insights/seed?days=60`, `DELETE /api/insights/seed`.
 
 ## Sponsor tracks
 
@@ -129,8 +142,8 @@ The bridge stays in the vehicle. Point its `ENGINE_URL` at the public HTTPS URL.
 | **Presage** (main) | Live HR, RR, HRV, breathing waveform and framing hints from a mounted camera | `presage-bridge/`, `web/src/lib/presage.ts`, `crew/[transferId]/CameraInstrument.tsx` |
 | ElevenLabs | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
 | Gemini | Live SBAR from vitals + notes; interventions extracted from speech | `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
-| Tiger Data | Vitals hypertable + 1-minute continuous aggregate → trend + forecast | `engine/app/migrations/001_init.sql`, `engine/app/db.py` |
-| Vultr | Compute + Caddy HTTPS + Object Storage | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh` |
+| Tiger Data | Vitals hypertable + 1-minute continuous aggregate → trend + forecast; transfer-log hypertable + daily aggregate + compression → network insights | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |
+| Vultr | Compute + Caddy HTTPS + Object Storage; host detected from instance metadata | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh`, `engine/app/core/infra.py`, `docs/DEPLOY_VULTR.md` |
 
 ## Docs
 

@@ -15,6 +15,7 @@ import styles from "./TopBar.module.scss";
 const ROLES = [
   { href: "/crew", label: "Crew" },
   { href: "/hospital", label: "Hospital" },
+  { href: "/insights", label: "Insights" },
 ];
 
 export function Mark({ className }: { className?: string }) {

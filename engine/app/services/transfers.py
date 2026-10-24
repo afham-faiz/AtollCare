@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 
 from app.core import alerts as alerts_mod
 from app.core import briefing as briefing_mod
+from app.core import insights as insights_mod
 from app.core import regions
 from app.core.clock import fmt_local
 from app.core.forecast import bucket_news2, forecast
@@ -407,6 +408,10 @@ class TransferService:
         t.monitoring.source = MonitoringSource.off
         await self._note(t, Author.system, NoteKind.event,
                          f"Arrived at {self.label(t, t.destination_id)}{' (ETA reached)' if auto else ''} — handover", at=at)
+        try:  # network history (transfer_log hypertable); never blocks the handover
+            await self.svc.repo.log_transfers([insights_mod.row_from_transfer(t)])
+        except Exception as exc:  # noqa: BLE001
+            log.warning("could not log transfer %s: %s", t.code, exc)
 
     async def close(self, transfer_id: UUID) -> Transfer:
         async with self.locks[transfer_id]:

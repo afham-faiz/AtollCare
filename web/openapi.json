@@ -47,6 +47,172 @@
         }
       }
     },
+    "/api/insights": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Insights",
+        "operationId": "insights_api_insights_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 60,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/insights/seed": {
+      "post": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Seed Insights",
+        "description": "Synthetic network history for the demo, flagged `seeded`; replaces earlier seeded rows for the region.",
+        "operationId": "seed_insights_api_insights_seed_post",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 60,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Clear Insights",
+        "operationId": "clear_insights_api_insights_seed_delete",
+        "parameters": [
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/presage/heartbeat": {
       "post": {
         "tags": [
@@ -1704,6 +1870,16 @@
           },
           "adapters": {
             "$ref": "#/components/schemas/AdapterStatus"
+          },
+          "infra": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InfraStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1713,6 +1889,396 @@
           "adapters"
         ],
         "title": "HealthResponse"
+      },
+      "InfraStatus": {
+        "properties": {
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "database_kind": {
+            "type": "string",
+            "enum": [
+              "tiger_cloud",
+              "timescaledb",
+              "postgres",
+              "memory"
+            ],
+            "title": "Database Kind"
+          },
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "host_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Provider"
+          },
+          "host_region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Region"
+          },
+          "host_source": {
+            "type": "string",
+            "enum": [
+              "metadata",
+              "env",
+              "none"
+            ],
+            "title": "Host Source",
+            "default": "none"
+          }
+        },
+        "type": "object",
+        "required": [
+          "database",
+          "database_kind",
+          "host"
+        ],
+        "title": "InfraStatus",
+        "description": "Where this engine is running and what it stores data in — detected, not assumed."
+      },
+      "InsightsChannel": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "atollcare",
+              "radio"
+            ],
+            "title": "Channel"
+          },
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "median_warning_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Warning Min"
+          },
+          "median_accept_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Accept Min"
+          },
+          "prepared_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel",
+          "transfers",
+          "median_warning_min",
+          "median_accept_min",
+          "prepared_pct"
+        ],
+        "title": "InsightsChannel"
+      },
+      "InsightsDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Day"
+          },
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "atollcare": {
+            "type": "integer",
+            "title": "Atollcare"
+          },
+          "radio": {
+            "type": "integer",
+            "title": "Radio"
+          },
+          "avg_warning_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Warning Min"
+          },
+          "avg_accept_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Accept Min"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "transfers",
+          "atollcare",
+          "radio",
+          "avg_warning_min",
+          "avg_accept_min"
+        ],
+        "title": "InsightsDay"
+      },
+      "InsightsGroup": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "median_journey_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Journey Min"
+          },
+          "median_warning_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Warning Min"
+          },
+          "median_accept_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Accept Min"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "transfers"
+        ],
+        "title": "InsightsGroup"
+      },
+      "InsightsResponse": {
+        "properties": {
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "transfer_daily",
+              "raw",
+              "memory"
+            ],
+            "title": "Source"
+          },
+          "query_ms": {
+            "type": "number",
+            "title": "Query Ms"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/InsightsTotals"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsDay"
+            },
+            "type": "array",
+            "title": "Daily"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsChannel"
+            },
+            "type": "array",
+            "title": "Channels"
+          },
+          "by_mode": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsGroup"
+            },
+            "type": "array",
+            "title": "By Mode"
+          },
+          "by_destination": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsGroup"
+            },
+            "type": "array",
+            "title": "By Destination"
+          },
+          "by_hour": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsGroup"
+            },
+            "type": "array",
+            "title": "By Hour"
+          }
+        },
+        "type": "object",
+        "required": [
+          "region_id",
+          "days",
+          "since",
+          "source",
+          "query_ms",
+          "totals",
+          "daily",
+          "channels",
+          "by_mode",
+          "by_destination",
+          "by_hour"
+        ],
+        "title": "InsightsResponse"
+      },
+      "InsightsTotals": {
+        "properties": {
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "seeded": {
+            "type": "integer",
+            "title": "Seeded"
+          },
+          "warning_hours": {
+            "type": "number",
+            "title": "Warning Hours"
+          },
+          "median_warning_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Warning Min"
+          },
+          "median_accept_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Accept Min"
+          },
+          "p90_accept_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P90 Accept Min"
+          },
+          "median_journey_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Journey Min"
+          },
+          "prepared_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prepared Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transfers",
+          "seeded",
+          "warning_hours",
+          "median_warning_min",
+          "median_accept_min",
+          "p90_accept_min",
+          "median_journey_min",
+          "prepared_pct"
+        ],
+        "title": "InsightsTotals"
       },
       "Intervention": {
         "properties": {
@@ -1857,6 +2423,9 @@
             },
             "type": "array",
             "title": "Prepare Options"
+          },
+          "infra": {
+            "$ref": "#/components/schemas/InfraStatus"
           }
         },
         "type": "object",
@@ -1868,7 +2437,8 @@
           "bridge",
           "demo_state",
           "now",
-          "prepare_options"
+          "prepare_options",
+          "infra"
         ],
         "title": "MetaResponse"
       },
@@ -2252,6 +2822,34 @@
           "facilities"
         ],
         "title": "Region"
+      },
+      "SeedResponse": {
+        "properties": {
+          "inserted": {
+            "type": "integer",
+            "title": "Inserted"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "elapsed_ms": {
+            "type": "number",
+            "title": "Elapsed Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "inserted",
+          "days",
+          "region_id",
+          "elapsed_ms"
+        ],
+        "title": "SeedResponse"
       },
       "SimProfile": {
         "properties": {

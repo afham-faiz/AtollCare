@@ -1,9 +1,11 @@
-# F-M7.3 Vultr deploy: Caddy (HTTPS) → web + engine. DATABASE_URL may point to Tiger Cloud; otherwise the bundled
-# TimescaleDB container is used. Storage: set STORAGE_MODE=s3 + S3_* for Vultr Object Storage.
-#   docker compose -f docker-compose.prod.yml up -d --build
+# F-M7.3 Vultr deploy: Caddy (HTTPS) → web + engine. DATABASE_URL may point to Tiger Cloud; otherwise run with
+# `--profile localdb` for the bundled TimescaleDB container (scripts/deploy_vultr.sh decides this for you).
+# Storage: set STORAGE_MODE=s3 + S3_* for Vultr Object Storage.
+#   docker compose -f docker-compose.prod.yml --profile localdb up -d --build
 services:
   db:
     image: timescale/timescaledb:latest-pg16
+    profiles: [localdb]
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -24,8 +26,14 @@ services:
       CORS_ORIGINS: https://${PUBLIC_HOST}
       STORAGE_LOCAL_DIR: /engine/var/storage
     volumes: [storage:/engine/var/storage]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     depends_on:
-      db: { condition: service_healthy }
+      db: { condition: service_healthy, required: false }
 
   web:
     build:

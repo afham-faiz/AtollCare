@@ -38,6 +38,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Insights */
+        get: operations["insights_api_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insights/seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seed Insights
+         * @description Synthetic network history for the demo, flagged `seeded`; replaces earlier seeded rows for the region.
+         */
+        post: operations["seed_insights_api_insights_seed_post"];
+        /** Clear Insights */
+        delete: operations["clear_insights_api_insights_seed_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/presage/heartbeat": {
         parameters: {
             query?: never;
@@ -669,6 +707,128 @@ export interface components {
             /** Db */
             db: string;
             adapters: components["schemas"]["AdapterStatus"];
+            infra?: components["schemas"]["InfraStatus"] | null;
+        };
+        /**
+         * InfraStatus
+         * @description Where this engine is running and what it stores data in — detected, not assumed.
+         */
+        InfraStatus: {
+            /** Database */
+            database: string;
+            /**
+             * Database Kind
+             * @enum {string}
+             */
+            database_kind: "tiger_cloud" | "timescaledb" | "postgres" | "memory";
+            /** Host */
+            host: string;
+            /** Host Provider */
+            host_provider?: string | null;
+            /** Host Region */
+            host_region?: string | null;
+            /**
+             * Host Source
+             * @default none
+             * @enum {string}
+             */
+            host_source: "metadata" | "env" | "none";
+        };
+        /** InsightsChannel */
+        InsightsChannel: {
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "atollcare" | "radio";
+            /** Transfers */
+            transfers: number;
+            /** Median Warning Min */
+            median_warning_min: number | null;
+            /** Median Accept Min */
+            median_accept_min: number | null;
+            /** Prepared Pct */
+            prepared_pct: number | null;
+        };
+        /** InsightsDay */
+        InsightsDay: {
+            /**
+             * Day
+             * Format: date-time
+             */
+            day: string;
+            /** Transfers */
+            transfers: number;
+            /** Atollcare */
+            atollcare: number;
+            /** Radio */
+            radio: number;
+            /** Avg Warning Min */
+            avg_warning_min: number | null;
+            /** Avg Accept Min */
+            avg_accept_min: number | null;
+        };
+        /** InsightsGroup */
+        InsightsGroup: {
+            /** Key */
+            key: string;
+            /** Transfers */
+            transfers: number;
+            /** Median Journey Min */
+            median_journey_min?: number | null;
+            /** Median Warning Min */
+            median_warning_min?: number | null;
+            /** Median Accept Min */
+            median_accept_min?: number | null;
+        };
+        /** InsightsResponse */
+        InsightsResponse: {
+            /** Region Id */
+            region_id: string;
+            /** Days */
+            days: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "transfer_daily" | "raw" | "memory";
+            /** Query Ms */
+            query_ms: number;
+            totals: components["schemas"]["InsightsTotals"];
+            /** Daily */
+            daily: components["schemas"]["InsightsDay"][];
+            /** Channels */
+            channels: components["schemas"]["InsightsChannel"][];
+            /** By Mode */
+            by_mode: components["schemas"]["InsightsGroup"][];
+            /** By Destination */
+            by_destination: components["schemas"]["InsightsGroup"][];
+            /** By Hour */
+            by_hour: components["schemas"]["InsightsGroup"][];
+        };
+        /** InsightsTotals */
+        InsightsTotals: {
+            /** Transfers */
+            transfers: number;
+            /** Seeded */
+            seeded: number;
+            /** Warning Hours */
+            warning_hours: number;
+            /** Median Warning Min */
+            median_warning_min: number | null;
+            /** Median Accept Min */
+            median_accept_min: number | null;
+            /** P90 Accept Min */
+            p90_accept_min: number | null;
+            /** Median Journey Min */
+            median_journey_min: number | null;
+            /** Prepared Pct */
+            prepared_pct: number | null;
         };
         /** Intervention */
         Intervention: {
@@ -728,6 +888,7 @@ export interface components {
             now: string;
             /** Prepare Options */
             prepare_options: string[];
+            infra: components["schemas"]["InfraStatus"];
         };
         /** Monitoring */
         Monitoring: {
@@ -854,6 +1015,17 @@ export interface components {
             modes: components["schemas"]["TransportMode"][];
             /** Facilities */
             facilities: components["schemas"]["Facility"][];
+        };
+        /** SeedResponse */
+        SeedResponse: {
+            /** Inserted */
+            inserted: number;
+            /** Days */
+            days: number;
+            /** Region Id */
+            region_id: string;
+            /** Elapsed Ms */
+            elapsed_ms: number;
         };
         /** SimProfile */
         SimProfile: {
@@ -1249,6 +1421,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    insights_api_insights_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                region_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    seed_insights_api_insights_seed_post: {
+        parameters: {
+            query?: {
+                days?: number;
+                region_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_insights_api_insights_seed_delete: {
+        parameters: {
+            query?: {
+                region_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
