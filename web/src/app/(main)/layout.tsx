@@ -6,7 +6,7 @@ export default function ({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main className="mx-auto w-full max-w-[90rem] flex-1 px-[1rem] pb-[2rem] pt-[4.5rem]">{children}</main>
+      <main className="mx-auto w-full max-w-[90rem] flex-1 px-[1rem] py-[1.25rem]">{children}</main>
       <Footer />
       <Toaster />
     </>

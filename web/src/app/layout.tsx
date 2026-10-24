@@ -11,17 +11,11 @@ export const metadata: Metadata = {
   description: APP_TAGLINE,
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0e7c86" };
-
-// F-M10.4 apply the stored theme before first paint (system default otherwise).
-const THEME_SCRIPT = `try{var t=localStorage.getItem("atollcare.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };
 
 export default function ({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

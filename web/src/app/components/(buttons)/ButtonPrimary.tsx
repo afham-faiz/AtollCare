@@ -5,7 +5,7 @@ import ButtonBase from "./ButtonBase";
 export default function ({ className, ...props }: React.JSX.IntrinsicElements["button"]) {
   return (
     <ButtonBase
-      className={twMerge("border-brand bg-brand text-brand-fg hover:bg-brand hover:opacity-90", className)}
+      className={twMerge("border-brand bg-brand text-white hover:border-brand-strong hover:bg-brand-strong", className)}
       {...props}
     />
   );

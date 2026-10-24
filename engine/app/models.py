@@ -244,6 +244,7 @@ class Transfer(BaseModel):
     latest: dict[str, LatestValue] = {}
     news2: News2Result | None = None
     alerts: list[Alert] = []
+    alerts_announced: dict[str, datetime] = {}  # code → last time it was announced (spoken / timeline)
     briefing: Briefing | None = None
     acceptance: Acceptance | None = None
     interventions: list[Intervention] = []
@@ -255,6 +256,7 @@ class Transfer(BaseModel):
 class TransferListItem(BaseModel):
     id: UUID
     code: str
+    region_id: str
     status: TransferStatus
     patient: Patient
     complaint: str
@@ -361,8 +363,8 @@ class BridgeStatus(BaseModel):
 
 
 class MetaResponse(BaseModel):
-    region: Region
-    regions: list[RegionSummary]
+    region: Region  # active region for new transfers
+    regions: list[Region]  # every installed pack (existing transfers may belong to another)
     modes: list[TransportModeInfo]
     adapters: AdapterStatus
     bridge: BridgeStatus

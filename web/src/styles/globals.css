@@ -1,113 +1,78 @@
 @import "tailwindcss";
 
-/* §10 palette: neutrals + ocean teal (brand) + alert red (critical/breach only) + amber (warnings). */
+/* Light, clinical palette: neutrals + ocean teal (brand) + red (critical only) + amber (warnings) + blue (hospital). */
 :root {
-  --bg: #ffffff;
-  --surface: #f6f7f8;
-  --raised: #ffffff;
-  --fg: #101418;
-  --muted: #5b6670;
-  --border: #dde1e5;
+  --bg: #f5f7f8;
+  --surface: #ffffff;
+  --subtle: #eef2f4;
+  --fg: #0f1a21;
+  --muted: #5d6b75;
+  --faint: #8a979f;
+  --border: #e1e7eb;
   --brand: #0e7c86;
-  --brand-fg: #ffffff;
-  --brand-soft: #e3f2f3;
+  --brand-strong: #0a5f67;
+  --brand-soft: #e5f3f4;
   --alert: #d92d20;
-  --alert-soft: #fdecea;
-  --warn: #f79009;
+  --alert-soft: #fdeceb;
+  --warn: #c76a00;
   --warn-soft: #fef3e2;
-  --warn-fg: #8a4b00;
+  --info: #2563c9;
+  --info-soft: #eaf1fd;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0c0f12;
-    --surface: #14191e;
-    --raised: #1a2026;
-    --fg: #e8ecef;
-    --muted: #97a3ad;
-    --border: #2a323a;
-    --brand: #2aa7b2;
-    --brand-fg: #04191b;
-    --brand-soft: #0f2c30;
-    --alert: #f2574a;
-    --alert-soft: #3a1714;
-    --warn: #f7a23b;
-    --warn-soft: #33240e;
-    --warn-fg: #f7c27a;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #0c0f12;
-  --surface: #14191e;
-  --raised: #1a2026;
-  --fg: #e8ecef;
-  --muted: #97a3ad;
-  --border: #2a323a;
-  --brand: #2aa7b2;
-  --brand-fg: #04191b;
-  --brand-soft: #0f2c30;
-  --alert: #f2574a;
-  --alert-soft: #3a1714;
-  --warn: #f7a23b;
-  --warn-soft: #33240e;
-  --warn-fg: #f7c27a;
-  color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-raised: var(--raised);
+  --color-subtle: var(--subtle);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-border: var(--border);
   --color-brand: var(--brand);
-  --color-brand-fg: var(--brand-fg);
+  --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
   --color-alert: var(--alert);
   --color-alert-soft: var(--alert-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-  --color-warn-fg: var(--warn-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --animate-skeleton: skeleton 1.4s ease-in-out infinite;
-  --animate-pulse-alert: pulse-alert 1s ease-in-out 10;
+  --animate-beat: beat 1s ease-in-out infinite;
 }
 
 @keyframes skeleton {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  50% { opacity: 0.5; }
 }
 
-@keyframes pulse-alert {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--alert) 45%, transparent); }
-  50% { box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--alert) 0%, transparent); }
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.18); }
+  30% { transform: scale(1); }
 }
 
-html {
+html,
+body {
   background: var(--bg);
 }
 
 body {
-  background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
   -webkit-font-smoothing: antialiased;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   font-size: 1rem;
 }
 
 .leaflet-container {
   font-family: var(--font-sans);
-  background: var(--surface);
-}
-
-.atoll-map-dark .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9);
+  background: var(--subtle);
 }

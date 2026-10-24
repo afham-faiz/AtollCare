@@ -6,9 +6,9 @@ import { twMerge } from "tailwind-merge";
 import { dismiss, useToasts } from "@/lib/toast";
 
 const TONE = {
-  info: "border-brand",
-  warn: "border-warn",
-  error: "border-alert",
+  info: "border-l-brand",
+  warn: "border-l-warn",
+  error: "border-l-alert",
 };
 
 export default function () {
@@ -20,7 +20,7 @@ export default function () {
           key={t.id}
           role="status"
           className={twMerge(
-            "pointer-events-auto flex max-w-[28rem] items-start gap-[.75rem] rounded-[.5rem] border-l-[.25rem] border-[1px] bg-raised px-[1rem] py-[.75rem] shadow-lg",
+            "pointer-events-auto flex max-w-[28rem] items-start gap-[.75rem] rounded-[.5rem] border-l-[.25rem] border-[1px] border-border bg-surface px-[1rem] py-[.75rem] shadow-lg",
             TONE[t.tone],
           )}
         >

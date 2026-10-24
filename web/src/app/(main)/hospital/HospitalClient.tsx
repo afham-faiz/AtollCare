@@ -1,127 +1,87 @@
-// F-M3.1 Referral inbox: facility selector, cases sorted by severity then window margin, critical rows pulse.
+// Hospital screen: incoming transfers on the left, the selected transfer on the right.
 "use client";
 
+import { Inbox } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
-import { DEFAULT_HOSPITAL_ID } from "@/app/config";
-import Card from "@/app/components/Card";
-import PillSeverity from "@/app/components/(pills)/PillSeverity";
-import PillStatus from "@/app/components/(pills)/PillStatus";
+import ModeIcon from "@/app/components/(transfer)/ModeIcon";
+import StatusPill from "@/app/components/(transfer)/StatusPill";
 import Skeleton from "@/app/components/Skeleton";
-import { CONDITION_LABEL, facilityName, fmtMin, fmtTime } from "@/lib/format";
-import { useCases, useMeta } from "@/lib/swr";
+import { fmtMin, minutesUntil, patientLine, place } from "@/lib/format";
+import { useMeta, useTransfers } from "@/lib/swr";
 
-import CapacityPanel from "./CapacityPanel";
-import styles from "./Hospital.module.scss";
+import TransferDetail from "./TransferDetail";
 
-const FAC_KEY = "atollcare.hospital";
-
-export default function () {
+export default function ({ transferId }: { transferId?: string }) {
   const { data: meta } = useMeta();
-  const [fid, setFid] = useState(DEFAULT_HOSPITAL_ID);
-  const { data: cases } = useCases(`?destination_id=${fid}`);
-  const firstSeen = useRef<Map<string, number>>(new Map());
-  const [, force] = useState(0);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(FAC_KEY);
-      if (saved) setFid(saved);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!cases) return;
-    const initial = firstSeen.current.size === 0;
-    for (const c of cases) if (!firstSeen.current.has(c.id)) firstSeen.current.set(c.id, initial ? 0 : Date.now());
-    const t = setTimeout(() => force((n) => n + 1), 10500);
-    return () => clearTimeout(t);
-  }, [cases]);
-
-  const hospitals = (meta?.facilities ?? []).filter((f) => f.type.endsWith("hospital"));
-  const visible = (cases ?? []).filter((c) => c.status !== "draft");
+  const { data: list } = useTransfers();
+  const items = (list ?? []).filter((t) => t.status !== "closed");
+  const selected = transferId ?? (items.length === 1 ? items[0].id : undefined);
 
   return (
-    <div className="grid gap-[1rem] lg:grid-cols-[1fr_22rem]">
-      <div className="flex min-w-0 flex-col gap-[1rem]">
-        <div className="flex flex-wrap items-center gap-[.75rem]">
-          <h1 className="text-[1.5rem] font-bold">Referral inbox</h1>
-          <select
-            value={fid}
-            onChange={(e) => {
-              setFid(e.target.value);
-              try {
-                localStorage.setItem(FAC_KEY, e.target.value);
-              } catch {
-                // ignore
-              }
-            }}
-            className="h-[2.75rem] rounded-[.5rem] border-[1px] border-border bg-raised px-[.75rem]"
-            aria-label="Facility"
-          >
-            {hospitals.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Card>
-          {!cases && <Skeleton className="h-[8rem]" />}
-          {cases && visible.length === 0 && (
-            <p className="text-muted">No incoming cases. Load a scenario in <Link href="/demo" className="text-brand underline">/demo</Link>.</p>
-          )}
-          {visible.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Case</th>
-                    <th>Severity</th>
-                    <th>Condition</th>
-                    <th>Origin</th>
-                    <th>Since onset</th>
-                    <th>Window left</th>
-                    <th>Status</th>
-                    <th>ETA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((c) => {
-                    const seen = firstSeen.current.get(c.id) ?? 0;
-                    const pulse = c.severity === "critical" && seen > 0 && Date.now() - seen < 10000;
-                    const remaining = c.window_remaining_min;
-                    return (
-                      <tr key={c.id} className={twMerge(pulse && "animate-pulse-alert")}>
-                        <td>
-                          <Link href={`/hospital/${c.id}`} className="font-bold text-brand tabular-nums">
-                            {c.short_code}
-                          </Link>
-                          {c.status === "assessed" && <span className="block text-[0.875rem] text-muted">pre-alert</span>}
-                        </td>
-                        <td><PillSeverity severity={c.severity} /></td>
-                        <td>{CONDITION_LABEL[c.primary_condition_id ?? "other"] ?? c.primary_condition_id}</td>
-                        <td>{facilityName(meta?.facilities, c.origin_facility_id)}</td>
-                        <td className="tabular-nums">{fmtMin(c.time_since_onset_min)}</td>
-                        <td className={twMerge("tabular-nums font-semibold", remaining !== null && remaining !== undefined && remaining < 30 && "text-alert")}>
-                          {remaining === null || remaining === undefined ? "—" : remaining < 0 ? `breached ${fmtMin(-remaining)}` : fmtMin(remaining)}
-                        </td>
-                        <td><PillStatus status={c.status} /></td>
-                        <td className="tabular-nums">{fmtTime(c.eta)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+    <div className="grid gap-[1rem] lg:grid-cols-[20rem_1fr]">
+      <aside className="flex flex-col gap-[.5rem]">
+        <h1 className="px-[.25rem] text-[0.875rem] font-semibold text-muted">Incoming ({items.length})</h1>
+        {!list && <Skeleton className="h-[6rem]" />}
+        {list && items.length === 0 && (
+          <div className="rounded-[.75rem] border-[1px] border-dashed border-border p-[1.25rem] text-center text-muted">
+            <Inbox size={28} className="mx-auto mb-[.5rem]" />
+            No incoming transfers.
+            <br />
+            <Link href="/crew" className="text-brand-strong underline">Start one on the crew screen</Link>
+          </div>
+        )}
+        {items.map((t) => {
+          const left = minutesUntil(t.eta, meta?.now);
+          const tone = t.alert_level === "critical" ? "bg-alert" : t.alert_level === "warning" ? "bg-warn" : "bg-brand";
+          return (
+            <Link
+              key={t.id}
+              href={`/hospital/${t.id}`}
+              className={twMerge(
+                "relative flex flex-col gap-[.375rem] overflow-hidden rounded-[.75rem] border-[1px] border-border bg-surface p-[.875rem] pl-[1.125rem] hover:border-brand",
+                selected === t.id && "border-brand ring-[.125rem] ring-brand/20",
+              )}
+            >
+              <span className={twMerge("absolute inset-y-0 left-0 w-[.25rem]", tone)} aria-hidden />
+              <span className="flex items-center justify-between gap-[.5rem]">
+                <strong className="tabular-nums">{t.code}</strong>
+                <span className="text-[0.9375rem] font-semibold tabular-nums">
+                  {t.status === "arrived" ? "Arrived" : left !== null ? fmtMin(left) : "—"}
+                </span>
+              </span>
+              <span className="truncate text-[0.9375rem]">
+                {patientLine(t.patient)} · {t.suspected_condition ?? t.complaint}
+              </span>
+              <span className="flex items-center justify-between gap-[.5rem] text-[0.875rem] text-muted">
+                <span className="flex min-w-0 items-center gap-[.375rem] truncate">
+                  <ModeIcon mode={t.mode} /> {place(meta?.regions.find((r) => r.id === t.region_id), t.origin_id)}
+                </span>
+                <span className="tabular-nums">NEWS2 {t.news2_total ?? "—"}</span>
+              </span>
+              <span className="flex items-center gap-[.5rem]">
+                <StatusPill status={t.status} />
+                {t.unanswered_questions > 0 && (
+                  <span className="text-[0.875rem] text-info">Waiting for crew answer</span>
+                )}
+              </span>
+            </Link>
+          );
+        })}
+      </aside>
+
+      <section className="min-w-0">
+        {selected ? (
+          <TransferDetail transferId={selected} />
+        ) : (
+          items.length > 0 && (
+            <div className="flex h-[20rem] items-center justify-center rounded-[.75rem] border-[1px] border-dashed border-border text-muted">
+              Select a transfer
             </div>
-          )}
-        </Card>
-      </div>
-      {meta && <CapacityPanel facilities={meta.facilities} focusId={fid} />}
+          )
+        )}
+      </section>
     </div>
   );
 }

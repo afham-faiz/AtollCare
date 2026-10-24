@@ -1,57 +1,66 @@
-// F-M10.1 Landing: problem, headline metric from the last closed demo case, role entry cards, sponsor strip.
+// Landing: one sentence, two screens, three steps.
 "use client";
 
-import { Hospital, Ship, Siren } from "lucide-react";
+import { ArrowRight, Building2, Camera, Mic, Sparkles, Video } from "lucide-react";
 import Link from "next/link";
 
-import { APP_NAME, APP_TAGLINE, SPONSORS } from "@/app/config";
-import CaseHeadline from "@/app/components/(case)/CaseHeadline";
-import PillBase from "@/app/components/(pills)/PillBase";
-import { setRole, type Role } from "@/lib/role";
-import { useCases } from "@/lib/swr";
+import { APP_TAGLINE, SPONSORS } from "@/app/config";
+import { useMeta } from "@/lib/swr";
 
 import styles from "./Landing.module.scss";
 
-const ENTRIES: { href: string; role: Role; title: string; text: string; Icon: typeof Siren }[] = [
-  { href: "/report", role: "reporter", title: "Island", text: "Raise an alert, scan vitals, get first-aid guidance.", Icon: Siren },
-  { href: "/hospital", role: "specialist", title: "Hospital", text: "Review referrals, accept in one click, manage capacity.", Icon: Hospital },
-  { href: "/transport", role: "transport", title: "Transport", text: "Dispatch the fastest feasible route and track it live.", Icon: Ship },
+const STEPS = [
+  { Icon: Camera, title: "Hands-free vitals", text: "A mounted camera reads heart rate, breathing and HRV with Presage while the crew keeps working." },
+  { Icon: Mic, title: "Talk, don't type", text: "Crew speak notes. Interventions are picked out and added to the record." },
+  { Icon: Sparkles, title: "Ready on arrival", text: "The hospital sees a live briefing and trend, accepts in one tap, and asks questions read aloud in the vehicle." },
 ];
 
 export default function () {
-  const { data: closed } = useCases("?status=closed,arrived");
-  const last = [...(closed ?? [])].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
+  const { data: meta } = useMeta();
   return (
-    <div className="flex flex-col gap-[2rem] py-[1rem]">
-      <section className="max-w-[48rem]">
-        <p className="text-[0.875rem] font-semibold uppercase tracking-[0.08em] text-brand">{APP_NAME}</p>
-        <h1 className="mt-[.5rem] text-[2.25rem] font-bold leading-tight">{APP_TAGLINE}</h1>
-        <p className="mt-[1rem] text-[1.0625rem] text-muted">
-          Across ~190 inhabited islands in the Maldives, the delay between an outer-island emergency and specialist care is
-          not medicine — it is a sequential phone chain of handoffs. {APP_NAME} gives every patient one live case that
-          travels with them: contactless vitals and AI-structured intake on the island, a clinically grounded engine that
-          picks the fastest route to the right hospital within the treatment window, one-click acceptance in Malé, and live
-          transport tracking — with every handoff happening in parallel.
+    <div className="mx-auto flex max-w-[64rem] flex-col gap-[2.5rem] py-[1.5rem]">
+      <section>
+        <h1 className="max-w-[40rem] text-[2.5rem] font-bold leading-tight">{APP_TAGLINE}</h1>
+        <p className="mt-[1rem] max-w-[44rem] text-[1.125rem] text-muted">
+          Emergency transfers from islands and remote communities take hours. AtollCare turns that time into
+          information: the receiving team knows the patient before the doors open.
         </p>
       </section>
-      {last && <CaseHeadline headline={last.headline} />}
-      <section className={styles.entries}>
-        {ENTRIES.map(({ href, role, title, text, Icon }) => (
-          <Link key={href} href={href} onClick={() => setRole(role)} className={styles.entry}>
-            <Icon size={24} className="text-brand" />
-            <h2>{title}</h2>
-            <p>{text}</p>
-          </Link>
+
+      <section className="grid gap-[1rem] md:grid-cols-2">
+        <Link href="/crew" className={styles.door}>
+          <Video size={28} className="text-brand" />
+          <h2>Crew screen</h2>
+          <p>Tablet or laptop mounted in the boat, ambulance or aircraft.</p>
+          <span className={styles.go}>
+            Open <ArrowRight size={18} />
+          </span>
+        </Link>
+        <Link href="/hospital" className={styles.door}>
+          <Building2 size={28} className="text-brand" />
+          <h2>Hospital screen</h2>
+          <p>Receiving team: incoming transfers, live vitals, briefing, accept.</p>
+          <span className={styles.go}>
+            Open <ArrowRight size={18} />
+          </span>
+        </Link>
+      </section>
+
+      <section className="grid gap-[1.5rem] md:grid-cols-3">
+        {STEPS.map(({ Icon, title, text }) => (
+          <div key={title}>
+            <Icon size={22} className="mb-[.5rem] text-brand" />
+            <h3 className="font-semibold">{title}</h3>
+            <p className="text-muted">{text}</p>
+          </div>
         ))}
       </section>
-      <section className="flex flex-wrap items-center gap-[.5rem]">
-        <span className="text-[0.875rem] text-muted">Built with</span>
-        {SPONSORS.map((s) => (
-          <PillBase key={s}>{s}</PillBase>
-        ))}
-        <Link href="/demo" className="ml-auto text-[0.875rem] text-brand underline">
-          Demo control →
-        </Link>
+
+      <section className="flex flex-wrap items-center gap-x-[1.5rem] gap-y-[.5rem] border-t-[1px] border-border pt-[1.25rem] text-[0.9375rem] text-muted">
+        <span>
+          Works anywhere: {meta?.regions.map((r) => r.name).join(" · ") ?? "…"} · add a region as one JSON file
+        </span>
+        <span className="ml-auto">Built with {SPONSORS.join(" · ")}</span>
       </section>
     </div>
   );

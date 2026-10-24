@@ -41,7 +41,7 @@ class DemoService:
         state = self.svc.clock.state
         return MetaResponse(
             region=regions.region(state.region_id),  # type: ignore[arg-type]
-            regions=regions.region_summaries(),
+            regions=list(regions.regions().values()),
             modes=list(regions.modes().values()),
             adapters=self.svc.adapter_status(),
             bridge=self.svc.bridge_status(),

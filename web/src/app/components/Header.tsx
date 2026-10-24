@@ -1,112 +1,49 @@
-// F-M10.2 Header: fixed, scroll-aware, nav, role switcher, theme toggle (F-M10.4), mobile hamburger.
+// Minimal header: logo, the two screens, active region.
 "use client";
 
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
 import { twMerge } from "tailwind-merge";
 
 import { APP_NAME } from "@/app/config";
-import { ROLES, setRole, useRole, type Role } from "@/lib/role";
-
-import styles from "./Header.module.scss";
+import { useMeta } from "@/lib/swr";
 
 const NAV = [
-  { href: "/report", label: "Report" },
+  { href: "/crew", label: "Crew" },
   { href: "/hospital", label: "Hospital" },
-  { href: "/transport", label: "Transport" },
-  { href: "/demo", label: "Demo" },
 ];
-
-const themeListeners = new Set<() => void>();
-const readTheme = () => document.documentElement.dataset.theme ?? "system";
-
-function useTheme(): [string, () => void] {
-  const theme = useSyncExternalStore(
-    (cb) => {
-      themeListeners.add(cb);
-      return () => themeListeners.delete(cb);
-    },
-    readTheme,
-    () => "system",
-  );
-  const toggle = () => {
-    const current =
-      document.documentElement.dataset.theme ??
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    const next = current === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("atollcare.theme", next);
-    } catch {
-      // storage unavailable
-    }
-    themeListeners.forEach((l) => l());
-  };
-  return [theme, toggle];
-}
 
 export default function () {
   const pathname = usePathname();
-  const role = useRole();
-  const [theme, toggleTheme] = useTheme();
-  const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => setOpen(false), [pathname]);
-
-  const nav = NAV.map((n) => (
-    <Link
-      key={n.href}
-      href={n.href}
-      className={twMerge(styles.link, pathname.startsWith(n.href) && styles.active)}
-    >
-      {n.label}
-    </Link>
-  ));
-
+  const { data: meta } = useMeta();
   return (
-    <header className={twMerge(styles.header, scrolled && styles.scrolled)}>
-      <div className={styles.bar}>
-        <Link href="/" className={styles.logo}>
-          <span className={styles.mark} aria-hidden />
+    <header className="sticky top-0 z-[1500] border-b-[1px] border-border bg-surface">
+      <div className="mx-auto flex h-[3.5rem] max-w-[90rem] items-center gap-[1.5rem] px-[1rem]">
+        <Link href="/" className="flex items-center gap-[.5rem] text-[1.0625rem] font-bold">
+          <span className="h-[1.125rem] w-[1.125rem] rounded-[50%] border-[.3125rem] border-brand" aria-hidden />
           {APP_NAME}
         </Link>
-        <nav className={styles.desktopNav}>{nav}</nav>
-        <div className={styles.controls}>
-          <label className={styles.role}>
-            <span className="sr-only">Role</span>
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label="Current role">
-              {ROLES.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" className={styles.icon} onClick={toggleTheme} aria-label="Toggle dark mode">
-            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          <button
-            type="button"
-            className={twMerge(styles.icon, styles.burger)}
-            onClick={() => setOpen((o) => !o)}
-            aria-label="Menu"
-            aria-expanded={open}
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
+        <nav className="flex gap-[.25rem]">
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className={twMerge(
+                "rounded-[.5rem] px-[.75rem] py-[.5rem] font-medium text-muted hover:bg-subtle hover:text-fg",
+                pathname.startsWith(n.href) && "bg-brand-soft text-brand-strong",
+              )}
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
+        {meta && (
+          <span className="ml-auto hidden items-center gap-[.375rem] text-[0.875rem] text-muted sm:flex">
+            <MapPin size={16} /> {meta.region.name}
+          </span>
+        )}
       </div>
-      <nav className={twMerge(styles.mobileNav, open && styles.open)}>{nav}</nav>
     </header>
   );
 }

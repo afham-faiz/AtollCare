@@ -90,3 +90,8 @@ def test_suspected_condition_keywords():
     assert "STEMI" in briefing.suspected_condition("crushing chest pain going to the left arm")
     assert "stroke" in briefing.suspected_condition("slurred speech and facial droop").lower()
     assert briefing.suspected_condition("feels unwell") is None
+
+
+def test_stroke_with_arm_weakness_is_not_stemi():
+    s = briefing.suspected_condition("Sudden weakness of the left arm and slurred speech")
+    assert s and "stroke" in s.lower()

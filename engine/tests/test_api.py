@@ -74,7 +74,7 @@ def test_full_transfer_lifecycle(client):
     t = ok(client.post(f"/api/transfers/{tid}/notes", json={"text": "Gave aspirin 300 mg. Pain 8 out of 10.",
                                                              "kind": "voice"}))
     assert t["interventions"][0]["text"].lower().startswith("gave aspirin 300 mg")
-    assert "aspirin" in t["briefing"]["recommendation"].lower()
+    assert "already given: aspirin" in t["briefing"]["recommendation"].lower()
 
     # hospital asks → crew answers (reply_to) → list shows no unanswered questions
     t = ok(client.post(f"/api/transfers/{tid}/messages", json={"text": "Any blood thinners?", "sender": "Dr A"}))

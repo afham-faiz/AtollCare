@@ -1,7 +1,7 @@
 # Deterioration alerts (deterministic). Raised once, spoken in the vehicle and shown at the hospital.
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models import Alert, AlertLevel, DeteriorationForecast, LatestValue, News2Result
 
@@ -45,9 +45,28 @@ def evaluate(
             ))
 
     since = {a.code: a.since for a in previous}
-    return [Alert(code=c, level=lvl, text=t, since=since.get(c, now)) for c, lvl, t in found]
+    current = [Alert(code=c, level=lvl, text=t, since=since.get(c, now)) for c, lvl, t in found]
+    # hysteresis: an alert stays active for HOLD after it was raised, so a value wobbling across a NEWS2 boundary
+    # doesn't flap the banner (a more severe alert of the same family replaces it)
+    codes = {a.code for a in current}
+    for a in previous:
+        family = a.code.split("_")[0]
+        if a.code in codes or any(c.split("_")[0] == family for c in codes):
+            continue
+        if now - a.since < HOLD:
+            current.append(a)
+    return current
 
 
-def new_alerts(before: list[Alert], after: list[Alert]) -> list[Alert]:
+HOLD = timedelta(minutes=10)
+REANNOUNCE = timedelta(minutes=15)
+
+
+def new_alerts(before: list[Alert], after: list[Alert], announced: dict[str, datetime] | None = None,
+               now: datetime | None = None) -> list[Alert]:
+    """Alerts to announce: newly active and not announced in the last REANNOUNCE window."""
     codes = {a.code for a in before}
-    return [a for a in after if a.code not in codes]
+    fresh = [a for a in after if a.code not in codes]
+    if announced is None or now is None:
+        return fresh
+    return [a for a in fresh if a.code not in announced or now - announced[a.code] >= REANNOUNCE]

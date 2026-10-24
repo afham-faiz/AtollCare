@@ -38,60 +38,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/media/{key}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Media */
-        get: operations["media_api_media__key__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Cases */
-        get: operations["list_cases_api_cases_get"];
-        put?: never;
-        /** Create Case */
-        post: operations["create_case_api_cases_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Case */
-        get: operations["get_case_api_cases__case_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Patch Case */
-        patch: operations["patch_case_api_cases__case_id__patch"];
-        trace?: never;
-    };
-    "/api/cases/{case_id}/submit": {
+    "/api/presage/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -100,263 +47,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit Case */
-        post: operations["submit_case_api_cases__case_id__submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/intake": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Intake */
-        post: operations["intake_api_cases__case_id__intake_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/refer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Refer */
-        post: operations["refer_api_cases__case_id__refer_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/sbar": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Sbar Preview */
-        get: operations["sbar_preview_api_cases__case_id__sbar_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/referral/respond": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Respond */
-        post: operations["respond_api_cases__case_id__referral_respond_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/referral/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Referral Info */
-        post: operations["referral_info_api_cases__case_id__referral_info_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/close": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Close */
-        post: operations["close_api_cases__case_id__close_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/notes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Notes */
-        post: operations["notes_api_cases__case_id__notes_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/guidance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Guidance */
-        get: operations["guidance_api_cases__case_id__guidance_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/assess": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Assess */
-        post: operations["assess_api_cases__case_id__assess_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/routes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Routes */
-        get: operations["routes_api_cases__case_id__routes_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/vitals/trend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Trend */
-        get: operations["trend_api_cases__case_id__vitals_trend_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/vitals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add Vitals */
-        post: operations["add_vitals_api_cases__case_id__vitals_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/vitals/scan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Scan */
-        post: operations["scan_api_cases__case_id__vitals_scan_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vitals/scan/{job_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Scan Status */
-        get: operations["scan_status_api_vitals_scan__job_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/voice/transcribe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Transcribe */
-        post: operations["transcribe_api_voice_transcribe_post"];
+        /** Presage Heartbeat */
+        post: operations["presage_heartbeat_api_presage_heartbeat_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -380,159 +72,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cases/{case_id}/status-sentence": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Status Sentence */
-        get: operations["status_sentence_api_cases__case_id__status_sentence_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/crew-brief": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Crew Brief */
-        get: operations["crew_brief_api_cases__case_id__crew_brief_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/dispatch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Dispatch */
-        post: operations["dispatch_api_cases__case_id__dispatch_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/track": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Track */
-        get: operations["track_api_cases__case_id__track_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cases/{case_id}/arrive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Arrive */
-        post: operations["arrive_api_cases__case_id__arrive_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/transport/assets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Assets */
-        get: operations["assets_api_transport_assets_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/transport/assets/{asset_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Patch Asset */
-        patch: operations["patch_asset_api_transport_assets__asset_id__patch"];
-        trace?: never;
-    };
-    "/api/hospitals/capacity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Capacity */
-        get: operations["capacity_api_hospitals_capacity_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/hospitals/{facility_id}/capacity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Patch Capacity */
-        patch: operations["patch_capacity_api_hospitals__facility_id__capacity_patch"];
-        trace?: never;
-    };
     "/api/demo/state": {
         parameters: {
             query?: never;
@@ -540,15 +79,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get State */
-        get: operations["get_state_api_demo_state_get"];
+        /** Demo State */
+        get: operations["demo_state_api_demo_state_get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Patch State */
-        patch: operations["patch_state_api_demo_state_patch"];
+        /** Patch Demo State */
+        patch: operations["patch_demo_state_api_demo_state_patch"];
         trace?: never;
     };
     "/api/demo/reset": {
@@ -568,7 +107,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/demo/scenario/{scenario_id}": {
+    "/api/demo/example": {
         parameters: {
             query?: never;
             header?: never;
@@ -577,8 +116,213 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Scenario */
-        post: operations["scenario_api_demo_scenario__scenario_id__post"];
+        /** Example */
+        post: operations["example_api_demo_example_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/media/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Media */
+        get: operations["media_api_media__key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Transfers */
+        get: operations["list_transfers_api_transfers_get"];
+        put?: never;
+        /** Create Transfer */
+        post: operations["create_transfer_api_transfers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Transfer */
+        get: operations["get_transfer_api_transfers__transfer_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/vitals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Vitals */
+        post: operations["add_vitals_api_transfers__transfer_id__vitals_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/vitals/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trend */
+        get: operations["trend_api_transfers__transfer_id__vitals_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/monitoring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Monitoring */
+        post: operations["monitoring_api_transfers__transfer_id__monitoring_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Note */
+        post: operations["add_note_api_transfers__transfer_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/notes/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Voice Note */
+        post: operations["voice_note_api_transfers__transfer_id__notes_voice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Message */
+        post: operations["message_api_transfers__transfer_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept */
+        post: operations["accept_api_transfers__transfer_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/arrive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Arrive */
+        post: operations["arrive_api_transfers__transfer_id__arrive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close */
+        post: operations["close_api_transfers__transfer_id__close_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -589,389 +333,189 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AdapterStatus */
-        AdapterStatus: {
-            /** Presage */
-            presage: string;
-            /** Gemini */
-            gemini: string;
-            /** Elevenlabs */
-            elevenlabs: string;
-            /** Storage */
-            storage: string;
-        };
-        /** AssetPatch */
-        AssetPatch: {
+        /** AcceptRequest */
+        AcceptRequest: {
+            /** By */
+            by: string;
             /**
-             * Status
-             * @enum {string}
-             */
-            status: "available" | "busy" | "offline";
-        };
-        /** BaselineComparison */
-        BaselineComparison: {
-            /** Steps */
-            steps: components["schemas"]["BaselineStep"][];
-            /** Baseline Total Min */
-            baseline_total_min: number;
-            /** Ours Steps */
-            ours_steps: components["schemas"]["BaselineStep"][];
-            /** Ours Total Min */
-            ours_total_min: number;
-            /** Saved Vs Baseline Min */
-            saved_vs_baseline_min: number;
-            /** Coordination Measured */
-            coordination_measured: boolean;
-            /**
-             * Assumptions
-             * @default {}
-             */
-            assumptions: {
-                [key: string]: unknown;
-            };
-        };
-        /** BaselineStep */
-        BaselineStep: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-            /** Min */
-            min: number;
-        };
-        /** Body_scan_api_cases__case_id__vitals_scan_post */
-        Body_scan_api_cases__case_id__vitals_scan_post: {
-            /** Video */
-            video: string;
-        };
-        /** Body_transcribe_api_voice_transcribe_post */
-        Body_transcribe_api_voice_transcribe_post: {
-            /** Audio */
-            audio: string;
-            /** Language */
-            language?: string | null;
-            /** Case Id */
-            case_id?: string | null;
-        };
-        /** CapacityPatch */
-        CapacityPatch: {
-            /** Icu Beds Free */
-            icu_beds_free?: number | null;
-            /** Cath Lab Available */
-            cath_lab_available?: boolean | null;
-            /** Ct Available */
-            ct_available?: boolean | null;
-            /** Blood Bank Units */
-            blood_bank_units?: number | null;
-        };
-        /** Case */
-        Case: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Short Code */
-            short_code: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            status: components["schemas"]["CaseStatus"];
-            /** Origin Facility Id */
-            origin_facility_id: string;
-            origin_point: components["schemas"]["GeoPoint"];
-            patient: components["schemas"]["Patient"];
-            intake?: components["schemas"]["Intake"] | null;
-            /**
-             * Vitals
+             * Prepare
              * @default []
              */
-            vitals: components["schemas"]["VitalsReading"][];
-            news2?: components["schemas"]["News2Result"] | null;
-            recommendation?: components["schemas"]["Recommendation"] | null;
-            referral?: components["schemas"]["Referral"] | null;
-            /**
-             * @default {
-             *       "status": "none",
-             *       "asset_ids": [],
-             *       "legs_completed": 0
-             *     }
-             */
-            transport: components["schemas"]["TransportState"];
-            /**
-             * Timeline
-             * @default []
-             */
-            timeline: components["schemas"]["CaseEvent"][];
-            headline: components["schemas"]["CaseHeadline"];
-            /**
-             * @default {
-             *       "scenario_steps_done": 0,
-             *       "autoplay": false,
-             *       "language": "en"
-             *     }
-             */
-            meta: components["schemas"]["CaseMeta"];
+            prepare: string[];
+            /** Message */
+            message?: string | null;
         };
-        /** CaseEvent */
-        CaseEvent: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Case Id
-             * Format: uuid
-             */
-            case_id: string;
+        /** Acceptance */
+        Acceptance: {
+            /** By */
+            by: string;
             /**
              * At
              * Format: date-time
              */
             at: string;
-            type: components["schemas"]["EventType"];
-            /** Actor Role */
-            actor_role: string;
-            /** Summary */
-            summary: string;
             /**
-             * Data
-             * @default {}
+             * Prepare
+             * @default []
              */
-            data: {
-                [key: string]: unknown;
-            };
+            prepare: string[];
+            /** Message */
+            message?: string | null;
         };
-        /** CaseHeadline */
-        CaseHeadline: {
-            /** Elapsed Min */
-            elapsed_min: number;
-            /** Projected Total Min */
-            projected_total_min: number | null;
-            /** Saved Vs Baseline Min */
-            saved_vs_baseline_min: number | null;
+        /** AdapterStatus */
+        AdapterStatus: {
+            /**
+             * Presage
+             * @enum {string}
+             */
+            presage: "live" | "simulated";
+            /**
+             * Gemini
+             * @enum {string}
+             */
+            gemini: "real" | "mock";
+            /**
+             * Elevenlabs
+             * @enum {string}
+             */
+            elevenlabs: "real" | "mock";
+            /**
+             * Storage
+             * @enum {string}
+             */
+            storage: "real" | "mock";
+        };
+        /** Alert */
+        Alert: {
+            /** Code */
+            code: string;
+            level: components["schemas"]["AlertLevel"];
             /** Text */
             text: string;
-        };
-        /** CaseListItem */
-        CaseListItem: {
             /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Short Code */
-            short_code: string;
-            status: components["schemas"]["CaseStatus"];
-            severity: components["schemas"]["Severity"] | null;
-            /** Origin Facility Id */
-            origin_facility_id: string;
-            /** Destination Id */
-            destination_id: string | null;
-            /** Primary Condition Id */
-            primary_condition_id: string | null;
-            /** Window Min */
-            window_min: number | null;
-            /** Window Remaining Min */
-            window_remaining_min: number | null;
-            /** Time Since Onset Min */
-            time_since_onset_min: number | null;
-            /** Eta */
-            eta: string | null;
-            headline: components["schemas"]["CaseHeadline"];
-            /**
-             * Created At
+             * Since
              * Format: date-time
              */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /** CaseMeta */
-        CaseMeta: {
-            /** Submitted At */
-            submitted_at?: string | null;
-            /** Referred At */
-            referred_at?: string | null;
-            /** Accepted At */
-            accepted_at?: string | null;
-            /** Dispatched At */
-            dispatched_at?: string | null;
-            /** Arrived At */
-            arrived_at?: string | null;
-            /** Closed At */
-            closed_at?: string | null;
-            /** Outcome Note */
-            outcome_note?: string | null;
-            /** Scenario Id */
-            scenario_id?: string | null;
-            /** Scenario Started At */
-            scenario_started_at?: string | null;
-            /**
-             * Scenario Steps Done
-             * @default 0
-             */
-            scenario_steps_done: number;
-            /**
-             * Autoplay
-             * @default false
-             */
-            autoplay: boolean;
-            /**
-             * Language
-             * @default en
-             */
-            language: string;
-            /** Last Assessed At */
-            last_assessed_at?: string | null;
+            since: string;
         };
         /**
-         * CaseStatus
+         * AlertLevel
          * @enum {string}
          */
-        CaseStatus: "draft" | "submitted" | "assessed" | "referred" | "needs_info" | "accepted" | "declined" | "dispatched" | "in_transit" | "arrived" | "closed";
-        /** ClockInfo */
-        ClockInfo: {
+        AlertLevel: "warning" | "critical";
+        /**
+         * Author
+         * @enum {string}
+         */
+        Author: "crew" | "hospital" | "system";
+        /** Body_voice_note_api_transfers__transfer_id__notes_voice_post */
+        Body_voice_note_api_transfers__transfer_id__notes_voice_post: {
+            /** Audio */
+            audio: string;
+            /** Reply To */
+            reply_to?: string | null;
+        };
+        /** BridgeHeartbeat */
+        BridgeHeartbeat: {
             /**
-             * Now
+             * Sdk
+             * @enum {string}
+             */
+            sdk: "ready" | "no_api_key" | "unavailable" | "error";
+            /** Version */
+            version?: string | null;
+            /**
+             * Clients
+             * @default 0
+             */
+            clients: number;
+            /** Message */
+            message?: string | null;
+        };
+        /** BridgeStatus */
+        BridgeStatus: {
+            /** Connected */
+            connected: boolean;
+            /** Sdk */
+            sdk?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Last Seen */
+            last_seen?: string | null;
+        };
+        /** Briefing */
+        Briefing: {
+            /** Situation */
+            situation: string;
+            /** Background */
+            background: string;
+            /** Assessment */
+            assessment: string;
+            /** Recommendation */
+            recommendation: string;
+            /** Suspected Condition */
+            suspected_condition?: string | null;
+            /**
+             * Generated By
+             * @enum {string}
+             */
+            generated_by: "gemini" | "template";
+            /**
+             * Generated At
              * Format: date-time
              */
-            now: string;
-            /** Local Time */
-            local_time: string;
-            /** Is Daylight */
-            is_daylight: boolean;
-            /** Sunrise */
-            sunrise: string;
-            /** Sunset */
-            sunset: string;
-            /** Seaplane Last Landing */
-            seaplane_last_landing: string;
-            /** Disabled Modes */
-            disabled_modes: {
-                [key: string]: string;
-            };
-        };
-        /** CloseRequest */
-        CloseRequest: {
+            generated_at: string;
             /**
-             * Outcome Note
+             * Input Hash
              * @default
              */
-            outcome_note: string;
-        };
-        /** ConditionInfo */
-        ConditionInfo: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-            /** Window Min */
-            window_min: number | null;
-            /** Window From */
-            window_from: string;
-            /**
-             * Window Label
-             * @default
-             */
-            window_label: string;
-            /**
-             * Time Critical
-             * @default false
-             */
-            time_critical: boolean;
-            /**
-             * Required Capabilities
-             * @default []
-             */
-            required_capabilities: string[];
-            /**
-             * High Severity Capabilities
-             * @default []
-             */
-            high_severity_capabilities: string[];
-            /** Interim Label */
-            interim_label?: string | null;
+            input_hash: string;
         };
         /**
          * Consciousness
          * @enum {string}
          */
         Consciousness: "A" | "C" | "V" | "P" | "U";
-        /** CreateCaseRequest */
-        CreateCaseRequest: {
-            /** Origin Facility Id */
-            origin_facility_id: string;
-            patient?: components["schemas"]["Patient"] | null;
-            /** Raw Text */
-            raw_text?: string | null;
-        };
-        /** CrewBriefResponse */
-        CrewBriefResponse: {
-            /** Text */
-            text: string;
-            /** Audio Url */
-            audio_url: string | null;
+        /** CreateTransferRequest */
+        CreateTransferRequest: {
+            /** @default {} */
+            patient: components["schemas"]["Patient"];
+            /** Complaint */
+            complaint: string;
+            /** Origin Id */
+            origin_id: string;
+            /** Destination Id */
+            destination_id: string;
+            mode: components["schemas"]["TransportMode"];
         };
         /** DemoState */
         DemoState: {
-            /**
-             * Clock Offset Min
-             * @default 0
-             */
-            clock_offset_min: number;
             /**
              * Speed Multiplier
              * @default 1
              */
             speed_multiplier: number;
             /**
-             * @default {
-             *       "sea_state": 2,
-             *       "wind_kt": 10,
-             *       "visibility_km": 10
-             *     }
+             * Clock Offset Min
+             * @default 0
              */
-            weather: components["schemas"]["Weather"];
-            /** Night Override */
-            night_override?: boolean | null;
+            clock_offset_min: number;
             /** Clock Anchor Real */
             clock_anchor_real?: string | null;
             /**
-             * Helicopter Enabled
-             * @default false
+             * Region Id
+             * @default maldives
              */
-            helicopter_enabled: boolean;
+            region_id: string;
         };
         /** DemoStatePatch */
         DemoStatePatch: {
-            /** Set Time Of Day */
-            set_time_of_day?: string | null;
-            /** Clock Offset Min */
-            clock_offset_min?: number | null;
             /** Speed Multiplier */
             speed_multiplier?: number | null;
-            weather?: components["schemas"]["WeatherPatch"] | null;
-            /** Night Override */
-            night_override?: boolean | null;
-            /**
-             * Clear Night Override
-             * @default false
-             */
-            clear_night_override: boolean;
-            /** Helicopter Enabled */
-            helicopter_enabled?: boolean | null;
+            /** Region Id */
+            region_id?: string | null;
         };
         /** DeteriorationForecast */
         DeteriorationForecast: {
@@ -1002,59 +546,36 @@ export interface components {
             /** Rr Slope Per Hour */
             rr_slope_per_hour?: number | null;
         };
-        /** DispatchRequest */
-        DispatchRequest: {
-            /** Route Id */
-            route_id: string;
-            /** Asset Ids */
-            asset_ids?: string[] | null;
+        /** Extraction */
+        Extraction: {
+            /**
+             * Observations
+             * @default []
+             */
+            observations: string[];
+            /**
+             * Interventions
+             * @default []
+             */
+            interventions: string[];
         };
-        /**
-         * EventType
-         * @enum {string}
-         */
-        EventType: "created" | "submitted" | "vitals_added" | "intake_extracted" | "assessed" | "referred" | "needs_info" | "info_provided" | "accepted" | "declined" | "replanned" | "dispatched" | "departed" | "leg_completed" | "arrived" | "closed" | "note";
         /** Facility */
         Facility: {
             /** Id */
             id: string;
             /** Name */
             name: string;
-            /**
-             * Short Name
-             * @default
-             */
+            /** Short Name */
             short_name: string;
             /**
-             * Type
+             * Kind
              * @enum {string}
              */
-            type: "tertiary_hospital" | "regional_hospital" | "atoll_hospital" | "health_centre" | "airport";
-            /** Atoll */
-            atoll: string;
+            kind: "hospital" | "clinic";
             /** Lat */
             lat: number;
             /** Lng */
             lng: number;
-            /**
-             * Capabilities
-             * @default []
-             */
-            capabilities: string[];
-            /**
-             * Has Airport
-             * @default false
-             */
-            has_airport: boolean;
-            /** Nearest Airport Id */
-            nearest_airport_id?: string | null;
-            /**
-             * Lagoon Access
-             * @default false
-             */
-            lagoon_access: boolean;
-            /** Seaplane Base Id */
-            seaplane_base_id?: string | null;
         };
         /** GeoPoint */
         GeoPoint: {
@@ -1062,34 +583,6 @@ export interface components {
             lat: number;
             /** Lng */
             lng: number;
-        };
-        /** GuidanceResponse */
-        GuidanceResponse: {
-            /** Steps */
-            steps: components["schemas"]["GuidanceStep"][];
-            /** Source Condition Id */
-            source_condition_id: string;
-            /** Disclaimer */
-            disclaimer: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "reporter" | "clinician";
-            /**
-             * Selected By
-             * @enum {string}
-             */
-            selected_by: "gemini" | "default_order";
-        };
-        /** GuidanceStep */
-        GuidanceStep: {
-            /** Id */
-            id: string;
-            /** Text */
-            text: string;
-            /** Audio Url */
-            audio_url?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1104,144 +597,83 @@ export interface components {
             db: string;
             adapters: components["schemas"]["AdapterStatus"];
         };
-        /** HospitalCapacity */
-        HospitalCapacity: {
-            /** Facility Id */
-            facility_id: string;
-            /** Icu Beds Free */
-            icu_beds_free?: number | null;
-            /** Cath Lab Available */
-            cath_lab_available?: boolean | null;
-            /** Ct Available */
-            ct_available?: boolean | null;
-            /** Blood Bank Units */
-            blood_bank_units?: number | null;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /** InfoAnswer */
-        InfoAnswer: {
-            /** Question */
-            question: string;
-            /** Answer */
-            answer: string;
+        /** Intervention */
+        Intervention: {
             /**
              * At
              * Format: date-time
              */
             at: string;
+            /** Text */
+            text: string;
+            /**
+             * Note Id
+             * Format: uuid
+             */
+            note_id: string;
         };
-        /** InfoAnswersRequest */
-        InfoAnswersRequest: {
-            /** Answers */
-            answers: {
-                [key: string]: string;
-            };
-        };
-        /** Intake */
-        Intake: {
-            /** Raw Text */
-            raw_text: string;
+        /** LatestValue */
+        LatestValue: {
+            /** Value */
+            value: number | string | boolean;
             /**
-             * Language
-             * @default en
+             * At
+             * Format: date-time
              */
-            language: string;
-            /** Chief Complaint */
-            chief_complaint: string;
-            /**
-             * Symptoms
-             * @default []
-             */
-            symptoms: string[];
-            /**
-             * Red Flags
-             * @default []
-             */
-            red_flags: string[];
-            /** Onset Time */
-            onset_time?: string | null;
-            /**
-             * Onset Confidence
-             * @default unknown
-             * @enum {string}
-             */
-            onset_confidence: "exact" | "approx" | "unknown";
-            /**
-             * Suspected Conditions
-             * @default []
-             */
-            suspected_conditions: components["schemas"]["SuspectedCondition"][];
-            /**
-             * Missing Info
-             * @default []
-             */
-            missing_info: string[];
-            /**
-             * Extracted By
-             * @enum {string}
-             */
-            extracted_by: "gemini" | "fallback_rules";
-        };
-        /** IntakeRequest */
-        IntakeRequest: {
-            /** Raw Text */
-            raw_text: string;
-            /** Language */
-            language?: string | null;
-        };
-        /** ManualVitalsRequest */
-        ManualVitalsRequest: {
-            /** Recorded At */
-            recorded_at?: string | null;
-            /** @default manual */
+            at: string;
             source: components["schemas"]["VitalsSource"];
-            /** Heart Rate */
-            heart_rate?: number | null;
-            /** Resp Rate */
-            resp_rate?: number | null;
-            /** Spo2 */
-            spo2?: number | null;
-            /** On Oxygen */
-            on_oxygen?: boolean | null;
-            /** Systolic Bp */
-            systolic_bp?: number | null;
-            /** Temperature C */
-            temperature_c?: number | null;
-            consciousness?: components["schemas"]["Consciousness"] | null;
-            /** Confidence */
-            confidence?: number | null;
-            /** Media Url */
-            media_url?: string | null;
+            /** Flag */
+            flag?: string | null;
+        };
+        /** MessageRequest */
+        MessageRequest: {
+            /** Text */
+            text: string;
+            /**
+             * Kind
+             * @default question
+             * @enum {string}
+             */
+            kind: "question" | "message";
+            /** Sender */
+            sender?: string | null;
         };
         /** MetaResponse */
         MetaResponse: {
-            /** Facilities */
-            facilities: components["schemas"]["Facility"][];
-            /** Transport Modes */
-            transport_modes: components["schemas"]["TransportModeInfo"][];
-            /** Conditions */
-            conditions: components["schemas"]["ConditionInfo"][];
+            region: components["schemas"]["Region"];
+            /** Regions */
+            regions: components["schemas"]["Region"][];
+            /** Modes */
+            modes: components["schemas"]["TransportModeInfo"][];
             adapters: components["schemas"]["AdapterStatus"];
+            bridge: components["schemas"]["BridgeStatus"];
             demo_state: components["schemas"]["DemoState"];
             /**
              * Now
              * Format: date-time
              */
             now: string;
-            clock: components["schemas"]["ClockInfo"];
-            /** Languages */
-            languages: {
-                [key: string]: unknown;
-            }[];
-            /** Scenarios */
-            scenarios: {
-                [key: string]: unknown;
-            }[];
+            /** Prepare Options */
+            prepare_options: string[];
         };
+        /** Monitoring */
+        Monitoring: {
+            /** @default simulated */
+            source: components["schemas"]["MonitoringSource"];
+            /** Last Reading At */
+            last_reading_at?: string | null;
+            /** Hint */
+            hint?: string | null;
+        };
+        /** MonitoringRequest */
+        MonitoringRequest: {
+            source: components["schemas"]["MonitoringSource"];
+        };
+        /**
+         * MonitoringSource
+         * @enum {string}
+         */
+        MonitoringSource: "presage" | "simulated" | "off";
         /** News2Result */
         News2Result: {
             /** Total */
@@ -1266,15 +698,52 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** Note */
+        Note: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Transfer Id
+             * Format: uuid
+             */
+            transfer_id: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            author: components["schemas"]["Author"];
+            kind: components["schemas"]["NoteKind"];
+            /** Text */
+            text: string;
+            /** Reply To */
+            reply_to?: string | null;
+            extraction?: components["schemas"]["Extraction"] | null;
+            /** Extracted By */
+            extracted_by?: ("gemini" | "rules") | null;
+            /** Audio Url */
+            audio_url?: string | null;
+        };
+        /**
+         * NoteKind
+         * @enum {string}
+         */
+        NoteKind: "voice" | "text" | "question" | "message" | "answer" | "alert" | "event";
         /** NoteRequest */
         NoteRequest: {
             /** Text */
             text: string;
             /**
-             * Actor Role
-             * @default clinician
+             * Kind
+             * @default text
+             * @enum {string}
              */
-            actor_role: string;
+            kind: "voice" | "text" | "answer";
+            /** Reply To */
+            reply_to?: string | null;
         };
         /** OkResponse */
         OkResponse: {
@@ -1284,328 +753,73 @@ export interface components {
              */
             ok: boolean;
         };
-        /** PatchCaseRequest */
-        PatchCaseRequest: {
-            patient?: components["schemas"]["Patient"] | null;
-            /** Origin Facility Id */
-            origin_facility_id?: string | null;
-        };
         /** Patient */
         Patient: {
-            /** Name */
-            name?: string | null;
+            /** Label */
+            label?: string | null;
             /** Age */
             age?: number | null;
             /** Sex */
             sex?: ("M" | "F" | "X") | null;
-            /** Pregnant */
-            pregnant?: boolean | null;
-            /**
-             * Known Conditions
-             * @default []
-             */
-            known_conditions: string[];
-            /**
-             * Medications
-             * @default []
-             */
-            medications: string[];
-            /**
-             * Allergies
-             * @default []
-             */
-            allergies: string[];
         };
-        /** Recommendation */
-        Recommendation: {
-            severity: components["schemas"]["Severity"];
-            /** Primary Condition Id */
-            primary_condition_id: string | null;
-            /** Window Min */
-            window_min: number | null;
-            /** Time Since Onset Min */
-            time_since_onset_min: number | null;
-            /** Destination Id */
-            destination_id: string;
-            /** Required Capabilities */
-            required_capabilities: string[];
-            /** Chosen Route Id */
-            chosen_route_id: string;
-            /** Alternatives */
-            alternatives: components["schemas"]["RouteOption"][];
-            /** Actions Now */
-            actions_now: string[];
-            /** Explanation */
-            explanation: string;
-            /** Breach Warning */
-            breach_warning?: string | null;
-            forecast?: components["schemas"]["DeteriorationForecast"] | null;
-            baseline: components["schemas"]["BaselineComparison"];
-            /**
-             * Generated At
-             * Format: date-time
-             */
-            generated_at: string;
-            /** Engine Version */
-            engine_version: string;
-            /**
-             * Warnings
-             * @default []
-             */
-            warnings: string[];
-            /**
-             * Explanation Source
-             * @default template
-             * @enum {string}
-             */
-            explanation_source: "gemini" | "template";
-            /**
-             * Input Hash
-             * @default
-             */
-            input_hash: string;
-            /**
-             * Onset Confidence
-             * @default unknown
-             * @enum {string}
-             */
-            onset_confidence: "exact" | "approx" | "unknown";
-            /**
-             * Window From
-             * @default onset
-             * @enum {string}
-             */
-            window_from: "onset" | "first_medical_contact";
-            /** Interim Window Min */
-            interim_window_min?: number | null;
-            /**
-             * Condition Probabilities
-             * @default []
-             */
-            condition_probabilities: components["schemas"]["SuspectedCondition"][];
-            /**
-             * All Routes Count
-             * @default 0
-             */
-            all_routes_count: number;
-        };
-        /** ReferRequest */
-        ReferRequest: {
-            /** Destination Id */
-            destination_id?: string | null;
-            /** Route Id */
-            route_id?: string | null;
-            /** Note */
-            note?: string | null;
-        };
-        /** Referral */
-        Referral: {
-            /** Destination Id */
-            destination_id: string;
-            /** Sent At */
-            sent_at?: string | null;
-            sbar?: components["schemas"]["SbarSummary"] | null;
-            /**
-             * Response
-             * @default pending
-             * @enum {string}
-             */
-            response: "pending" | "accepted" | "declined" | "needs_info";
-            /** Responded At */
-            responded_at?: string | null;
-            /** Responder Name */
-            responder_name?: string | null;
-            /** Response Note */
-            response_note?: string | null;
-            /**
-             * Info Requests
-             * @default []
-             */
-            info_requests: string[];
-            /** Note */
-            note?: string | null;
-            /** Route Id */
-            route_id?: string | null;
-            /**
-             * Info Answers
-             * @default []
-             */
-            info_answers: components["schemas"]["InfoAnswer"][];
-            /**
-             * Declined Destination Ids
-             * @default []
-             */
-            declined_destination_ids: string[];
-        };
-        /** RespondRequest */
-        RespondRequest: {
-            /**
-             * Response
-             * @enum {string}
-             */
-            response: "accepted" | "declined" | "needs_info";
-            /** Responder Name */
-            responder_name: string;
-            /** Note */
-            note?: string | null;
-            /**
-             * Info Requests
-             * @default []
-             */
-            info_requests: string[];
-        };
-        /** RouteLeg */
-        RouteLeg: {
-            mode: components["schemas"]["TransportMode"];
-            /** From Id */
-            from_id: string;
-            /** To Id */
-            to_id: string;
-            from_point: components["schemas"]["GeoPoint"];
-            to_point: components["schemas"]["GeoPoint"];
-            /** Distance Km */
-            distance_km: number;
-            /** Dispatch Min */
-            dispatch_min: number;
-            /** Travel Min */
-            travel_min: number;
-            /** Handover Min */
-            handover_min: number;
-            /**
-             * Depart At
-             * Format: date-time
-             */
-            depart_at: string;
-            /**
-             * Arrive At
-             * Format: date-time
-             */
-            arrive_at: string;
-            /** Asset Id */
-            asset_id?: string | null;
-            /**
-             * Wait Min
-             * @default 0
-             */
-            wait_min: number;
-        };
-        /** RouteOption */
-        RouteOption: {
+        /** Region */
+        Region: {
             /** Id */
             id: string;
-            /** Destination Id */
-            destination_id: string;
-            /** Legs */
-            legs: components["schemas"]["RouteLeg"][];
-            /** Total Min */
-            total_min: number;
-            /**
-             * Arrive At
-             * Format: date-time
-             */
-            arrive_at: string;
-            /** Feasible */
-            feasible: boolean;
-            /**
-             * Infeasible Reasons
-             * @default []
-             */
-            infeasible_reasons: string[];
-            /** Within Window */
-            within_window?: boolean | null;
-            /** Window Margin Min */
-            window_margin_min?: number | null;
-            /** Interim Stop Id */
-            interim_stop_id?: string | null;
-            /**
-             * Score
-             * @default 0
-             */
-            score: number;
-            /**
-             * Kind
-             * @default direct
-             * @enum {string}
-             */
-            kind: "direct" | "interim" | "local";
-            /**
-             * Label
-             * @default
-             */
-            label: string;
-            /**
-             * Medic Onboard
-             * @default false
-             */
-            medic_onboard: boolean;
-            /** Interim Arrive Min */
-            interim_arrive_min?: number | null;
-            /** Interim Within Window */
-            interim_within_window?: boolean | null;
-            /**
-             * Score Breakdown
-             * @default {}
-             */
-            score_breakdown: {
-                [key: string]: number;
-            };
+            /** Name */
+            name: string;
+            /** Country */
+            country: string;
+            /** Description */
+            description: string;
+            /** Timezone */
+            timezone: string;
+            center: components["schemas"]["GeoPoint"];
+            /** Zoom */
+            zoom: number;
+            /** Modes */
+            modes: components["schemas"]["TransportMode"][];
+            /** Facilities */
+            facilities: components["schemas"]["Facility"][];
         };
-        /** SbarSummary */
-        SbarSummary: {
-            /** Situation */
-            situation: string;
-            /** Background */
-            background: string;
-            /** Assessment */
-            assessment: string;
-            /** Recommendation */
-            recommendation: string;
+        /** SimProfile */
+        SimProfile: {
             /**
-             * Generated By
-             * @enum {string}
+             * Heart Rate
+             * @default 92
              */
-            generated_by: "gemini" | "template";
+            heart_rate: number;
             /**
-             * Input Hash
-             * @default
+             * Heart Rate Per Hour
+             * @default 8
              */
-            input_hash: string;
-        };
-        /** ScanJobCreated */
-        ScanJobCreated: {
-            /** Job Id */
-            job_id: string;
-        };
-        /** ScanJobStatus */
-        ScanJobStatus: {
+            heart_rate_per_hour: number;
             /**
-             * Status
-             * @enum {string}
+             * Resp Rate
+             * @default 18
              */
-            status: "queued" | "processing" | "done" | "failed";
-            reading?: components["schemas"]["VitalsReading"] | null;
-            /** Error */
-            error?: string | null;
-            /** Case Id */
-            case_id?: string | null;
+            resp_rate: number;
+            /**
+             * Resp Rate Per Hour
+             * @default 3
+             */
+            resp_rate_per_hour: number;
+            /**
+             * Hrv Rmssd
+             * @default 28
+             */
+            hrv_rmssd: number;
         };
-        /**
-         * Severity
-         * @enum {string}
-         */
-        Severity: "low" | "low_medium" | "medium" | "high" | "critical";
         /** SpeakRequest */
         SpeakRequest: {
             /** Text */
             text: string;
             /**
              * Voice
-             * @default guide
+             * @default hospital
              * @enum {string}
              */
-            voice: "guide" | "status";
-            /** Language */
-            language?: string | null;
+            voice: "crew" | "hospital";
         };
         /** SpeakResponse */
         SpeakResponse: {
@@ -1613,78 +827,166 @@ export interface components {
             audio_url: string | null;
             /**
              * Source
-             * @default browser
              * @enum {string}
              */
             source: "elevenlabs" | "browser";
         };
-        /** SuspectedCondition */
-        SuspectedCondition: {
-            /** Condition Id */
-            condition_id: string;
-            /** Probability */
-            probability: number;
+        /** Transfer */
+        Transfer: {
             /**
-             * Rationale
-             * @default
+             * Id
+             * Format: uuid
              */
-            rationale: string;
-        };
-        /** TrackPoint */
-        TrackPoint: {
+            id: string;
+            /** Code */
+            code: string;
+            /** Region Id */
+            region_id: string;
             /**
-             * T
+             * Created At
              * Format: date-time
              */
-            t: string;
-            /** Lat */
-            lat: number;
-            /** Lng */
-            lng: number;
-            /** Leg Index */
-            leg_index?: number | null;
-        };
-        /** TrackResponse */
-        TrackResponse: {
-            /** Positions */
-            positions: components["schemas"]["TrackPoint"][];
-            transport: components["schemas"]["TransportState"];
-        };
-        /** TranscribeResponse */
-        TranscribeResponse: {
-            /** Text */
-            text: string;
-            /** Language */
-            language: string;
-            /** Confidence */
-            confidence?: number | null;
+            created_at: string;
             /**
-             * Source
-             * @default mock
-             * @enum {string}
+             * Updated At
+             * Format: date-time
              */
-            source: "elevenlabs" | "mock";
-        };
-        /** TransportAsset */
-        TransportAsset: {
-            /** Id */
-            id: string;
+            updated_at: string;
+            status: components["schemas"]["TransferStatus"];
+            patient: components["schemas"]["Patient"];
+            /** Complaint */
+            complaint: string;
+            /** Origin Id */
+            origin_id: string;
+            /** Destination Id */
+            destination_id: string;
             mode: components["schemas"]["TransportMode"];
-            /** Home Facility Id */
-            home_facility_id: string;
             /**
-             * Status
-             * @enum {string}
+             * Departed At
+             * Format: date-time
              */
-            status: "available" | "busy" | "offline";
-            /** Crew Note */
-            crew_note?: string | null;
+            departed_at: string;
+            /**
+             * Eta
+             * Format: date-time
+             */
+            eta: string;
+            /** Distance Km */
+            distance_km: number;
+            /**
+             * Progress
+             * @default 0
+             */
+            progress: number;
+            position: components["schemas"]["GeoPoint"];
+            origin_point: components["schemas"]["GeoPoint"];
+            destination_point: components["schemas"]["GeoPoint"];
+            /**
+             * @default {
+             *       "source": "simulated"
+             *     }
+             */
+            monitoring: components["schemas"]["Monitoring"];
+            /**
+             * @default {
+             *       "heart_rate": 92,
+             *       "heart_rate_per_hour": 8,
+             *       "resp_rate": 18,
+             *       "resp_rate_per_hour": 3,
+             *       "hrv_rmssd": 28
+             *     }
+             */
+            sim_profile: components["schemas"]["SimProfile"];
+            /**
+             * Latest
+             * @default {}
+             */
+            latest: {
+                [key: string]: components["schemas"]["LatestValue"];
+            };
+            news2?: components["schemas"]["News2Result"] | null;
+            /**
+             * Alerts
+             * @default []
+             */
+            alerts: components["schemas"]["Alert"][];
+            briefing?: components["schemas"]["Briefing"] | null;
+            acceptance?: components["schemas"]["Acceptance"] | null;
+            /**
+             * Interventions
+             * @default []
+             */
+            interventions: components["schemas"]["Intervention"][];
+            /**
+             * Notes
+             * @default []
+             */
+            notes: components["schemas"]["Note"][];
+            /**
+             * Vitals
+             * @default []
+             */
+            vitals: components["schemas"]["VitalsReading"][];
+            /** Arrived At */
+            arrived_at?: string | null;
         };
+        /** TransferListItem */
+        TransferListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Region Id */
+            region_id: string;
+            status: components["schemas"]["TransferStatus"];
+            patient: components["schemas"]["Patient"];
+            /** Complaint */
+            complaint: string;
+            /** Suspected Condition */
+            suspected_condition: string | null;
+            /** Origin Id */
+            origin_id: string;
+            /** Destination Id */
+            destination_id: string;
+            mode: components["schemas"]["TransportMode"];
+            /**
+             * Eta
+             * Format: date-time
+             */
+            eta: string;
+            /** Progress */
+            progress: number;
+            /** News2 Total */
+            news2_total: number | null;
+            /** News2 Band */
+            news2_band: string | null;
+            alert_level: components["schemas"]["AlertLevel"] | null;
+            /** Heart Rate */
+            heart_rate: number | null;
+            /** Resp Rate */
+            resp_rate: number | null;
+            monitoring: components["schemas"]["MonitoringSource"];
+            /** Unanswered Questions */
+            unanswered_questions: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * TransferStatus
+         * @enum {string}
+         */
+        TransferStatus: "pending" | "accepted" | "arrived" | "closed";
         /**
          * TransportMode
          * @enum {string}
          */
-        TransportMode: "ground" | "speedboat" | "sea_ambulance" | "seaplane" | "fixed_wing" | "helicopter";
+        TransportMode: "road" | "boat" | "helicopter" | "plane";
         /** TransportModeInfo */
         TransportModeInfo: {
             mode: components["schemas"]["TransportMode"];
@@ -1692,54 +994,8 @@ export interface components {
             label: string;
             /** Speed Kmh */
             speed_kmh: number;
-            /** Dispatch Min */
-            dispatch_min: number;
-            /** Handover Min */
-            handover_min: number;
-            /**
-             * Medic Onboard
-             * @default false
-             */
-            medic_onboard: boolean;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled: boolean;
-            /**
-             * Constraints
-             * @default
-             */
-            constraints: string;
-        };
-        /** TransportState */
-        TransportState: {
-            /** Route Id */
-            route_id?: string | null;
-            /**
-             * Status
-             * @default none
-             * @enum {string}
-             */
-            status: "none" | "dispatched" | "in_transit" | "arrived";
-            /** Current Leg Index */
-            current_leg_index?: number | null;
-            position?: components["schemas"]["GeoPoint"] | null;
-            /** Eta */
-            eta?: string | null;
-            /**
-             * Asset Ids
-             * @default []
-             */
-            asset_ids: string[];
-            route?: components["schemas"]["RouteOption"] | null;
-            /** Dispatched At */
-            dispatched_at?: string | null;
-            /**
-             * Legs Completed
-             * @default 0
-             */
-            legs_completed: number;
+            /** Detour */
+            detour: number;
         };
         /** TrendBucket */
         TrendBucket: {
@@ -1752,6 +1008,8 @@ export interface components {
             hr?: number | null;
             /** Rr */
             rr?: number | null;
+            /** Hrv */
+            hrv?: number | null;
             /** Spo2 */
             spo2?: number | null;
             /** Sbp */
@@ -1785,6 +1043,13 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VitalsAck */
+        VitalsAck: {
+            news2: components["schemas"]["News2Result"] | null;
+            /** Alerts */
+            alerts: components["schemas"]["Alert"][];
+            monitoring: components["schemas"]["Monitoring"];
+        };
         /** VitalsReading */
         VitalsReading: {
             /**
@@ -1793,10 +1058,10 @@ export interface components {
              */
             id: string;
             /**
-             * Case Id
+             * Transfer Id
              * Format: uuid
              */
-            case_id: string;
+            transfer_id: string;
             /**
              * Recorded At
              * Format: date-time
@@ -1807,6 +1072,8 @@ export interface components {
             heart_rate?: number | null;
             /** Resp Rate */
             resp_rate?: number | null;
+            /** Hrv Rmssd */
+            hrv_rmssd?: number | null;
             /** Spo2 */
             spo2?: number | null;
             /** On Oxygen */
@@ -1818,46 +1085,43 @@ export interface components {
             consciousness?: components["schemas"]["Consciousness"] | null;
             /** Confidence */
             confidence?: number | null;
-            /** Media Url */
-            media_url?: string | null;
             /**
              * Low Quality
              * @default false
              */
             low_quality: boolean;
         };
+        /** VitalsRequest */
+        VitalsRequest: {
+            /** @default manual */
+            source: components["schemas"]["VitalsSource"];
+            /** Recorded At */
+            recorded_at?: string | null;
+            /** Heart Rate */
+            heart_rate?: number | null;
+            /** Resp Rate */
+            resp_rate?: number | null;
+            /** Hrv Rmssd */
+            hrv_rmssd?: number | null;
+            /** Spo2 */
+            spo2?: number | null;
+            /** On Oxygen */
+            on_oxygen?: boolean | null;
+            /** Systolic Bp */
+            systolic_bp?: number | null;
+            /** Temperature C */
+            temperature_c?: number | null;
+            consciousness?: components["schemas"]["Consciousness"] | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Hint */
+            hint?: string | null;
+        };
         /**
          * VitalsSource
          * @enum {string}
          */
-        VitalsSource: "presage" | "manual" | "device" | "mock";
-        /** Weather */
-        Weather: {
-            /**
-             * Sea State
-             * @default 2
-             */
-            sea_state: number;
-            /**
-             * Wind Kt
-             * @default 10
-             */
-            wind_kt: number;
-            /**
-             * Visibility Km
-             * @default 10
-             */
-            visibility_km: number;
-        };
-        /** WeatherPatch */
-        WeatherPatch: {
-            /** Sea State */
-            sea_state?: number | null;
-            /** Wind Kt */
-            wind_kt?: number | null;
-            /** Visibility Km */
-            visibility_km?: number | null;
-        };
+        VitalsSource: "presage" | "manual" | "simulated";
     };
     responses: never;
     parameters: never;
@@ -1907,689 +1171,7 @@ export interface operations {
             };
         };
     };
-    media_api_media__key__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_cases_api_cases_get: {
-        parameters: {
-            query?: {
-                status?: string | null;
-                destination_id?: string | null;
-                origin_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CaseListItem"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_case_api_cases_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCaseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_case_api_cases__case_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_case_api_cases__case_id__patch: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PatchCaseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_case_api_cases__case_id__submit_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    intake_api_cases__case_id__intake_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IntakeRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refer_api_cases__case_id__refer_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReferRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sbar_preview_api_cases__case_id__sbar_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SbarSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    respond_api_cases__case_id__referral_respond_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RespondRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    referral_info_api_cases__case_id__referral_info_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InfoAnswersRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    close_api_cases__case_id__close_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CloseRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    notes_api_cases__case_id__notes_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NoteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    guidance_api_cases__case_id__guidance_get: {
-        parameters: {
-            query?: {
-                role?: string;
-            };
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GuidanceResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    assess_api_cases__case_id__assess_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    routes_api_cases__case_id__routes_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RouteOption"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    trend_api_cases__case_id__vitals_trend_get: {
-        parameters: {
-            query?: {
-                window_min?: number;
-            };
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TrendResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_vitals_api_cases__case_id__vitals_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ManualVitalsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    scan_api_cases__case_id__vitals_scan_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_scan_api_cases__case_id__vitals_scan_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScanJobCreated"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    scan_status_api_vitals_scan__job_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScanJobStatus"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    transcribe_api_voice_transcribe_post: {
+    presage_heartbeat_api_presage_heartbeat_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2598,7 +1180,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_transcribe_api_voice_transcribe_post"];
+                "application/json": components["schemas"]["BridgeHeartbeat"];
             };
         };
         responses: {
@@ -2608,7 +1190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TranscribeResponse"];
+                    "application/json": components["schemas"]["OkResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2655,282 +1237,7 @@ export interface operations {
             };
         };
     };
-    status_sentence_api_cases__case_id__status_sentence_get: {
-        parameters: {
-            query?: {
-                speak?: boolean;
-            };
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrewBriefResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crew_brief_api_cases__case_id__crew_brief_get: {
-        parameters: {
-            query?: {
-                speak?: boolean;
-            };
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CrewBriefResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    dispatch_api_cases__case_id__dispatch_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "x-role"?: string | null;
-            };
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DispatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    track_api_cases__case_id__track_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TrackResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    arrive_api_cases__case_id__arrive_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                case_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Case"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    assets_api_transport_assets_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TransportAsset"][];
-                };
-            };
-        };
-    };
-    patch_asset_api_transport_assets__asset_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                asset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssetPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TransportAsset"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    capacity_api_hospitals_capacity_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HospitalCapacity"][];
-                };
-            };
-        };
-    };
-    patch_capacity_api_hospitals__facility_id__capacity_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                facility_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CapacityPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HospitalCapacity"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_state_api_demo_state_get: {
+    demo_state_api_demo_state_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2950,7 +1257,7 @@ export interface operations {
             };
         };
     };
-    patch_state_api_demo_state_patch: {
+    patch_demo_state_api_demo_state_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -3003,14 +1310,32 @@ export interface operations {
             };
         };
     };
-    scenario_api_demo_scenario__scenario_id__post: {
+    example_api_demo_example_post: {
         parameters: {
-            query?: {
-                autoplay?: boolean;
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
             };
+        };
+    };
+    media_api_media__key__get: {
+        parameters: {
+            query?: never;
             header?: never;
             path: {
-                scenario_id: string;
+                key: string;
             };
             cookie?: never;
         };
@@ -3022,7 +1347,407 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Case"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_transfers_api_transfers_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferListItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_transfer_api_transfers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transfer_api_transfers__transfer_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_vitals_api_transfers__transfer_id__vitals_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VitalsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VitalsAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trend_api_transfers__transfer_id__vitals_trend_get: {
+        parameters: {
+            query?: {
+                window_min?: number;
+            };
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    monitoring_api_transfers__transfer_id__monitoring_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MonitoringRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_note_api_transfers__transfer_id__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_note_api_transfers__transfer_id__notes_voice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_voice_note_api_transfers__transfer_id__notes_voice_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    message_api_transfers__transfer_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_api_transfers__transfer_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    arrive_api_transfers__transfer_id__arrive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_api_transfers__transfer_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
                 };
             };
             /** @description Validation Error */

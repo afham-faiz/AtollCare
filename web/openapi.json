@@ -8,7 +8,7 @@
     "/api/meta": {
       "get": {
         "tags": [
-          "meta"
+          "system"
         ],
         "summary": "Meta",
         "operationId": "meta_api_meta_get",
@@ -29,7 +29,7 @@
     "/api/health": {
       "get": {
         "tags": [
-          "meta"
+          "system"
         ],
         "summary": "Health",
         "operationId": "health_api_health_get",
@@ -47,1172 +47,18 @@
         }
       }
     },
-    "/api/media/{key}": {
-      "get": {
-        "tags": [
-          "meta"
-        ],
-        "summary": "Media",
-        "operationId": "media_api_media__key__get",
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Key"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases": {
-      "get": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "List Cases",
-        "operationId": "list_cases_api_cases_get",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "destination_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Destination Id"
-            }
-          },
-          {
-            "name": "origin_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Origin Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CaseListItem"
-                  },
-                  "title": "Response List Cases Api Cases Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
+    "/api/presage/heartbeat": {
       "post": {
         "tags": [
-          "cases"
+          "system"
         ],
-        "summary": "Create Case",
-        "operationId": "create_case_api_cases_post",
-        "parameters": [
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
+        "summary": "Presage Heartbeat",
+        "operationId": "presage_heartbeat_api_presage_heartbeat_post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCaseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}": {
-      "get": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Get Case",
-        "operationId": "get_case_api_cases__case_id__get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Patch Case",
-        "operationId": "patch_case_api_cases__case_id__patch",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PatchCaseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/submit": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Submit Case",
-        "operationId": "submit_case_api_cases__case_id__submit_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/intake": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Intake",
-        "operationId": "intake_api_cases__case_id__intake_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/IntakeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/refer": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Refer",
-        "operationId": "refer_api_cases__case_id__refer_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReferRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/sbar": {
-      "get": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Sbar Preview",
-        "operationId": "sbar_preview_api_cases__case_id__sbar_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SbarSummary"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/referral/respond": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Respond",
-        "operationId": "respond_api_cases__case_id__referral_respond_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RespondRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/referral/info": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Referral Info",
-        "operationId": "referral_info_api_cases__case_id__referral_info_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InfoAnswersRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/close": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Close",
-        "operationId": "close_api_cases__case_id__close_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CloseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/notes": {
-      "post": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Notes",
-        "operationId": "notes_api_cases__case_id__notes_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NoteRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/guidance": {
-      "get": {
-        "tags": [
-          "cases"
-        ],
-        "summary": "Guidance",
-        "operationId": "guidance_api_cases__case_id__guidance_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "reporter",
-              "title": "Role"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GuidanceResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/assess": {
-      "post": {
-        "tags": [
-          "engine"
-        ],
-        "summary": "Assess",
-        "operationId": "assess_api_cases__case_id__assess_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/routes": {
-      "get": {
-        "tags": [
-          "engine"
-        ],
-        "summary": "Routes",
-        "operationId": "routes_api_cases__case_id__routes_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RouteOption"
-                  },
-                  "title": "Response Routes Api Cases  Case Id  Routes Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/vitals/trend": {
-      "get": {
-        "tags": [
-          "engine"
-        ],
-        "summary": "Trend",
-        "operationId": "trend_api_cases__case_id__vitals_trend_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "window_min",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1440,
-              "minimum": 5,
-              "default": 60,
-              "title": "Window Min"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrendResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/vitals": {
-      "post": {
-        "tags": [
-          "vitals"
-        ],
-        "summary": "Add Vitals",
-        "operationId": "add_vitals_api_cases__case_id__vitals_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ManualVitalsRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/vitals/scan": {
-      "post": {
-        "tags": [
-          "vitals"
-        ],
-        "summary": "Scan",
-        "operationId": "scan_api_cases__case_id__vitals_scan_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_scan_api_cases__case_id__vitals_scan_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScanJobCreated"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/vitals/scan/{job_id}": {
-      "get": {
-        "tags": [
-          "vitals"
-        ],
-        "summary": "Scan Status",
-        "operationId": "scan_status_api_vitals_scan__job_id__get",
-        "parameters": [
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScanJobStatus"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/voice/transcribe": {
-      "post": {
-        "tags": [
-          "voice"
-        ],
-        "summary": "Transcribe",
-        "operationId": "transcribe_api_voice_transcribe_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_transcribe_api_voice_transcribe_post"
+                "$ref": "#/components/schemas/BridgeHeartbeat"
               }
             }
           },
@@ -1224,7 +70,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TranscribeResponse"
+                  "$ref": "#/components/schemas/OkResponse"
                 }
               }
             }
@@ -1245,7 +91,7 @@
     "/api/voice/speak": {
       "post": {
         "tags": [
-          "voice"
+          "system"
         ],
         "summary": "Speak",
         "operationId": "speak_api_voice_speak_post",
@@ -1283,428 +129,13 @@
         }
       }
     },
-    "/api/cases/{case_id}/status-sentence": {
-      "get": {
-        "tags": [
-          "voice"
-        ],
-        "summary": "Status Sentence",
-        "operationId": "status_sentence_api_cases__case_id__status_sentence_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "speak",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Speak"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CrewBriefResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/crew-brief": {
-      "get": {
-        "tags": [
-          "voice"
-        ],
-        "summary": "Crew Brief",
-        "operationId": "crew_brief_api_cases__case_id__crew_brief_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "speak",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Speak"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CrewBriefResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/dispatch": {
-      "post": {
-        "tags": [
-          "transport"
-        ],
-        "summary": "Dispatch",
-        "operationId": "dispatch_api_cases__case_id__dispatch_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          },
-          {
-            "name": "x-role",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Role"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DispatchRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/track": {
-      "get": {
-        "tags": [
-          "transport"
-        ],
-        "summary": "Track",
-        "operationId": "track_api_cases__case_id__track_get",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TrackResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/cases/{case_id}/arrive": {
-      "post": {
-        "tags": [
-          "transport"
-        ],
-        "summary": "Arrive",
-        "operationId": "arrive_api_cases__case_id__arrive_post",
-        "parameters": [
-          {
-            "name": "case_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Case Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Case"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/transport/assets": {
-      "get": {
-        "tags": [
-          "transport"
-        ],
-        "summary": "Assets",
-        "operationId": "assets_api_transport_assets_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/TransportAsset"
-                  },
-                  "type": "array",
-                  "title": "Response Assets Api Transport Assets Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/transport/assets/{asset_id}": {
-      "patch": {
-        "tags": [
-          "transport"
-        ],
-        "summary": "Patch Asset",
-        "operationId": "patch_asset_api_transport_assets__asset_id__patch",
-        "parameters": [
-          {
-            "name": "asset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Asset Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssetPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TransportAsset"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hospitals/capacity": {
-      "get": {
-        "tags": [
-          "hospitals"
-        ],
-        "summary": "Capacity",
-        "operationId": "capacity_api_hospitals_capacity_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/HospitalCapacity"
-                  },
-                  "type": "array",
-                  "title": "Response Capacity Api Hospitals Capacity Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/hospitals/{facility_id}/capacity": {
-      "patch": {
-        "tags": [
-          "hospitals"
-        ],
-        "summary": "Patch Capacity",
-        "operationId": "patch_capacity_api_hospitals__facility_id__capacity_patch",
-        "parameters": [
-          {
-            "name": "facility_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Facility Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CapacityPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HospitalCapacity"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/demo/state": {
       "get": {
         "tags": [
-          "demo"
+          "system"
         ],
-        "summary": "Get State",
-        "operationId": "get_state_api_demo_state_get",
+        "summary": "Demo State",
+        "operationId": "demo_state_api_demo_state_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1720,10 +151,10 @@
       },
       "patch": {
         "tags": [
-          "demo"
+          "system"
         ],
-        "summary": "Patch State",
-        "operationId": "patch_state_api_demo_state_patch",
+        "summary": "Patch Demo State",
+        "operationId": "patch_demo_state_api_demo_state_patch",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1761,7 +192,7 @@
     "/api/demo/reset": {
       "post": {
         "tags": [
-          "demo"
+          "system"
         ],
         "summary": "Reset",
         "operationId": "reset_api_demo_reset_post",
@@ -1779,31 +210,89 @@
         }
       }
     },
-    "/api/demo/scenario/{scenario_id}": {
+    "/api/demo/example": {
       "post": {
         "tags": [
-          "demo"
+          "system"
         ],
-        "summary": "Scenario",
-        "operationId": "scenario_api_demo_scenario__scenario_id__post",
+        "summary": "Example",
+        "operationId": "example_api_demo_example_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/media/{key}": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Media",
+        "operationId": "media_api_media__key__get",
         "parameters": [
           {
-            "name": "scenario_id",
+            "name": "key",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Scenario Id"
+              "title": "Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
             }
           },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers": {
+      "get": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "List Transfers",
+        "operationId": "list_transfers_api_transfers_get",
+        "parameters": [
           {
-            "name": "autoplay",
+            "name": "status",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Autoplay"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
             }
           }
         ],
@@ -1813,7 +302,552 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Case"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransferListItem"
+                  },
+                  "title": "Response List Transfers Api Transfers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Create Transfer",
+        "operationId": "create_transfer_api_transfers_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}": {
+      "get": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Get Transfer",
+        "operationId": "get_transfer_api_transfers__transfer_id__get",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/vitals": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Add Vitals",
+        "operationId": "add_vitals_api_transfers__transfer_id__vitals_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VitalsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VitalsAck"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/vitals/trend": {
+      "get": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Trend",
+        "operationId": "trend_api_transfers__transfer_id__vitals_trend_get",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          },
+          {
+            "name": "window_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 720,
+              "minimum": 5,
+              "default": 60,
+              "title": "Window Min"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/monitoring": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Monitoring",
+        "operationId": "monitoring_api_transfers__transfer_id__monitoring_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MonitoringRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/notes": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Add Note",
+        "operationId": "add_note_api_transfers__transfer_id__notes_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/notes/voice": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Voice Note",
+        "operationId": "voice_note_api_transfers__transfer_id__notes_voice_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_voice_note_api_transfers__transfer_id__notes_voice_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/messages": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Message",
+        "operationId": "message_api_transfers__transfer_id__messages_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/accept": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Accept",
+        "operationId": "accept_api_transfers__transfer_id__accept_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/arrive": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Arrive",
+        "operationId": "arrive_api_transfers__transfer_id__arrive_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/close": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Close",
+        "operationId": "close_api_transfers__transfer_id__close_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
                 }
               }
             }
@@ -1834,22 +868,110 @@
   },
   "components": {
     "schemas": {
+      "AcceptRequest": {
+        "properties": {
+          "by": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "By"
+          },
+          "prepare": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Prepare",
+            "default": []
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "by"
+        ],
+        "title": "AcceptRequest"
+      },
+      "Acceptance": {
+        "properties": {
+          "by": {
+            "type": "string",
+            "title": "By"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "prepare": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Prepare",
+            "default": []
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "by",
+          "at"
+        ],
+        "title": "Acceptance"
+      },
       "AdapterStatus": {
         "properties": {
           "presage": {
             "type": "string",
+            "enum": [
+              "live",
+              "simulated"
+            ],
             "title": "Presage"
           },
           "gemini": {
             "type": "string",
+            "enum": [
+              "real",
+              "mock"
+            ],
             "title": "Gemini"
           },
           "elevenlabs": {
             "type": "string",
+            "enum": [
+              "real",
+              "mock"
+            ],
             "title": "Elevenlabs"
           },
           "storage": {
             "type": "string",
+            "enum": [
+              "real",
+              "mock"
+            ],
             "title": "Storage"
           }
         },
@@ -1862,130 +984,59 @@
         ],
         "title": "AdapterStatus"
       },
-      "AssetPatch": {
+      "Alert": {
         "properties": {
-          "status": {
+          "code": {
             "type": "string",
-            "enum": [
-              "available",
-              "busy",
-              "offline"
-            ],
-            "title": "Status"
+            "title": "Code"
+          },
+          "level": {
+            "$ref": "#/components/schemas/AlertLevel"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
           }
         },
         "type": "object",
         "required": [
-          "status"
+          "code",
+          "level",
+          "text",
+          "since"
         ],
-        "title": "AssetPatch"
+        "title": "Alert"
       },
-      "BaselineComparison": {
-        "properties": {
-          "steps": {
-            "items": {
-              "$ref": "#/components/schemas/BaselineStep"
-            },
-            "type": "array",
-            "title": "Steps"
-          },
-          "baseline_total_min": {
-            "type": "number",
-            "title": "Baseline Total Min"
-          },
-          "ours_steps": {
-            "items": {
-              "$ref": "#/components/schemas/BaselineStep"
-            },
-            "type": "array",
-            "title": "Ours Steps"
-          },
-          "ours_total_min": {
-            "type": "number",
-            "title": "Ours Total Min"
-          },
-          "saved_vs_baseline_min": {
-            "type": "number",
-            "title": "Saved Vs Baseline Min"
-          },
-          "coordination_measured": {
-            "type": "boolean",
-            "title": "Coordination Measured"
-          },
-          "assumptions": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Assumptions",
-            "default": {}
-          }
-        },
-        "type": "object",
-        "required": [
-          "steps",
-          "baseline_total_min",
-          "ours_steps",
-          "ours_total_min",
-          "saved_vs_baseline_min",
-          "coordination_measured"
+      "AlertLevel": {
+        "type": "string",
+        "enum": [
+          "warning",
+          "critical"
         ],
-        "title": "BaselineComparison"
+        "title": "AlertLevel"
       },
-      "BaselineStep": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "min": {
-            "type": "number",
-            "title": "Min"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "label",
-          "min"
+      "Author": {
+        "type": "string",
+        "enum": [
+          "crew",
+          "hospital",
+          "system"
         ],
-        "title": "BaselineStep"
+        "title": "Author"
       },
-      "Body_scan_api_cases__case_id__vitals_scan_post": {
-        "properties": {
-          "video": {
-            "type": "string",
-            "contentMediaType": "application/octet-stream",
-            "title": "Video"
-          }
-        },
-        "type": "object",
-        "required": [
-          "video"
-        ],
-        "title": "Body_scan_api_cases__case_id__vitals_scan_post"
-      },
-      "Body_transcribe_api_voice_transcribe_post": {
+      "Body_voice_note_api_transfers__transfer_id__notes_voice_post": {
         "properties": {
           "audio": {
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "Audio"
           },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
-          },
-          "case_id": {
+          "reply_to": {
             "anyOf": [
               {
                 "type": "string",
@@ -1995,306 +1046,28 @@
                 "type": "null"
               }
             ],
-            "title": "Case Id"
+            "title": "Reply To"
           }
         },
         "type": "object",
         "required": [
           "audio"
         ],
-        "title": "Body_transcribe_api_voice_transcribe_post"
+        "title": "Body_voice_note_api_transfers__transfer_id__notes_voice_post"
       },
-      "CapacityPatch": {
+      "BridgeHeartbeat": {
         "properties": {
-          "icu_beds_free": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
+          "sdk": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "no_api_key",
+              "unavailable",
+              "error"
             ],
-            "title": "Icu Beds Free"
+            "title": "Sdk"
           },
-          "cath_lab_available": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cath Lab Available"
-          },
-          "ct_available": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ct Available"
-          },
-          "blood_bank_units": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blood Bank Units"
-          }
-        },
-        "type": "object",
-        "title": "CapacityPatch"
-      },
-      "Case": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "short_code": {
-            "type": "string",
-            "title": "Short Code"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          },
-          "status": {
-            "$ref": "#/components/schemas/CaseStatus"
-          },
-          "origin_facility_id": {
-            "type": "string",
-            "title": "Origin Facility Id"
-          },
-          "origin_point": {
-            "$ref": "#/components/schemas/GeoPoint"
-          },
-          "patient": {
-            "$ref": "#/components/schemas/Patient"
-          },
-          "intake": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Intake"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "vitals": {
-            "items": {
-              "$ref": "#/components/schemas/VitalsReading"
-            },
-            "type": "array",
-            "title": "Vitals",
-            "default": []
-          },
-          "news2": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/News2Result"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "recommendation": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Recommendation"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "referral": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Referral"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "transport": {
-            "$ref": "#/components/schemas/TransportState",
-            "default": {
-              "status": "none",
-              "asset_ids": [],
-              "legs_completed": 0
-            }
-          },
-          "timeline": {
-            "items": {
-              "$ref": "#/components/schemas/CaseEvent"
-            },
-            "type": "array",
-            "title": "Timeline",
-            "default": []
-          },
-          "headline": {
-            "$ref": "#/components/schemas/CaseHeadline"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/CaseMeta",
-            "default": {
-              "scenario_steps_done": 0,
-              "autoplay": false,
-              "language": "en"
-            }
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "short_code",
-          "created_at",
-          "updated_at",
-          "status",
-          "origin_facility_id",
-          "origin_point",
-          "patient",
-          "headline"
-        ],
-        "title": "Case"
-      },
-      "CaseEvent": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "case_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Case Id"
-          },
-          "at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "At"
-          },
-          "type": {
-            "$ref": "#/components/schemas/EventType"
-          },
-          "actor_role": {
-            "type": "string",
-            "title": "Actor Role"
-          },
-          "summary": {
-            "type": "string",
-            "title": "Summary"
-          },
-          "data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Data",
-            "default": {}
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "case_id",
-          "at",
-          "type",
-          "actor_role",
-          "summary"
-        ],
-        "title": "CaseEvent"
-      },
-      "CaseHeadline": {
-        "properties": {
-          "elapsed_min": {
-            "type": "number",
-            "title": "Elapsed Min"
-          },
-          "projected_total_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Projected Total Min"
-          },
-          "saved_vs_baseline_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Saved Vs Baseline Min"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "elapsed_min",
-          "projected_total_min",
-          "saved_vs_baseline_min",
-          "text"
-        ],
-        "title": "CaseHeadline"
-      },
-      "CaseListItem": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "short_code": {
-            "type": "string",
-            "title": "Short Code"
-          },
-          "status": {
-            "$ref": "#/components/schemas/CaseStatus"
-          },
-          "severity": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Severity"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "origin_facility_id": {
-            "type": "string",
-            "title": "Origin Facility Id"
-          },
-          "destination_id": {
+          "version": {
             "anyOf": [
               {
                 "type": "string"
@@ -2303,221 +1076,71 @@
                 "type": "null"
               }
             ],
-            "title": "Destination Id"
+            "title": "Version"
           },
-          "primary_condition_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Primary Condition Id"
-          },
-          "window_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Min"
-          },
-          "window_remaining_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Remaining Min"
-          },
-          "time_since_onset_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Since Onset Min"
-          },
-          "eta": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Eta"
-          },
-          "headline": {
-            "$ref": "#/components/schemas/CaseHeadline"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "short_code",
-          "status",
-          "severity",
-          "origin_facility_id",
-          "destination_id",
-          "primary_condition_id",
-          "window_min",
-          "window_remaining_min",
-          "time_since_onset_min",
-          "eta",
-          "headline",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "CaseListItem"
-      },
-      "CaseMeta": {
-        "properties": {
-          "submitted_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Submitted At"
-          },
-          "referred_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Referred At"
-          },
-          "accepted_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Accepted At"
-          },
-          "dispatched_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Dispatched At"
-          },
-          "arrived_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Arrived At"
-          },
-          "closed_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Closed At"
-          },
-          "outcome_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outcome Note"
-          },
-          "scenario_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scenario Id"
-          },
-          "scenario_started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scenario Started At"
-          },
-          "scenario_steps_done": {
+          "clients": {
             "type": "integer",
-            "title": "Scenario Steps Done",
+            "title": "Clients",
             "default": 0
           },
-          "autoplay": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sdk"
+        ],
+        "title": "BridgeHeartbeat"
+      },
+      "BridgeStatus": {
+        "properties": {
+          "connected": {
             "type": "boolean",
-            "title": "Autoplay",
-            "default": false
+            "title": "Connected"
           },
-          "language": {
-            "type": "string",
-            "title": "Language",
-            "default": "en"
+          "sdk": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sdk"
           },
-          "last_assessed_at": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "last_seen": {
             "anyOf": [
               {
                 "type": "string",
@@ -2527,139 +1150,34 @@
                 "type": "null"
               }
             ],
-            "title": "Last Assessed At"
-          }
-        },
-        "type": "object",
-        "title": "CaseMeta"
-      },
-      "CaseStatus": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "submitted",
-          "assessed",
-          "referred",
-          "needs_info",
-          "accepted",
-          "declined",
-          "dispatched",
-          "in_transit",
-          "arrived",
-          "closed"
-        ],
-        "title": "CaseStatus"
-      },
-      "ClockInfo": {
-        "properties": {
-          "now": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Now"
-          },
-          "local_time": {
-            "type": "string",
-            "title": "Local Time"
-          },
-          "is_daylight": {
-            "type": "boolean",
-            "title": "Is Daylight"
-          },
-          "sunrise": {
-            "type": "string",
-            "title": "Sunrise"
-          },
-          "sunset": {
-            "type": "string",
-            "title": "Sunset"
-          },
-          "seaplane_last_landing": {
-            "type": "string",
-            "title": "Seaplane Last Landing"
-          },
-          "disabled_modes": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Disabled Modes"
+            "title": "Last Seen"
           }
         },
         "type": "object",
         "required": [
-          "now",
-          "local_time",
-          "is_daylight",
-          "sunrise",
-          "sunset",
-          "seaplane_last_landing",
-          "disabled_modes"
+          "connected"
         ],
-        "title": "ClockInfo"
+        "title": "BridgeStatus"
       },
-      "CloseRequest": {
+      "Briefing": {
         "properties": {
-          "outcome_note": {
+          "situation": {
             "type": "string",
-            "title": "Outcome Note",
-            "default": ""
-          }
-        },
-        "type": "object",
-        "title": "CloseRequest"
-      },
-      "ConditionInfo": {
-        "properties": {
-          "id": {
+            "title": "Situation"
+          },
+          "background": {
             "type": "string",
-            "title": "Id"
+            "title": "Background"
           },
-          "label": {
+          "assessment": {
             "type": "string",
-            "title": "Label"
+            "title": "Assessment"
           },
-          "window_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Min"
-          },
-          "window_from": {
+          "recommendation": {
             "type": "string",
-            "title": "Window From"
+            "title": "Recommendation"
           },
-          "window_label": {
-            "type": "string",
-            "title": "Window Label",
-            "default": ""
-          },
-          "time_critical": {
-            "type": "boolean",
-            "title": "Time Critical",
-            "default": false
-          },
-          "required_capabilities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Required Capabilities",
-            "default": []
-          },
-          "high_severity_capabilities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "High Severity Capabilities",
-            "default": []
-          },
-          "interim_label": {
+          "suspected_condition": {
             "anyOf": [
               {
                 "type": "string"
@@ -2668,17 +1186,37 @@
                 "type": "null"
               }
             ],
-            "title": "Interim Label"
+            "title": "Suspected Condition"
+          },
+          "generated_by": {
+            "type": "string",
+            "enum": [
+              "gemini",
+              "template"
+            ],
+            "title": "Generated By"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "input_hash": {
+            "type": "string",
+            "title": "Input Hash",
+            "default": ""
           }
         },
         "type": "object",
         "required": [
-          "id",
-          "label",
-          "window_min",
-          "window_from"
+          "situation",
+          "background",
+          "assessment",
+          "recommendation",
+          "generated_by",
+          "generated_at"
         ],
-        "title": "ConditionInfo"
+        "title": "Briefing"
       },
       "Consciousness": {
         "type": "string",
@@ -2691,95 +1229,49 @@
         ],
         "title": "Consciousness"
       },
-      "CreateCaseRequest": {
+      "CreateTransferRequest": {
         "properties": {
-          "origin_facility_id": {
-            "type": "string",
-            "title": "Origin Facility Id"
-          },
           "patient": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Patient"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Patient",
+            "default": {}
           },
-          "raw_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Raw Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "origin_facility_id"
-        ],
-        "title": "CreateCaseRequest"
-      },
-      "CrewBriefResponse": {
-        "properties": {
-          "text": {
+          "complaint": {
             "type": "string",
-            "title": "Text"
+            "minLength": 1,
+            "title": "Complaint"
           },
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
+          "origin_id": {
+            "type": "string",
+            "title": "Origin Id"
+          },
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TransportMode"
           }
         },
         "type": "object",
         "required": [
-          "text",
-          "audio_url"
+          "complaint",
+          "origin_id",
+          "destination_id",
+          "mode"
         ],
-        "title": "CrewBriefResponse"
+        "title": "CreateTransferRequest"
       },
       "DemoState": {
         "properties": {
-          "clock_offset_min": {
-            "type": "number",
-            "title": "Clock Offset Min",
-            "default": 0
-          },
           "speed_multiplier": {
             "type": "number",
             "title": "Speed Multiplier",
             "default": 1
           },
-          "weather": {
-            "$ref": "#/components/schemas/Weather",
-            "default": {
-              "sea_state": 2,
-              "wind_kt": 10.0,
-              "visibility_km": 10.0
-            }
-          },
-          "night_override": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Night Override"
+          "clock_offset_min": {
+            "type": "number",
+            "title": "Clock Offset Min",
+            "default": 0
           },
           "clock_anchor_real": {
             "anyOf": [
@@ -2793,10 +1285,10 @@
             ],
             "title": "Clock Anchor Real"
           },
-          "helicopter_enabled": {
-            "type": "boolean",
-            "title": "Helicopter Enabled",
-            "default": false
+          "region_id": {
+            "type": "string",
+            "title": "Region Id",
+            "default": "maldives"
           }
         },
         "type": "object",
@@ -2804,33 +1296,11 @@
       },
       "DemoStatePatch": {
         "properties": {
-          "set_time_of_day": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Time Of Day"
-          },
-          "clock_offset_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Clock Offset Min"
-          },
           "speed_multiplier": {
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 3600.0,
+                "maximum": 600.0,
                 "exclusiveMinimum": 0.0
               },
               {
@@ -2839,42 +1309,16 @@
             ],
             "title": "Speed Multiplier"
           },
-          "weather": {
+          "region_id": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/WeatherPatch"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "night_override": {
-            "anyOf": [
-              {
-                "type": "boolean"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Night Override"
-          },
-          "clear_night_override": {
-            "type": "boolean",
-            "title": "Clear Night Override",
-            "default": false
-          },
-          "helicopter_enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Helicopter Enabled"
+            "title": "Region Id"
           }
         },
         "type": "object",
@@ -2985,55 +1429,27 @@
         ],
         "title": "DeteriorationForecast"
       },
-      "DispatchRequest": {
+      "Extraction": {
         "properties": {
-          "route_id": {
-            "type": "string",
-            "title": "Route Id"
+          "observations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Observations",
+            "default": []
           },
-          "asset_ids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Ids"
+          "interventions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interventions",
+            "default": []
           }
         },
         "type": "object",
-        "required": [
-          "route_id"
-        ],
-        "title": "DispatchRequest"
-      },
-      "EventType": {
-        "type": "string",
-        "enum": [
-          "created",
-          "submitted",
-          "vitals_added",
-          "intake_extracted",
-          "assessed",
-          "referred",
-          "needs_info",
-          "info_provided",
-          "accepted",
-          "declined",
-          "replanned",
-          "dispatched",
-          "departed",
-          "leg_completed",
-          "arrived",
-          "closed",
-          "note"
-        ],
-        "title": "EventType"
+        "title": "Extraction"
       },
       "Facility": {
         "properties": {
@@ -3047,23 +1463,15 @@
           },
           "short_name": {
             "type": "string",
-            "title": "Short Name",
-            "default": ""
+            "title": "Short Name"
           },
-          "type": {
+          "kind": {
             "type": "string",
             "enum": [
-              "tertiary_hospital",
-              "regional_hospital",
-              "atoll_hospital",
-              "health_centre",
-              "airport"
+              "hospital",
+              "clinic"
             ],
-            "title": "Type"
-          },
-          "atoll": {
-            "type": "string",
-            "title": "Atoll"
+            "title": "Kind"
           },
           "lat": {
             "type": "number",
@@ -3072,54 +1480,14 @@
           "lng": {
             "type": "number",
             "title": "Lng"
-          },
-          "capabilities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Capabilities",
-            "default": []
-          },
-          "has_airport": {
-            "type": "boolean",
-            "title": "Has Airport",
-            "default": false
-          },
-          "nearest_airport_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Nearest Airport Id"
-          },
-          "lagoon_access": {
-            "type": "boolean",
-            "title": "Lagoon Access",
-            "default": false
-          },
-          "seaplane_base_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seaplane Base Id"
           }
         },
         "type": "object",
         "required": [
           "id",
           "name",
-          "type",
-          "atoll",
+          "short_name",
+          "kind",
           "lat",
           "lng"
         ],
@@ -3142,79 +1510,6 @@
           "lng"
         ],
         "title": "GeoPoint"
-      },
-      "GuidanceResponse": {
-        "properties": {
-          "steps": {
-            "items": {
-              "$ref": "#/components/schemas/GuidanceStep"
-            },
-            "type": "array",
-            "title": "Steps"
-          },
-          "source_condition_id": {
-            "type": "string",
-            "title": "Source Condition Id"
-          },
-          "disclaimer": {
-            "type": "string",
-            "title": "Disclaimer"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "reporter",
-              "clinician"
-            ],
-            "title": "Role"
-          },
-          "selected_by": {
-            "type": "string",
-            "enum": [
-              "gemini",
-              "default_order"
-            ],
-            "title": "Selected By"
-          }
-        },
-        "type": "object",
-        "required": [
-          "steps",
-          "source_condition_id",
-          "disclaimer",
-          "role",
-          "selected_by"
-        ],
-        "title": "GuidanceResponse"
-      },
-      "GuidanceStep": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "text"
-        ],
-        "title": "GuidanceStep"
       },
       "HTTPValidationError": {
         "properties": {
@@ -3251,325 +1546,56 @@
         ],
         "title": "HealthResponse"
       },
-      "HospitalCapacity": {
+      "Intervention": {
         "properties": {
-          "facility_id": {
-            "type": "string",
-            "title": "Facility Id"
-          },
-          "icu_beds_free": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Icu Beds Free"
-          },
-          "cath_lab_available": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cath Lab Available"
-          },
-          "ct_available": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ct Available"
-          },
-          "blood_bank_units": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blood Bank Units"
-          },
-          "updated_at": {
+          "at": {
             "type": "string",
             "format": "date-time",
-            "title": "Updated At"
+            "title": "At"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "note_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Note Id"
           }
         },
         "type": "object",
         "required": [
-          "facility_id",
-          "updated_at"
+          "at",
+          "text",
+          "note_id"
         ],
-        "title": "HospitalCapacity"
+        "title": "Intervention"
       },
-      "InfoAnswer": {
+      "LatestValue": {
         "properties": {
-          "question": {
-            "type": "string",
-            "title": "Question"
-          },
-          "answer": {
-            "type": "string",
-            "title": "Answer"
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "title": "Value"
           },
           "at": {
             "type": "string",
             "format": "date-time",
             "title": "At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "question",
-          "answer",
-          "at"
-        ],
-        "title": "InfoAnswer"
-      },
-      "InfoAnswersRequest": {
-        "properties": {
-          "answers": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Answers"
-          }
-        },
-        "type": "object",
-        "required": [
-          "answers"
-        ],
-        "title": "InfoAnswersRequest"
-      },
-      "Intake": {
-        "properties": {
-          "raw_text": {
-            "type": "string",
-            "title": "Raw Text"
-          },
-          "language": {
-            "type": "string",
-            "title": "Language",
-            "default": "en"
-          },
-          "chief_complaint": {
-            "type": "string",
-            "title": "Chief Complaint"
-          },
-          "symptoms": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Symptoms",
-            "default": []
-          },
-          "red_flags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Red Flags",
-            "default": []
-          },
-          "onset_time": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Onset Time"
-          },
-          "onset_confidence": {
-            "type": "string",
-            "enum": [
-              "exact",
-              "approx",
-              "unknown"
-            ],
-            "title": "Onset Confidence",
-            "default": "unknown"
-          },
-          "suspected_conditions": {
-            "items": {
-              "$ref": "#/components/schemas/SuspectedCondition"
-            },
-            "type": "array",
-            "title": "Suspected Conditions",
-            "default": []
-          },
-          "missing_info": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Missing Info",
-            "default": []
-          },
-          "extracted_by": {
-            "type": "string",
-            "enum": [
-              "gemini",
-              "fallback_rules"
-            ],
-            "title": "Extracted By"
-          }
-        },
-        "type": "object",
-        "required": [
-          "raw_text",
-          "chief_complaint",
-          "extracted_by"
-        ],
-        "title": "Intake"
-      },
-      "IntakeRequest": {
-        "properties": {
-          "raw_text": {
-            "type": "string",
-            "title": "Raw Text"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
-          }
-        },
-        "type": "object",
-        "required": [
-          "raw_text"
-        ],
-        "title": "IntakeRequest"
-      },
-      "ManualVitalsRequest": {
-        "properties": {
-          "recorded_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Recorded At"
           },
           "source": {
-            "$ref": "#/components/schemas/VitalsSource",
-            "default": "manual"
+            "$ref": "#/components/schemas/VitalsSource"
           },
-          "heart_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Heart Rate"
-          },
-          "resp_rate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resp Rate"
-          },
-          "spo2": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Spo2"
-          },
-          "on_oxygen": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "On Oxygen"
-          },
-          "systolic_bp": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Systolic Bp"
-          },
-          "temperature_c": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Temperature C"
-          },
-          "consciousness": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Consciousness"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "confidence": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confidence"
-          },
-          "media_url": {
+          "flag": {
             "anyOf": [
               {
                 "type": "string"
@@ -3578,37 +1604,76 @@
                 "type": "null"
               }
             ],
-            "title": "Media Url"
+            "title": "Flag"
           }
         },
         "type": "object",
-        "title": "ManualVitalsRequest"
+        "required": [
+          "value",
+          "at",
+          "source"
+        ],
+        "title": "LatestValue"
+      },
+      "MessageRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question",
+              "message"
+            ],
+            "title": "Kind",
+            "default": "question"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "MessageRequest"
       },
       "MetaResponse": {
         "properties": {
-          "facilities": {
+          "region": {
+            "$ref": "#/components/schemas/Region"
+          },
+          "regions": {
             "items": {
-              "$ref": "#/components/schemas/Facility"
+              "$ref": "#/components/schemas/Region"
             },
             "type": "array",
-            "title": "Facilities"
+            "title": "Regions"
           },
-          "transport_modes": {
+          "modes": {
             "items": {
               "$ref": "#/components/schemas/TransportModeInfo"
             },
             "type": "array",
-            "title": "Transport Modes"
-          },
-          "conditions": {
-            "items": {
-              "$ref": "#/components/schemas/ConditionInfo"
-            },
-            "type": "array",
-            "title": "Conditions"
+            "title": "Modes"
           },
           "adapters": {
             "$ref": "#/components/schemas/AdapterStatus"
+          },
+          "bridge": {
+            "$ref": "#/components/schemas/BridgeStatus"
           },
           "demo_state": {
             "$ref": "#/components/schemas/DemoState"
@@ -3618,39 +1683,80 @@
             "format": "date-time",
             "title": "Now"
           },
-          "clock": {
-            "$ref": "#/components/schemas/ClockInfo"
-          },
-          "languages": {
+          "prepare_options": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "type": "string"
             },
             "type": "array",
-            "title": "Languages"
-          },
-          "scenarios": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Scenarios"
+            "title": "Prepare Options"
           }
         },
         "type": "object",
         "required": [
-          "facilities",
-          "transport_modes",
-          "conditions",
+          "region",
+          "regions",
+          "modes",
           "adapters",
+          "bridge",
           "demo_state",
           "now",
-          "clock",
-          "languages",
-          "scenarios"
+          "prepare_options"
         ],
         "title": "MetaResponse"
+      },
+      "Monitoring": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/MonitoringSource",
+            "default": "simulated"
+          },
+          "last_reading_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reading At"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          }
+        },
+        "type": "object",
+        "title": "Monitoring"
+      },
+      "MonitoringRequest": {
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/MonitoringSource"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "MonitoringRequest"
+      },
+      "MonitoringSource": {
+        "type": "string",
+        "enum": [
+          "presage",
+          "simulated",
+          "off"
+        ],
+        "title": "MonitoringSource"
       },
       "News2Result": {
         "properties": {
@@ -3729,16 +1835,135 @@
         ],
         "title": "News2Result"
       },
-      "NoteRequest": {
+      "Note": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "transfer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transfer Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "author": {
+            "$ref": "#/components/schemas/Author"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NoteKind"
+          },
           "text": {
             "type": "string",
             "title": "Text"
           },
-          "actor_role": {
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
+          },
+          "extraction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Extraction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "extracted_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "gemini",
+                  "rules"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted By"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transfer_id",
+          "at",
+          "author",
+          "kind",
+          "text"
+        ],
+        "title": "Note"
+      },
+      "NoteKind": {
+        "type": "string",
+        "enum": [
+          "voice",
+          "text",
+          "question",
+          "message",
+          "answer",
+          "alert",
+          "event"
+        ],
+        "title": "NoteKind"
+      },
+      "NoteRequest": {
+        "properties": {
+          "text": {
             "type": "string",
-            "title": "Actor Role",
-            "default": "clinician"
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "voice",
+              "text",
+              "answer"
+            ],
+            "title": "Kind",
+            "default": "text"
+          },
+          "reply_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply To"
           }
         },
         "type": "object",
@@ -3758,36 +1983,9 @@
         "type": "object",
         "title": "OkResponse"
       },
-      "PatchCaseRequest": {
-        "properties": {
-          "patient": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Patient"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "origin_facility_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Origin Facility Id"
-          }
-        },
-        "type": "object",
-        "title": "PatchCaseRequest"
-      },
       "Patient": {
         "properties": {
-          "name": {
+          "label": {
             "anyOf": [
               {
                 "type": "string"
@@ -3796,7 +1994,7 @@
                 "type": "null"
               }
             ],
-            "title": "Name"
+            "title": "Label"
           },
           "age": {
             "anyOf": [
@@ -3824,800 +2022,116 @@
               }
             ],
             "title": "Sex"
-          },
-          "pregnant": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pregnant"
-          },
-          "known_conditions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Known Conditions",
-            "default": []
-          },
-          "medications": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Medications",
-            "default": []
-          },
-          "allergies": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Allergies",
-            "default": []
           }
         },
         "type": "object",
         "title": "Patient"
       },
-      "Recommendation": {
-        "properties": {
-          "severity": {
-            "$ref": "#/components/schemas/Severity"
-          },
-          "primary_condition_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Primary Condition Id"
-          },
-          "window_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Min"
-          },
-          "time_since_onset_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Since Onset Min"
-          },
-          "destination_id": {
-            "type": "string",
-            "title": "Destination Id"
-          },
-          "required_capabilities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Required Capabilities"
-          },
-          "chosen_route_id": {
-            "type": "string",
-            "title": "Chosen Route Id"
-          },
-          "alternatives": {
-            "items": {
-              "$ref": "#/components/schemas/RouteOption"
-            },
-            "type": "array",
-            "title": "Alternatives"
-          },
-          "actions_now": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Actions Now"
-          },
-          "explanation": {
-            "type": "string",
-            "title": "Explanation"
-          },
-          "breach_warning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Breach Warning"
-          },
-          "forecast": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DeteriorationForecast"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "baseline": {
-            "$ref": "#/components/schemas/BaselineComparison"
-          },
-          "generated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Generated At"
-          },
-          "engine_version": {
-            "type": "string",
-            "title": "Engine Version"
-          },
-          "warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Warnings",
-            "default": []
-          },
-          "explanation_source": {
-            "type": "string",
-            "enum": [
-              "gemini",
-              "template"
-            ],
-            "title": "Explanation Source",
-            "default": "template"
-          },
-          "input_hash": {
-            "type": "string",
-            "title": "Input Hash",
-            "default": ""
-          },
-          "onset_confidence": {
-            "type": "string",
-            "enum": [
-              "exact",
-              "approx",
-              "unknown"
-            ],
-            "title": "Onset Confidence",
-            "default": "unknown"
-          },
-          "window_from": {
-            "type": "string",
-            "enum": [
-              "onset",
-              "first_medical_contact"
-            ],
-            "title": "Window From",
-            "default": "onset"
-          },
-          "interim_window_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Interim Window Min"
-          },
-          "condition_probabilities": {
-            "items": {
-              "$ref": "#/components/schemas/SuspectedCondition"
-            },
-            "type": "array",
-            "title": "Condition Probabilities",
-            "default": []
-          },
-          "all_routes_count": {
-            "type": "integer",
-            "title": "All Routes Count",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "severity",
-          "primary_condition_id",
-          "window_min",
-          "time_since_onset_min",
-          "destination_id",
-          "required_capabilities",
-          "chosen_route_id",
-          "alternatives",
-          "actions_now",
-          "explanation",
-          "baseline",
-          "generated_at",
-          "engine_version"
-        ],
-        "title": "Recommendation"
-      },
-      "ReferRequest": {
-        "properties": {
-          "destination_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Destination Id"
-          },
-          "route_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Route Id"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          }
-        },
-        "type": "object",
-        "title": "ReferRequest"
-      },
-      "Referral": {
-        "properties": {
-          "destination_id": {
-            "type": "string",
-            "title": "Destination Id"
-          },
-          "sent_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sent At"
-          },
-          "sbar": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SbarSummary"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "response": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "accepted",
-              "declined",
-              "needs_info"
-            ],
-            "title": "Response",
-            "default": "pending"
-          },
-          "responded_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Responded At"
-          },
-          "responder_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Responder Name"
-          },
-          "response_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Response Note"
-          },
-          "info_requests": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Info Requests",
-            "default": []
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          },
-          "route_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Route Id"
-          },
-          "info_answers": {
-            "items": {
-              "$ref": "#/components/schemas/InfoAnswer"
-            },
-            "type": "array",
-            "title": "Info Answers",
-            "default": []
-          },
-          "declined_destination_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Declined Destination Ids",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "destination_id"
-        ],
-        "title": "Referral"
-      },
-      "RespondRequest": {
-        "properties": {
-          "response": {
-            "type": "string",
-            "enum": [
-              "accepted",
-              "declined",
-              "needs_info"
-            ],
-            "title": "Response"
-          },
-          "responder_name": {
-            "type": "string",
-            "title": "Responder Name"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Note"
-          },
-          "info_requests": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Info Requests",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "response",
-          "responder_name"
-        ],
-        "title": "RespondRequest"
-      },
-      "RouteLeg": {
-        "properties": {
-          "mode": {
-            "$ref": "#/components/schemas/TransportMode"
-          },
-          "from_id": {
-            "type": "string",
-            "title": "From Id"
-          },
-          "to_id": {
-            "type": "string",
-            "title": "To Id"
-          },
-          "from_point": {
-            "$ref": "#/components/schemas/GeoPoint"
-          },
-          "to_point": {
-            "$ref": "#/components/schemas/GeoPoint"
-          },
-          "distance_km": {
-            "type": "number",
-            "title": "Distance Km"
-          },
-          "dispatch_min": {
-            "type": "number",
-            "title": "Dispatch Min"
-          },
-          "travel_min": {
-            "type": "number",
-            "title": "Travel Min"
-          },
-          "handover_min": {
-            "type": "number",
-            "title": "Handover Min"
-          },
-          "depart_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Depart At"
-          },
-          "arrive_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Arrive At"
-          },
-          "asset_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Asset Id"
-          },
-          "wait_min": {
-            "type": "number",
-            "title": "Wait Min",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "mode",
-          "from_id",
-          "to_id",
-          "from_point",
-          "to_point",
-          "distance_km",
-          "dispatch_min",
-          "travel_min",
-          "handover_min",
-          "depart_at",
-          "arrive_at"
-        ],
-        "title": "RouteLeg"
-      },
-      "RouteOption": {
+      "Region": {
         "properties": {
           "id": {
             "type": "string",
             "title": "Id"
           },
-          "destination_id": {
+          "name": {
             "type": "string",
-            "title": "Destination Id"
+            "title": "Name"
           },
-          "legs": {
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "center": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "zoom": {
+            "type": "integer",
+            "title": "Zoom"
+          },
+          "modes": {
             "items": {
-              "$ref": "#/components/schemas/RouteLeg"
+              "$ref": "#/components/schemas/TransportMode"
             },
             "type": "array",
-            "title": "Legs"
+            "title": "Modes"
           },
-          "total_min": {
-            "type": "number",
-            "title": "Total Min"
-          },
-          "arrive_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Arrive At"
-          },
-          "feasible": {
-            "type": "boolean",
-            "title": "Feasible"
-          },
-          "infeasible_reasons": {
+          "facilities": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Facility"
             },
             "type": "array",
-            "title": "Infeasible Reasons",
-            "default": []
-          },
-          "within_window": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Within Window"
-          },
-          "window_margin_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Margin Min"
-          },
-          "interim_stop_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Interim Stop Id"
-          },
-          "score": {
-            "type": "number",
-            "title": "Score",
-            "default": 0
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "direct",
-              "interim",
-              "local"
-            ],
-            "title": "Kind",
-            "default": "direct"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label",
-            "default": ""
-          },
-          "medic_onboard": {
-            "type": "boolean",
-            "title": "Medic Onboard",
-            "default": false
-          },
-          "interim_arrive_min": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Interim Arrive Min"
-          },
-          "interim_within_window": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Interim Within Window"
-          },
-          "score_breakdown": {
-            "additionalProperties": {
-              "type": "number"
-            },
-            "type": "object",
-            "title": "Score Breakdown",
-            "default": {}
+            "title": "Facilities"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "destination_id",
-          "legs",
-          "total_min",
-          "arrive_at",
-          "feasible"
+          "name",
+          "country",
+          "description",
+          "timezone",
+          "center",
+          "zoom",
+          "modes",
+          "facilities"
         ],
-        "title": "RouteOption"
+        "title": "Region"
       },
-      "SbarSummary": {
+      "SimProfile": {
         "properties": {
-          "situation": {
-            "type": "string",
-            "title": "Situation"
+          "heart_rate": {
+            "type": "number",
+            "title": "Heart Rate",
+            "default": 92
           },
-          "background": {
-            "type": "string",
-            "title": "Background"
+          "heart_rate_per_hour": {
+            "type": "number",
+            "title": "Heart Rate Per Hour",
+            "default": 8
           },
-          "assessment": {
-            "type": "string",
-            "title": "Assessment"
+          "resp_rate": {
+            "type": "number",
+            "title": "Resp Rate",
+            "default": 18
           },
-          "recommendation": {
-            "type": "string",
-            "title": "Recommendation"
+          "resp_rate_per_hour": {
+            "type": "number",
+            "title": "Resp Rate Per Hour",
+            "default": 3
           },
-          "generated_by": {
-            "type": "string",
-            "enum": [
-              "gemini",
-              "template"
-            ],
-            "title": "Generated By"
-          },
-          "input_hash": {
-            "type": "string",
-            "title": "Input Hash",
-            "default": ""
+          "hrv_rmssd": {
+            "type": "number",
+            "title": "Hrv Rmssd",
+            "default": 28
           }
         },
         "type": "object",
-        "required": [
-          "situation",
-          "background",
-          "assessment",
-          "recommendation",
-          "generated_by"
-        ],
-        "title": "SbarSummary"
-      },
-      "ScanJobCreated": {
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "job_id"
-        ],
-        "title": "ScanJobCreated"
-      },
-      "ScanJobStatus": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "queued",
-              "processing",
-              "done",
-              "failed"
-            ],
-            "title": "Status"
-          },
-          "reading": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VitalsReading"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          },
-          "case_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Case Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "title": "ScanJobStatus"
-      },
-      "Severity": {
-        "type": "string",
-        "enum": [
-          "low",
-          "low_medium",
-          "medium",
-          "high",
-          "critical"
-        ],
-        "title": "Severity"
+        "title": "SimProfile"
       },
       "SpeakRequest": {
         "properties": {
           "text": {
             "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
             "title": "Text"
           },
           "voice": {
             "type": "string",
             "enum": [
-              "guide",
-              "status"
+              "crew",
+              "hospital"
             ],
             "title": "Voice",
-            "default": "guide"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
+            "default": "hospital"
           }
         },
         "type": "object",
@@ -4645,157 +2159,239 @@
               "elevenlabs",
               "browser"
             ],
-            "title": "Source",
-            "default": "browser"
+            "title": "Source"
           }
         },
         "type": "object",
         "required": [
-          "audio_url"
+          "audio_url",
+          "source"
         ],
         "title": "SpeakResponse"
       },
-      "SuspectedCondition": {
-        "properties": {
-          "condition_id": {
-            "type": "string",
-            "title": "Condition Id"
-          },
-          "probability": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Probability"
-          },
-          "rationale": {
-            "type": "string",
-            "title": "Rationale",
-            "default": ""
-          }
-        },
-        "type": "object",
-        "required": [
-          "condition_id",
-          "probability"
-        ],
-        "title": "SuspectedCondition"
-      },
-      "TrackPoint": {
-        "properties": {
-          "t": {
-            "type": "string",
-            "format": "date-time",
-            "title": "T"
-          },
-          "lat": {
-            "type": "number",
-            "title": "Lat"
-          },
-          "lng": {
-            "type": "number",
-            "title": "Lng"
-          },
-          "leg_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Leg Index"
-          }
-        },
-        "type": "object",
-        "required": [
-          "t",
-          "lat",
-          "lng"
-        ],
-        "title": "TrackPoint"
-      },
-      "TrackResponse": {
-        "properties": {
-          "positions": {
-            "items": {
-              "$ref": "#/components/schemas/TrackPoint"
-            },
-            "type": "array",
-            "title": "Positions"
-          },
-          "transport": {
-            "$ref": "#/components/schemas/TransportState"
-          }
-        },
-        "type": "object",
-        "required": [
-          "positions",
-          "transport"
-        ],
-        "title": "TrackResponse"
-      },
-      "TranscribeResponse": {
-        "properties": {
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "language": {
-            "type": "string",
-            "title": "Language"
-          },
-          "confidence": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Confidence"
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "elevenlabs",
-              "mock"
-            ],
-            "title": "Source",
-            "default": "mock"
-          }
-        },
-        "type": "object",
-        "required": [
-          "text",
-          "language"
-        ],
-        "title": "TranscribeResponse"
-      },
-      "TransportAsset": {
+      "Transfer": {
         "properties": {
           "id": {
             "type": "string",
+            "format": "uuid",
             "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TransferStatus"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/Patient"
+          },
+          "complaint": {
+            "type": "string",
+            "title": "Complaint"
+          },
+          "origin_id": {
+            "type": "string",
+            "title": "Origin Id"
+          },
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
           },
           "mode": {
             "$ref": "#/components/schemas/TransportMode"
           },
-          "home_facility_id": {
+          "departed_at": {
             "type": "string",
-            "title": "Home Facility Id"
+            "format": "date-time",
+            "title": "Departed At"
+          },
+          "eta": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Eta"
+          },
+          "distance_km": {
+            "type": "number",
+            "title": "Distance Km"
+          },
+          "progress": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "default": 0
+          },
+          "position": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "origin_point": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "destination_point": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "monitoring": {
+            "$ref": "#/components/schemas/Monitoring",
+            "default": {
+              "source": "simulated"
+            }
+          },
+          "sim_profile": {
+            "$ref": "#/components/schemas/SimProfile",
+            "default": {
+              "heart_rate": 92.0,
+              "heart_rate_per_hour": 8.0,
+              "resp_rate": 18.0,
+              "resp_rate_per_hour": 3.0,
+              "hrv_rmssd": 28.0
+            }
+          },
+          "latest": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LatestValue"
+            },
+            "type": "object",
+            "title": "Latest",
+            "default": {}
+          },
+          "news2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/News2Result"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array",
+            "title": "Alerts",
+            "default": []
+          },
+          "briefing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Briefing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acceptance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Acceptance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interventions": {
+            "items": {
+              "$ref": "#/components/schemas/Intervention"
+            },
+            "type": "array",
+            "title": "Interventions",
+            "default": []
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          },
+          "vitals": {
+            "items": {
+              "$ref": "#/components/schemas/VitalsReading"
+            },
+            "type": "array",
+            "title": "Vitals",
+            "default": []
+          },
+          "arrived_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrived At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "region_id",
+          "created_at",
+          "updated_at",
+          "status",
+          "patient",
+          "complaint",
+          "origin_id",
+          "destination_id",
+          "mode",
+          "departed_at",
+          "eta",
+          "distance_km",
+          "position",
+          "origin_point",
+          "destination_point"
+        ],
+        "title": "Transfer"
+      },
+      "TransferListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "available",
-              "busy",
-              "offline"
-            ],
-            "title": "Status"
+            "$ref": "#/components/schemas/TransferStatus"
           },
-          "crew_note": {
+          "patient": {
+            "$ref": "#/components/schemas/Patient"
+          },
+          "complaint": {
+            "type": "string",
+            "title": "Complaint"
+          },
+          "suspected_condition": {
             "anyOf": [
               {
                 "type": "string"
@@ -4804,27 +2400,137 @@
                 "type": "null"
               }
             ],
-            "title": "Crew Note"
+            "title": "Suspected Condition"
+          },
+          "origin_id": {
+            "type": "string",
+            "title": "Origin Id"
+          },
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TransportMode"
+          },
+          "eta": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Eta"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "news2_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "News2 Total"
+          },
+          "news2_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "News2 Band"
+          },
+          "alert_level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heart_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate"
+          },
+          "resp_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resp Rate"
+          },
+          "monitoring": {
+            "$ref": "#/components/schemas/MonitoringSource"
+          },
+          "unanswered_questions": {
+            "type": "integer",
+            "title": "Unanswered Questions"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
           }
         },
         "type": "object",
         "required": [
           "id",
+          "code",
+          "region_id",
+          "status",
+          "patient",
+          "complaint",
+          "suspected_condition",
+          "origin_id",
+          "destination_id",
           "mode",
-          "home_facility_id",
-          "status"
+          "eta",
+          "progress",
+          "news2_total",
+          "news2_band",
+          "alert_level",
+          "heart_rate",
+          "resp_rate",
+          "monitoring",
+          "unanswered_questions",
+          "updated_at"
         ],
-        "title": "TransportAsset"
+        "title": "TransferListItem"
+      },
+      "TransferStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "arrived",
+          "closed"
+        ],
+        "title": "TransferStatus"
       },
       "TransportMode": {
         "type": "string",
         "enum": [
-          "ground",
-          "speedboat",
-          "sea_ambulance",
-          "seaplane",
-          "fixed_wing",
-          "helicopter"
+          "road",
+          "boat",
+          "helicopter",
+          "plane"
         ],
         "title": "TransportMode"
       },
@@ -4841,28 +2547,9 @@
             "type": "number",
             "title": "Speed Kmh"
           },
-          "dispatch_min": {
+          "detour": {
             "type": "number",
-            "title": "Dispatch Min"
-          },
-          "handover_min": {
-            "type": "number",
-            "title": "Handover Min"
-          },
-          "medic_onboard": {
-            "type": "boolean",
-            "title": "Medic Onboard",
-            "default": false
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "default": true
-          },
-          "constraints": {
-            "type": "string",
-            "title": "Constraints",
-            "default": ""
+            "title": "Detour"
           }
         },
         "type": "object",
@@ -4870,106 +2557,9 @@
           "mode",
           "label",
           "speed_kmh",
-          "dispatch_min",
-          "handover_min"
+          "detour"
         ],
         "title": "TransportModeInfo"
-      },
-      "TransportState": {
-        "properties": {
-          "route_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Route Id"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "none",
-              "dispatched",
-              "in_transit",
-              "arrived"
-            ],
-            "title": "Status",
-            "default": "none"
-          },
-          "current_leg_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Current Leg Index"
-          },
-          "position": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/GeoPoint"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "eta": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Eta"
-          },
-          "asset_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Asset Ids",
-            "default": []
-          },
-          "route": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RouteOption"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "dispatched_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Dispatched At"
-          },
-          "legs_completed": {
-            "type": "integer",
-            "title": "Legs Completed",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "TransportState"
       },
       "TrendBucket": {
         "properties": {
@@ -4999,6 +2589,17 @@
               }
             ],
             "title": "Rr"
+          },
+          "hrv": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hrv"
           },
           "spo2": {
             "anyOf": [
@@ -5127,6 +2728,37 @@
         ],
         "title": "ValidationError"
       },
+      "VitalsAck": {
+        "properties": {
+          "news2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/News2Result"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/Alert"
+            },
+            "type": "array",
+            "title": "Alerts"
+          },
+          "monitoring": {
+            "$ref": "#/components/schemas/Monitoring"
+          }
+        },
+        "type": "object",
+        "required": [
+          "news2",
+          "alerts",
+          "monitoring"
+        ],
+        "title": "VitalsAck"
+      },
       "VitalsReading": {
         "properties": {
           "id": {
@@ -5134,10 +2766,10 @@
             "format": "uuid",
             "title": "Id"
           },
-          "case_id": {
+          "transfer_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Case Id"
+            "title": "Transfer Id"
           },
           "recorded_at": {
             "type": "string",
@@ -5168,6 +2800,17 @@
               }
             ],
             "title": "Resp Rate"
+          },
+          "hrv_rmssd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hrv Rmssd"
           },
           "spo2": {
             "anyOf": [
@@ -5234,17 +2877,6 @@
             ],
             "title": "Confidence"
           },
-          "media_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Media Url"
-          },
           "low_quality": {
             "type": "boolean",
             "title": "Low Quality",
@@ -5254,85 +2886,165 @@
         "type": "object",
         "required": [
           "id",
-          "case_id",
+          "transfer_id",
           "recorded_at",
           "source"
         ],
         "title": "VitalsReading"
       },
-      "VitalsSource": {
-        "type": "string",
-        "enum": [
-          "presage",
-          "manual",
-          "device",
-          "mock"
-        ],
-        "title": "VitalsSource"
-      },
-      "Weather": {
+      "VitalsRequest": {
         "properties": {
-          "sea_state": {
-            "type": "integer",
-            "maximum": 9.0,
-            "minimum": 0.0,
-            "title": "Sea State",
-            "default": 2
+          "source": {
+            "$ref": "#/components/schemas/VitalsSource",
+            "default": "manual"
           },
-          "wind_kt": {
-            "type": "number",
-            "title": "Wind Kt",
-            "default": 10
-          },
-          "visibility_km": {
-            "type": "number",
-            "title": "Visibility Km",
-            "default": 10
-          }
-        },
-        "type": "object",
-        "title": "Weather"
-      },
-      "WeatherPatch": {
-        "properties": {
-          "sea_state": {
+          "recorded_at": {
             "anyOf": [
               {
-                "type": "integer",
-                "maximum": 9.0,
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded At"
+          },
+          "heart_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": 10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate"
+          },
+          "resp_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 80.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resp Rate"
+          },
+          "hrv_rmssd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 500.0,
                 "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Sea State"
+            "title": "Hrv Rmssd"
           },
-          "wind_kt": {
+          "spo2": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 40.0
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Wind Kt"
+            "title": "Spo2"
           },
-          "visibility_km": {
+          "on_oxygen": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Visibility Km"
+            "title": "On Oxygen"
+          },
+          "systolic_bp": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": 30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Systolic Bp"
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 45.0,
+                "minimum": 25.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "consciousness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Consciousness"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
           }
         },
         "type": "object",
-        "title": "WeatherPatch"
+        "title": "VitalsRequest"
+      },
+      "VitalsSource": {
+        "type": "string",
+        "enum": [
+          "presage",
+          "manual",
+          "simulated"
+        ],
+        "title": "VitalsSource"
       }
     }
   }

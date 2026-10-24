@@ -63,6 +63,23 @@ PROFILES = [
 ]
 
 
+def describe(r: VitalsReading) -> str:
+    """'SpO₂ 95%, on air, BP 104, T 36.8 °C, ACVPU A' — for the timeline."""
+    parts: list[str] = []
+    for field, fmt in [
+        ("heart_rate", "HR {:g}"), ("resp_rate", "RR {:g}"), ("spo2", "SpO₂ {:g}%"), ("systolic_bp", "BP {:g}"),
+        ("temperature_c", "T {:g} °C"),
+    ]:
+        v = getattr(r, field)
+        if v is not None:
+            parts.append(fmt.format(v))
+    if r.on_oxygen is not None:
+        parts.append("on oxygen" if r.on_oxygen else "on air")
+    if r.consciousness is not None:
+        parts.append(f"ACVPU {r.consciousness.value}")
+    return ", ".join(parts)
+
+
 def profile_for(complaint: str) -> SimProfile:
     import re
 
@@ -194,9 +211,7 @@ class TransferService:
         if reading.source in (VitalsSource.presage, VitalsSource.simulated):
             t.monitoring.last_reading_at = reading.recorded_at
         if reading.source == VitalsSource.manual:
-            parts = [f"{k.replace('_', ' ')} {v.value if hasattr(v, 'value') else v}" for k, v in data.items()
-                     if v is not None and k not in ("source", "confidence")]
-            await self._note(t, Author.crew, NoteKind.event, "Vitals entered: " + ", ".join(parts), at=reading.recorded_at)
+            await self._note(t, Author.crew, NoteKind.event, "Vitals entered: " + describe(reading), at=reading.recorded_at)
         await self._reassess(t)
         return reading
 
@@ -209,9 +224,11 @@ class TransferService:
         fc = forecast(trend, now, t.eta)
         before = t.alerts
         t.alerts = alerts_mod.evaluate(t.news2, t.latest, fc, before, now)
-        for a in alerts_mod.new_alerts(before, t.alerts):
+        announce = alerts_mod.new_alerts(before, t.alerts, t.alerts_announced, now)
+        for a in announce:
+            t.alerts_announced[a.code] = now
             await self._note(t, Author.system, NoteKind.alert, a.text)
-        changed = (t.news2.total if t.news2 else None) != before_total or bool(alerts_mod.new_alerts(before, t.alerts))
+        changed = (t.news2.total if t.news2 else None) != before_total or bool(announce)
         if changed:
             await self._template_briefing(t, keep_gemini=True)
             self._schedule_briefing(t.id)
@@ -406,7 +423,7 @@ class TransferService:
                 return float(lv.value) if lv is not None and isinstance(lv.value, (int, float)) and not isinstance(lv.value, bool) else None
 
             items.append(TransferListItem(
-                id=t.id, code=t.code, status=t.status, patient=t.patient, complaint=t.complaint,
+                id=t.id, code=t.code, region_id=t.region_id, status=t.status, patient=t.patient, complaint=t.complaint,
                 suspected_condition=t.briefing.suspected_condition if t.briefing else None,
                 origin_id=t.origin_id, destination_id=t.destination_id, mode=t.mode, eta=t.eta, progress=t.progress,
                 news2_total=t.news2.total if t.news2 else None, news2_band=t.news2.band if t.news2 else None,

@@ -13,7 +13,7 @@ from app.core.news2 import partial_label
 from app.models import Briefing, Extraction, Transfer
 
 SUSPECTED = [
-    ("Suspected STEMI / acute coronary syndrome", r"chest pain|crushing|st elevation|stemi|left arm"),
+    ("Suspected STEMI / acute coronary syndrome", r"chest pain|crushing chest|st elevation|stemi"),
     ("Suspected stroke", r"slurred|facial droop|face.*droop|one.sided weakness|weakness of the (left|right)|stroke"),
     ("Major trauma / haemorrhage", r"fell|fall from|fracture|bleeding heavily|heavy bleeding|crash|stab"),
     ("Postpartum haemorrhage", r"gave birth|postpartum|after (the )?birth"),
@@ -53,7 +53,8 @@ def inputs(t: Transfer, origin: str, destination: str, mode_label: str, tz: str)
         "news2": {"total": t.news2.total, "band": t.news2.band, "complete": t.news2.complete} if t.news2 else None,
         "active_alerts": [a.text for a in t.alerts],
         "interventions": [f"{fmt_local(i.at, tz)} {i.text}" for i in t.interventions],
-        "crew_notes": [f"{fmt_local(n.at, tz)} {n.text}" for n in t.notes if n.author.value == "crew"][-8:],
+        "crew_notes": [f"{fmt_local(n.at, tz)} {n.text}" for n in t.notes
+                       if n.author.value == "crew" and n.kind.value in ("voice", "text", "answer")][-8:],
         "hospital_questions": [
             {"q": n.text, "answered": any(m.reply_to == n.id for m in t.notes)} for n in t.notes if n.kind.value == "question"
         ],
@@ -88,7 +89,8 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
         assessment += " Alerts: " + "; ".join(a.text for a in t.alerts) + "."
     rec = []
     if t.interventions:
-        rec.append("Given: " + "; ".join(i.text for i in t.interventions[-3:]) + ".")
+        given = [re.sub(r"^(gave|given|administered)\s+", "", i.text, flags=re.I) for i in t.interventions[-3:]]
+        rec.append("Already given: " + "; ".join(given) + ".")
     if suspected and "STEMI" in suspected:
         rec.append("Consider cath lab activation on arrival.")
     elif suspected and "stroke" in suspected.lower():
@@ -113,12 +115,17 @@ OBSERVATION = re.compile(r"\b(pain [^.;,]*|sweat\w*|vomit\w*|pale|clammy|drowsy|
                          r"st elevation[^.;,]*|facial droop[^.;,]*|blood glucose [^.;,]*)", re.I)
 
 
+def _cap(s: str) -> str:
+    s = s.strip()
+    return s[:1].upper() + s[1:]
+
+
 def extract(text: str) -> Extraction:
     interventions: list[str] = []
     for m in INTERVENTION.finditer(text):
-        interventions.append(m.group(0).strip().capitalize())
+        interventions.append(_cap(m.group(0)))
     if not interventions:
-        interventions = [m.group(0).strip().capitalize() for m in DRUGS.finditer(text)
+        interventions = [_cap(m.group(0)) for m in DRUGS.finditer(text)
                          if not re.search(r"\bnot on\b|\bno\b", text[max(0, m.start() - 8): m.start()], re.I)]
-    observations = [m.group(0).strip().capitalize() for m in OBSERVATION.finditer(text)]
+    observations = [_cap(m.group(0)) for m in OBSERVATION.finditer(text)]
     return Extraction(observations=list(dict.fromkeys(observations))[:6], interventions=list(dict.fromkeys(interventions))[:4])
