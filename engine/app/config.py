@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     elevenlabs_voice_crew: str = ""
     elevenlabs_voice_hospital: str = ""
 
+    # Presage bridge (presage-bridge/): live frames from a laptop camera, and recorded clips from phones (file mode)
+    presage_bridge_url: str = "http://127.0.0.1:8787"
+
     storage_mode: str = "local"  # local | s3
     storage_local_dir: str = str(ENGINE_DIR / "var" / "storage")
     s3_endpoint: str = ""

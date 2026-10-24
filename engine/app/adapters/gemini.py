@@ -58,9 +58,10 @@ class GeminiAdapter:
 
     def _get_client(self):
         if self._client is None:
-            from google import genai
+            # one client for the whole engine: AI Studio or Agent Platform keys (GEMINI_USE_ENTERPRISE), with timeouts
+            from app.intake.gemini_client import make_client
 
-            self._client = genai.Client(api_key=self.settings.gemini_api_key)
+            self._client = make_client(api_key=self.settings.gemini_api_key)
         return self._client
 
     async def _generate(
