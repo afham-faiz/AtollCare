@@ -4,14 +4,18 @@ Remote emergency transfers (island, rural, maritime, mountain) can mean 30 minut
 ambulance or aircraft before the patient reaches the hospital that can treat them. Usually the receiving team learns
 almost nothing until the doors open.
 
-AtollCare is two connected screens:
+AtollCare is three connected screens. What's captured once is never asked again:
 
-- **Crew** (`/crew`): a tablet or laptop on a mount in the vehicle. **Presage** reads heart rate, breathing rate and HRV
-  from the camera, hands-free. The crew speak their notes (ElevenLabs Scribe), and the notes become a structured
-  handoff. One tap sends it.
+- **Pre-arrival** (`/pre-arrival`): the companion's phone, before anyone reaches the health centre. Three steps: a
+  60-second video of the patient (**Presage** heart and breathing rate; **Gemini** checks it frame by frame for visible
+  signs and cites the frames), what happened in their own words (spoken or typed), and an optional ID photo. Nothing
+  reaches the health centre until they press Send.
+- **Crew** (`/crew`): picks up a sent packet and starts the transfer from it, or starts one from scratch. Contactless
+  vitals come from **60-second scans on a propped-up phone** (the default on phones) or the **live camera** on a mounted
+  tablet or laptop. The crew speak their notes, and the notes become a structured handoff. One tap sends it.
 - **Hospital** (`/hospital`): who's arriving, how sick they are, what's been given, measurements with their source,
-  an SBAR briefing, the ETA, and one primary decision: **Accept**. Questions typed here are spoken aloud in the
-  vehicle. The acceptance, and what's being prepared, shows up on the crew screen.
+  what was seen on video (with the frame), the companion's account and ID, an SBAR briefing, the ETA, and one primary
+  decision: **Accept**. Questions typed here are spoken aloud in the vehicle.
 
 Region-neutral: regions are JSON data packs. The Maldives and the Scottish Western Isles ship as examples.
 Product brief: [`docs/BRIEF.md`](docs/BRIEF.md). Decision support only. Every clinical number in the demo is
@@ -20,23 +24,32 @@ illustrative.
 ## Architecture
 
 ```
-vehicle laptop / tablet                             Vultr VM (Docker Compose, Caddy HTTPS)
-┌──────────────────────────────┐                    ┌────────────────────────────────────────────┐
-│ browser: crew screen         │── /api (HTTPS) ───►│ engine  FastAPI · NEWS2 · alerts · SBAR     │
-│   camera frames (RGBA, WS)   │                    │         sim clock · region packs            │
-│        ▼              ▲      │                    │         adapters: gemini · elevenlabs · s3  │
-│ presage-bridge  HR/RR/HRV    │── stable vitals ──►│ db      TimescaleDB / Tiger Cloud           │
-│ (@smartspectra/node-sdk)     │   every 5 s        │         (in-memory when DATABASE_URL empty) │
-└──────────────────────────────┘                    │ web     Next.js 16                          │
-         video never leaves the vehicle             └────────────────────────────────────────────┘
+companion's / crew's phone ── 60 s clip (upload) ──┐
+                                                   ▼
+vehicle laptop / tablet (live mode)          engine  FastAPI · NEWS2 · alerts · SBAR · sim clock · region packs
+┌──────────────────────────────┐                     intake: Percy's services (sign check, ID read, speech)
+│ browser: crew screen         │── /api ───────────► adapters: gemini · elevenlabs · s3
+│   camera frames (RGBA, WS)   │                     db: TimescaleDB / Tiger Cloud (in-memory when empty)
+│        ▼              ▲      │                          │ clip as MJPEG          ▲ HR / RR + quality
+│ presage-bridge  HR/RR/HRV    │◄── POST /vitals/file ────┘                        │
+│ (@smartspectra/node-sdk)     │──────────────── stable vitals every 5 s (live) ───┘
+└──────────────────────────────┘
 hospital browser ── /hospital ── polls /api every 2 s (SWR)
 ```
+
+A scan's clip is analysed in memory and never stored: Gemini's sign check and Presage's measurement run in parallel,
+and only the frames a finding cites are kept. One SmartSpectra session runs at a time; a clip takes over a live session.
 
 - The **engine owns the data and the clinical logic**. Next.js only calls `/api/*`, so keys stay server-side.
 - **One source of truth for types:** Pydantic models in `engine/app/models.py` → OpenAPI → `web/src/lib/api-types.ts`
   (`bun run gen:api`).
+- **Packet lifecycle:** `draft` (only the companion's phone sees it) → `sent` (listed for the crew) → `started` (copied
+  into the transfer, read-only from then on).
 - **Transfer lifecycle:** `preparing` (crew only) → `pending` (handoff sent; the hospital sees it) → `accepted` →
   `arrived` → `closed`.
+- **Scans become readings once.** A finished scan's heart and breathing rate become two Presage readings, timed when
+  the clip was recorded, each with its own signal quality (below 0.6 is shown but not scored). Each scan also adds one
+  line to the timeline: what was measured, what was seen, and what was described but not seen.
 - **Honest provenance:** every vital carries its source (`presage`, `manual` or `simulated`) and a timestamp. Simulated
   values are labelled *Simulated* on both screens and "(simulated)" in the SBAR, and get no clinical status word.
 - **Only measured values score.** NEWS2, alerts and the deterioration forecast use Presage and crew readings only;
@@ -65,6 +78,11 @@ cd presage-bridge && npm install && PRESAGE_API_KEY=... ENGINE_URL=http://localh
 Then open the crew screen in Chrome or Edge and allow the camera. Camera and microphone need a secure context
 (`localhost` or HTTPS). Embedded preview panes, such as an editor's built-in browser, usually block capture. Details:
 [`presage-bridge/README.md`](presage-bridge/README.md).
+
+**Scans** (pre-arrival and crew) need the same bridge running: the engine sends each clip to its `/vitals/file`
+(`PRESAGE_BRIDGE_URL`, default `http://127.0.0.1:8787`). Without it, scans still run Gemini's sign check and say
+plainly that heart and breathing rate weren't measured. To try the phone flow on a real phone, serve the web app over
+HTTPS (the Vultr deploy, or a tunnel); a phone can't use the camera on a plain `http://` LAN address.
 
 ### With Tiger Data locally (TimescaleDB in Docker)
 
@@ -116,7 +134,9 @@ See [`.env.example`](.env.example). Each adapter has a `mock` mode, and a missin
 | `DATABASE_URL` | engine | Postgres / TimescaleDB / Tiger Cloud. Empty → in-memory store |
 | `GEMINI_MODE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | engine | `real` → Gemini writes the SBAR and extracts interventions (fallback model when the primary is overloaded); otherwise template + rules |
 | `ELEVENLABS_MODE`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_CREW`, `ELEVENLABS_VOICE_HOSPITAL` | engine | `real` → Scribe transcribes voice notes; hospital messages are spoken with ElevenLabs TTS. Otherwise the browser's own speech recognition and synthesis |
-| `STORAGE_MODE` (`local`/`s3`), `S3_*` | engine | Where TTS audio is cached |
+| `GEMINI_VQA_MODEL`, `VQA_MODE`, `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES`, `GEMINI_VQA_THINKING` | engine | The scan's sign check (Percy's settings): model, one-pass or two-step, frame sampling, thinking level (`low` by default: ~20 s instead of up to 2 min) |
+| `PRESAGE_BRIDGE_URL` | engine | Where scans are measured (`/vitals/file`) |
+| `STORAGE_MODE` (`local`/`s3`), `S3_*` | engine | Where TTS audio and the evidence frames a finding cites are kept |
 | `DEFAULT_REGION`, `DEFAULT_SPEED_MULTIPLIER` | engine | Demo defaults |
 | `HOST_LABEL`, `HOST_REGION` | engine | Only if Vultr's metadata service isn't reachable from the container |
 | `NEXT_PUBLIC_ENGINE_URL`, `ENGINE_INTERNAL_URL` | web | API base for the browser / for the Next.js proxy |
@@ -151,15 +171,16 @@ vehicle and points its `ENGINE_URL` at the public HTTPS URL.
 
 | Track | Role | Where |
 |---|---|---|
-| **Presage** (main) | Live HR, RR, HRV, breathing waveform and framing hints from a mounted camera | `presage-bridge/`, `web/src/lib/presage.ts`, `crew/[transferId]/CameraInstrument.tsx` |
-| ElevenLabs | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
-| Gemini | Live SBAR from vitals + notes; interventions extracted from speech | `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
+| **Presage** (main) | On a phone: HR and RR from a 60 s clip, with per-vital signal quality. On a mount: live HR, RR, HRV, breathing waveform and framing hints | `presage-bridge/` (`/vitals/file`, `/ws`), `engine/app/intake/rppg_extractor.py`, `components/(scan)/`, `crew/[transferId]/CameraInstrument.tsx` |
+| Gemini | Visible signs checked frame by frame with cited frames; ID read; companion's account condensed; live SBAR; interventions extracted from speech | `engine/app/intake/`, `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
+| ElevenLabs | Speech to text (Scribe, Gemini as fallback); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
 | Tiger Data | Hypertables, measured-only `vitals_1m` → trend + forecast, network aggregates, columnar compression, Network insights with a live benchmark | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |
 | Vultr | Compute + Caddy HTTPS, region shown from instance metadata, optional Object Storage | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh`, `docs/DEPLOY_VULTR.md` |
 
 ## Docs
 
-[`docs/BRIEF.md`](docs/BRIEF.md) product brief · [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md) deploy runbook ·
+[`docs/BRIEF.md`](docs/BRIEF.md) product brief · [`docs/PART1.md`](docs/PART1.md) Percy's pre-arrival services and
+how they're wired in · [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md) deploy runbook ·
 [`docs/FEATURES.md`](docs/FEATURES.md) what's built and how it was
 verified · [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) what isn't verified · [`docs/PITCH.md`](docs/PITCH.md) demo
 script · [`docs/DEV_POST.md`](docs/DEV_POST.md) write-up draft · [`docs/CONCEPT.md`](docs/CONCEPT.md) and

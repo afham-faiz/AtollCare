@@ -1,17 +1,31 @@
-# Feature checklist (v2: two screens + network insights)
+# Feature checklist (pre-arrival + crew + hospital + network insights)
 
 ✅ built and exercised · ⚠️ built, not verified end to end (see the note) · ❌ not built.
 
-**How it was verified:** 88 engine tests, run against both the in-memory store and TimescaleDB 2.31 / Postgres 17
-(`TEST_DATABASE_URL`); 7 web unit tests (`bun run test`); `scripts/demo_e2e.py` against a live engine; `ruff check`,
+**How it was verified:** 189 engine tests (94 of them Percy's, in `tests/intake/`), run against both the in-memory store
+and TimescaleDB 2.31 / Postgres 17 (`TEST_DATABASE_URL`); 7 web unit tests (`bun run test`); `scripts/demo_e2e.py` against a live engine; `ruff check`,
 `bun run typecheck`, `lint` and `build`; production images built and smoke-tested; browser passes at 1440×900,
 1024×768 and 390×844. Real Gemini and ElevenLabs calls verified; camera and mic seen working in Chrome by a teammate.
+
+## Pre-arrival — `/pre-arrival`, `/pre-arrival/[intakeId]` (companion's phone)
+
+| Feature | Status | Files |
+|---|---|---|
+| Choose the health centre, get a packet code (PA-XXXX) | ✅ | `pre-arrival/PreArrivalStartClient.tsx`, `services/intakes.py` |
+| Record ~60 s (back camera, countdown ring, breathing-window coaching) or upload a video | ⚠️ upload ✅; recording not tried on a real phone | `components/(scan)/ScanRecorder.tsx` |
+| Scan result as it lands: Presage HR / RR with signal quality; Gemini's signs with cited frames; "described but not seen" vs "couldn't show it" | ⚠️ no real face scanned yet | `components/(scan)/ScanResult.tsx`, `intake/vqa_evaluator.py` |
+| What happened: speak (Scribe, Gemini fallback) or type; condensed to one line; age and sex taken when stated | ✅ typed · ⚠️ spoken | `AccountCapture.tsx`, `adapters/gemini.py` |
+| ID photo read by Gemini; "check by eye" when anything is unclear | ⚠️ needs a specimen card | `IdCapture.tsx`, `intake/ocr_service.py` |
+| Send (nothing reaches the health centre before); sent screen with the code | ✅ | `PreArrivalClient.tsx` |
 
 ## Crew screen — `/crew`, `/crew/[transferId]`
 
 | Feature | Status | Files |
 |---|---|---|
 | Start a transfer: "What's happening" (type or dictate), age, sex, from → to, transport | ✅ | `crew/CrewStartClient.tsx` |
+| "Sent ahead from a phone": sent packets with what they hold; start the transfer from one (account, ID, video carried over) | ✅ | `crew/SentAhead.tsx`, `services/intakes.py` |
+| Contactless vitals by 60 s scan (default on phones) or live camera; the choice is on the timeline | ✅ · ⚠️ real face | `crew/[transferId]/ScanStage.tsx`, `CrewClient.tsx` |
+| "Sent ahead" sheet: the companion's account, ID and video results | ✅ | `components/(scan)/PreArrivalPanel.tsx` |
 | Monitor hierarchy: patient + status → camera instrument → vitals → note dock → next action; fits 1024×768 | ✅ | `crew/[transferId]/CrewClient.tsx` |
 | Camera instrument: face + upper-chest guide, acquiring sweep, framing hints, 30 s breathing settle | ⚠️ live phases need a Presage measurement | `CameraInstrument.tsx`, `lib/presage.ts` |
 | Says why it isn't measuring (API key missing / bridge offline / unavailable); blocked / busy / no-camera states; any-size camera fallback | ✅ | `CameraInstrument.tsx`, `lib/presage.ts` |
@@ -32,7 +46,8 @@
 | Feature | Status | Files |
 |---|---|---|
 | Incoming rail; only handed-off transfers appear | ✅ | `hospital/HospitalClient.tsx`, `services/transfers.py` |
-| Hero: working impression with its source and the crew's words; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
+| Hero: working impression with its source and the words it came from (crew or companion); name from the ID, marked "check by eye"; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
+| "Seen on video" beside the handoff (frame thumbnail per sign); Video & ID tab with every scan | ✅ · ⚠️ no "seen" sign from a real clip yet | `TransferDetail.tsx`, `components/(scan)/PreArrivalPanel.tsx` |
 | Container-query layout (rail-aware); sticky decision bar on phones | ✅ | `hospital/Hospital.module.scss` |
 | Vitals strip with status word, source and freshness; simulated muted | ✅ | `TransferDetail.tsx` |
 | Handoff: SBAR (Gemini or template, labelled) + "Given" list | ✅ | `components/(transfer)/SbarDocument.tsx` |
@@ -57,6 +72,9 @@
 | Feature | Status | Files |
 |---|---|---|
 | Lifecycle `preparing → pending → accepted → arrived → closed` | ✅ | `services/transfers.py` |
+| Packets `draft → sent → started`; read-only once started | ✅ | `services/intakes.py`, `migrations/003_intakes.sql` |
+| Scans: clip analysed in memory, Gemini + Presage in parallel, only cited frames stored; readings written once, timed at recording; one timeline line per scan | ✅ | `services/intakes.py` (`ScanRunner`), `services/transfers.py` |
+| Percy's services as engine modules (sign check, ID read, transcription, clip measurement) | ✅ | `engine/app/intake/`, `docs/PART1.md` |
 | NEWS2, forecast, alerts with hysteresis — measured readings only | ✅ | `core/`, `services/transfers.py` |
 | SBAR: Gemini with template fallback; "(simulated)" labelling | ✅ | `core/briefing.py`, `adapters/gemini.py` |
 | Gemini fallback model; extraction tries the fast model first under a 5 s deadline | ✅ | `adapters/gemini.py`, `tests/test_gemini.py` |
@@ -79,4 +97,5 @@
 | Feature | Status |
 |---|---|
 | Frame protocol (tested on the browser side), `useCustomInput` + `sendFrame` into the official SDK | ⚠️ SDK ready with a real key; live measurement not yet observed |
+| `POST /vitals/file`: a clip (MJPEG) measured with `useFile`; human-readable hints; one SDK session at a time | ✅ runs end to end (test pattern → "No face found") · ⚠️ real face |
 | Metrics, hints, status to the browser; stable vitals to the engine every 5 s; heartbeat | ⚠️ as above |

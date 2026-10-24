@@ -84,7 +84,35 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 
 **Hands off:** a **pre-arrival packet** (identity, early vital cues, observations, companion's account) sent to the health centre before the patient walks in. The ID and slot check is done in advance.
 
-### Running the Part 1 prototype
+### In the integrated app (branch `integration/part1`)
+
+Percy's services run unchanged in logic inside the engine, as modules, and feed the same transfer the crew and hospital
+already use. Nothing is captured twice: the packet becomes the transfer's `pre_arrival`, the account becomes the first
+timeline entry, and the video's heart and breathing rate become Presage readings timed when it was recorded.
+
+| Percy's module (`src/…` on `user-branch`) | Now | Used by |
+|---|---|---|
+| `vqa_evaluator`, `cue_planner`, `data/cue_catalogue.json` | `engine/app/intake/` | Every scan (pre-arrival and crew): signs checked frame by frame, each "seen" citing frames, "described but not seen" kept |
+| `rppg_extractor` + `presage-sidecar` | `engine/app/intake/rppg_extractor.py` → `presage-bridge` `POST /vitals/file` | Same scans. One bridge serves both the live camera and clips; his insight (the SDK can't read H.264) is kept: clips go as MJPEG |
+| `ocr_service` | `engine/app/intake/ocr_service.py` | Pre-arrival step 3 (ID photo). Age worked out in code; "needs review" shown as "check by eye" |
+| `transcription` | `engine/app/intake/transcription.py` | Pre-arrival step 2, as the fallback when ElevenLabs Scribe isn't configured |
+| `video_prep`, `gemini_client`, `config`, `schemas` | `engine/app/intake/` | Shared. Settings keep his names and are read from the root `.env` |
+
+| Screen | Route | What it does |
+|---|---|---|
+| Pre-arrival (companion's phone) | `/pre-arrival` | Choose the health centre → record ~60 s → say or type what happened → optional ID photo → Send. Results land as they finish |
+| Crew | `/crew` | "Sent ahead from a phone" lists sent packets; one tap starts the transfer. 60 s scans on a phone, or the live camera on a mount |
+| Hospital | `/hospital` | "Seen on video" beside the handoff, and a Video & ID tab with the account, the ID and every scan with its frames |
+
+API: `POST /api/intakes`, `PATCH /api/intakes/{id}`, `POST /api/intakes/{id}/scans` (video), `/account/voice` (audio),
+`/id-photo` (image), `/send`, `/transfer`; `POST /api/transfers/{id}/scans` for crew scans. Tests:
+`engine/tests/intake/` (his, 94) and `engine/tests/test_intake_api.py` (the flow end to end).
+
+What changed from the prototype: the video is analysed in memory and never written to disk; only frames a finding
+cites are kept. `SAVE_RECORDINGS`, the `logs/` files and the standalone page are not used here (they remain on
+`user-branch`). `GEMINI_VQA_THINKING=low` was added: the default dynamic thinking sometimes took two minutes.
+
+### Running the standalone Part 1 prototype (on `user-branch`)
 
 **What exists so far**
 
