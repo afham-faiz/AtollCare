@@ -112,32 +112,62 @@
       "lng": 73.02
     }
   ],
-  "example": {
-    "patient": {
-      "label": "Ahmed (demo)",
-      "age": 58,
-      "sex": "M"
+  "cases": [
+    {
+      "id": "mv-chest-pain",
+      "title": "Chest pain on a sea ambulance",
+      "patient": {
+        "label": "Ahmed (demo)",
+        "age": 58,
+        "sex": "M"
+      },
+      "origin_id": "dhiffushi_hc",
+      "destination_id": "igmh",
+      "mode": "boat",
+      "complaint": "Crushing chest pain for 40 minutes, sweating, pain going to the left arm.",
+      "profile": {
+        "heart_rate": 102,
+        "heart_rate_per_hour": 24,
+        "resp_rate": 20,
+        "resp_rate_per_hour": 8,
+        "hrv_rmssd": 22
+      },
+      "baseline_vitals": {
+        "spo2": 95,
+        "on_oxygen": false,
+        "systolic_bp": 104,
+        "temperature_c": 36.8,
+        "consciousness": "A"
+      },
+      "suggested_note": "Twelve-lead shows ST elevation inferiorly. Gave aspirin 300 milligrams. Pain eight out of ten, sweating."
     },
-    "origin_id": "dhiffushi_hc",
-    "destination_id": "igmh",
-    "mode": "boat",
-    "complaint": "Crushing chest pain for 40 minutes, sweating, pain going to the left arm.",
-    "profile": {
-      "heart_rate": 102,
-      "heart_rate_per_hour": 24,
-      "resp_rate": 20,
-      "resp_rate_per_hour": 8,
-      "hrv_rmssd": 22
-    },
-    "baseline_vitals": {
-      "spo2": 95,
-      "on_oxygen": false,
-      "systolic_bp": 104,
-      "temperature_c": 36.8,
-      "consciousness": "A"
-    },
-    "notes": [
-      "12-lead ECG shows ST elevation in the inferior leads. Gave aspirin 300 mg at departure. Pain 8 out of 10."
-    ]
-  }
+    {
+      "id": "mv-trauma",
+      "title": "Fall from height, open leg fracture",
+      "patient": {
+        "label": "Ibrahim (demo)",
+        "age": 34,
+        "sex": "M"
+      },
+      "origin_id": "dhangethi_hc",
+      "destination_id": "igmh",
+      "mode": "plane",
+      "complaint": "Fell from a coconut tree 20 minutes ago. Open fracture of the left leg, heavy bleeding.",
+      "profile": {
+        "heart_rate": 118,
+        "heart_rate_per_hour": 18,
+        "resp_rate": 22,
+        "resp_rate_per_hour": 6,
+        "hrv_rmssd": 18
+      },
+      "baseline_vitals": {
+        "spo2": 94,
+        "on_oxygen": false,
+        "systolic_bp": 96,
+        "temperature_c": 36.4,
+        "consciousness": "A"
+      },
+      "suggested_note": "Tourniquet applied to the left thigh. Gave one litre of saline. Pale and clammy."
+    }
+  ]
 }

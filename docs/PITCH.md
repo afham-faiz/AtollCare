@@ -1,63 +1,64 @@
-# Pitch — 3 minutes
+# Pitch: 3 minutes
 
-**Setup before going on stage:** `/demo` → Reset → tick *Autoplay* → speed 1× → open `/demo?view=split` on the stage
-screen, `/report` on a phone (HTTPS URL), `/hospital` and `/transport` in tabs. Have a teammate ready to be scanned.
+**Before going on stage**
+
+- Crew laptop on a stand, camera angled at a teammate reclining as the patient (face and upper chest in view, lit from
+  the front). The Presage bridge runs on it with a real key. Chrome or Edge, camera and mic allowed.
+- Second screen (or laptop) on `/hospital`, showing "No incoming transfers".
+- On the crew laptop: **Ctrl + .** → Reset → **Chest pain on a sea ambulance**. The crew screen opens in *Preparing
+  handoff*. Close the panel.
+- Speed 1×. Voice on. Volume up on the crew laptop.
 
 ## Script
 
-**1 · Problem (20 s)** — Map of the Maldives. "Around 190 inhabited islands spread over 90,000 km² of ocean. When a
-fisherman on Isdhoo has a heart attack at 9 pm, the delay isn't medicine — it's handoffs. Health centre calls the
-atoll hospital, who calls Malé, who calls for approval, who calls a boat. Each waits for the last."
+**1 · Problem (20 s).** "A heart attack on an outer island: an hour or more on a sea ambulance before the hospital
+that can treat it. The team waiting at the other end learns almost nothing until the doors open. The crew have both
+hands on the patient. Nobody's typing."
 
-**2 · Island (60 s)** — On the phone: *Raise medical alert* → read out the case code. Hold to speak: "crushing chest
-pain for 40 minutes, sweating, pain in the left arm" (ElevenLabs Scribe). Analyse → Gemini structured intake: red flags,
-STEMI 85 %. Camera scan the teammate (Presage) → HR/RR land in NEWS2 as a *partial* score. Send to doctor →
-recommendation in seconds. Point at the *why*: "Seaplane rejected — night, after sunset 18:15. Sea ambulance to Malé
-breaches the 120-minute PCI window. So: speedboat to Gan Regional for fibrinolysis in 51 minutes, then fixed-wing
-Kadhdhoo → Hulhulé → IGMH."
+**2 · Crew screen (70 s).**
+- "This is the tablet on the wall of the boat. The camera is a medical instrument now." Point at the guide: face and
+  upper chest. The capsule goes *Presage · acquiring*, then heart rate and breathing appear as **Presage · live**, and
+  the breathing waveform moves. "No sensors on the patient. That's Presage."
+- Tap the mic and say: *"Gave aspirin 300 milligrams and GTN spray, oxygen four litres, pain eight out of ten."* Tap
+  again. The words turn into chips: **Aspirin 300 mg · GTN spray · Oxygen 4 litres · Pain 8 out of 10**. "ElevenLabs
+  Scribe hears it. Gemini structures it."
+- **Send handoff.** The review sheet shows urgency, key vitals with where each number came from, and the SBAR.
+  **Send to IGMH**. The status chip flies to *Handoff sent*.
 
-> Night scenario during a daytime pitch: load **Night-time heart attack, Laamu** in `/demo` (sets the sim clock to
-> 21:00) and use its case on the phone, or press *Night 21:00*.
+**3 · Hospital screen (50 s).**
+- The row arrives and highlights. Open it: *Suspected STEMI*, NEWS2, arrival time, and every vital with its source
+  and age. "The patient's story arrived before the patient."
+- **Ask the crew** → *On blood thinners?* The crew laptop says it out loud. The crew answer by voice. The answer
+  appears under the question.
+- **Accept transfer** → prepare *Cath lab* → message *"Come straight to the cath lab."*
 
-**3 · Hospital (40 s)** — Stage screen: inbox row pulses red. Open it: SBAR written for the specialist, vitals trend
-from Tiger Data's continuous aggregate with a hedged forecast, every route the engine considered and why it rejected
-it. One click: **Accept**.
+**4 · Back to the crew (20 s).** The dock turns to **Accepted · Dr … — "Come straight to the cath lab"**, and it's
+spoken in the vehicle. "One loop: scan, speak, hand off, answered."
 
-**4 · Transport (30 s)** — Dispatch board → Dispatch → set speed 60× → the boat moves on the map; the timeline shows
-"Departed Isdhoo", "Reached Gan Regional — interim care". *Speak update* plays "The patient is on the way to IGMH,
-expected arrival in…".
+**5 · Anywhere (20 s).** Ctrl + . → region **Western Isles** → **Suspected stroke, island to Glasgow**. "Same app.
+A region is a JSON file of hospitals, clinics and transport. Next: hospital inboxes, auth, SMS fallback."
 
-**5 · Headline (20 s)** — "Symptom to definitive care: 3 h 40 min — about 2 h 50 min faster than the phone chain."
-Architecture strip: Presage · Gemini · ElevenLabs · Tiger Data · Vultr.
+## Backup moves
 
-**6 · Scale (10 s)** — "Any archipelago: Pacific, Indonesia, Philippines, Scottish isles, the Arctic. Next: real
-referral data, Dhivehi voice, SMS/WhatsApp intake, national health-system integration."
+- **No Presage key, or the camera fails:** the screen says so and the vitals switch to a labelled **Demo signal**. Say
+  it plainly: "That's a demo signal, and we label it everywhere, including in the hospital's briefing."
+- **Mic fails or the room is loud:** the keyboard icon beside the mic types the same note.
+- **Wi-Fi fails:** run engine + web on the crew laptop (`README → Run locally`). The hospital screen can be a second
+  browser window.
 
-### Backup moves
+## Judge Q&A
 
-- Capacity flip: load **Stroke with a capacity change, Baa** → `/hospital` → Capacity → IGMH CT off → route flips to
-  Kulhudhuffushi within 2 s with a toast.
-- Constraint reasoning: **Postpartum haemorrhage in bad weather** → sea state 6 → "No feasible transport" with each
-  blocking reason → toggle Helicopter on → helicopter route appears.
-- Treat locally first: **Sepsis treated locally first** → antibiotics start at Dhiffushi *now*, transfer follows.
-- If the camera fails: *Enter manually* (the UI falls back automatically on permission denial).
-
-## Judge Q&A prep
-
-- **Safety?** Decision support, not decision making — every step needs a human to act (refer, accept, dispatch).
-  First-aid text comes only from a vetted static library; the LLM can only select and order step IDs. Every AI output
-  is badged; every clinical number is labelled DEMO ASSUMPTION. Presage's own clearance says vitals are not intended to
-  independently direct therapy — we mirror that.
-- **What if Gemini is down or wrong?** Every AI step has a deterministic fallback (rule-based intake, template SBAR
-  and explanation) and the timeline records the fallback. The routing decision itself is deterministic, auditable,
-  and unit-tested (NEWS2 boundaries, night / sea-state constraints, scenario outcomes).
-- **Data?** No real patient data. Scan videos auto-expire (bucket lifecycle). No PII in URLs — case IDs are UUIDs,
-  short codes are random. Timeline is an audit log.
-- **Why not just WhatsApp?** WhatsApp moves messages; it doesn't know that the seaplane can't fly after 18:15, that
-  the cath lab is down, or that fibrinolysis at Gan beats a 7-hour boat ride. And it still runs the handoffs in
-  sequence. We'd *add* WhatsApp/SMS as an intake channel.
-- **Scale / cost?** One small VM + managed Postgres. Facilities, transport modes, windows and baseline durations are
-  data files — a new country is a new `facilities.json`.
-- **Where do the numbers come from?** Illustrative: `engine/app/data/*.yaml`. The headline uses an illustrative
-  sequential chain (20 + 40 + 60 + 45 min, not measured data) vs the measured acceptance time in our flow — both shown
-  in the Assumptions popover.
+- **Is Presage accurate enough?** We use it inside its validated envelope: a mounted (not handheld) camera, face and
+  upper chest visible, patient still, 30 s for breathing to settle. Pulse is validated for 40–110 BPM. Above that the
+  crew screen says *confirm with a monitor*. HR + RR give a *partial* NEWS2, and the crew add SpO₂ / BP / temperature
+  / ACVPU with a few taps.
+- **Privacy?** Video never leaves the vehicle. The bridge runs next to the camera, and only numbers go to the cloud.
+- **Can the AI make things up?** The SBAR is built only from recorded vitals and the crew's own words. It says
+  *"Drafted by Gemini"* or *"Drafted from template"*, and simulated values carry *(demo signal)*. If Gemini is down,
+  a deterministic template takes over. The crew's original sentence always sits next to the extracted chips.
+- **Safety?** Decision support: a clinician accepts, the crew act. Alerts use NEWS2 bands plus a hedged trend
+  forecast, with hysteresis so they don't flap.
+- **Why not WhatsApp?** WhatsApp moves messages. It doesn't measure vitals hands-free, structure what was given,
+  or put one *Accept* in front of the receiving team.
+- **Data and scale?** No real patient data. One small VM and managed Postgres (Tiger Cloud: vitals hypertable and a
+  one-minute continuous aggregate for the trend). New regions are data files.

@@ -37,4 +37,6 @@ Template:
 - **Observed:** `sdk` and `cloud` modes are placeholders (`TODO(presage-verify)`)
 - **Expected:** real HR/RR from the 30 s browser recording
 - **Notes / fix idea:** ask the Presage booth: Linux SDK binary/binding vs cloud endpoint, accepted video format
-- **Status:** open
+- **Status:** in progress. v2 replaced the placeholders with `presage-bridge/` (official `@smartspectra/node-sdk`,
+  live frames over a local WebSocket). It needs a real `PRESAGE_API_KEY` and a camera in Chrome or Edge to verify
+  (see `KNOWN_ISSUES.md`).

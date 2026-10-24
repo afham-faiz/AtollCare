@@ -210,12 +210,80 @@
         }
       }
     },
+    "/api/demo/cases": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Demo Cases",
+        "operationId": "demo_cases_api_demo_cases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DemoCase"
+                  },
+                  "type": "array",
+                  "title": "Response Demo Cases Api Demo Cases Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/cases/{case_id}": {
+      "post": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Start Case",
+        "operationId": "start_case_api_demo_cases__case_id__post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/demo/example": {
       "post": {
         "tags": [
           "system"
         ],
         "summary": "Example",
+        "description": "First prepared case of the active region.",
         "operationId": "example_api_demo_example_post",
         "responses": {
           "200": {
@@ -702,6 +770,49 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/{transfer_id}/handoff": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Handoff",
+        "operationId": "handoff_api_transfers__transfer_id__handoff_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1260,6 +1371,63 @@
           "mode"
         ],
         "title": "CreateTransferRequest"
+      },
+      "DemoCase": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/Patient"
+          },
+          "complaint": {
+            "type": "string",
+            "title": "Complaint"
+          },
+          "origin_id": {
+            "type": "string",
+            "title": "Origin Id"
+          },
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TransportMode"
+          },
+          "suggested_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "region_id",
+          "title",
+          "patient",
+          "complaint",
+          "origin_id",
+          "destination_id",
+          "mode"
+        ],
+        "title": "DemoCase"
       },
       "DemoState": {
         "properties": {
@@ -2287,6 +2455,15 @@
             "title": "Alerts",
             "default": []
           },
+          "alerts_announced": {
+            "additionalProperties": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "type": "object",
+            "title": "Alerts Announced",
+            "default": {}
+          },
           "briefing": {
             "anyOf": [
               {
@@ -2296,6 +2473,18 @@
                 "type": "null"
               }
             ]
+          },
+          "handoff_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoff At"
           },
           "acceptance": {
             "anyOf": [
@@ -2517,6 +2706,7 @@
       "TransferStatus": {
         "type": "string",
         "enum": [
+          "preparing",
           "pending",
           "accepted",
           "arrived",

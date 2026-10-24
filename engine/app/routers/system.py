@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from app.core.clock import real_now
 from app.models import (
     BridgeHeartbeat,
+    DemoCase,
     DemoState,
     DemoStatePatch,
     HealthResponse,
@@ -63,9 +64,20 @@ async def reset(h: Hub = Depends(hub)):
     return OkResponse()
 
 
+@router.get("/demo/cases", response_model=list[DemoCase])
+async def demo_cases(h: Hub = Depends(hub)):
+    return h.transfers.demo_cases()
+
+
+@router.post("/demo/cases/{case_id}", response_model=Transfer)
+async def start_case(case_id: str, h: Hub = Depends(hub)):
+    return await h.transfers.start_case(case_id)
+
+
 @router.post("/demo/example", response_model=Transfer)
 async def example(h: Hub = Depends(hub)):
-    return await h.transfers.example()
+    """First prepared case of the active region."""
+    return await h.transfers.start_case()
 
 
 @router.get("/media/{key:path}")

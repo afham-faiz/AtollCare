@@ -1,21 +1,21 @@
-// Vitals trend from the Tiger Data 1-minute continuous aggregate, with a hedged NEWS2 forecast line.
+// Vitals trend from recorded readings (Tiger Data 1-minute aggregate) with a hedged, dashed NEWS2 projection.
 "use client";
 
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import Card from "@/app/components/Card";
 import type { TrendResponse } from "@/lib/api";
 import { fmtMin, fmtTime } from "@/lib/format";
 
 const SERIES = [
-  { key: "HR", color: "#d92d20", axis: "v" },
-  { key: "RR", color: "#0e7c86", axis: "v" },
-  { key: "SpO₂", color: "#2563c9", axis: "v" },
-  { key: "NEWS2", color: "#c76a00", axis: "n" },
+  { key: "HR", color: "#c8322a", axis: "v", label: "Heart rate" },
+  { key: "RR", color: "#0f9286", axis: "v", label: "Respiration" },
+  { key: "SpO₂", color: "#2579ce", axis: "v", label: "SpO₂" },
+  { key: "NEWS2", color: "#a8620a", axis: "n", label: "NEWS2" },
 ];
 
+type Row = { t: string; HR?: number | null; RR?: number | null; "SpO₂"?: number | null; NEWS2?: number | null; Projection?: number | null };
+
 export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?: string; className?: string }) {
-  type Row = { t: string; HR?: number | null; RR?: number | null; "SpO₂"?: number | null; NEWS2?: number | null; Forecast?: number | null };
   const data: Row[] = (trend?.buckets ?? []).map((b) => ({
     t: fmtTime(b.t, tz),
     HR: b.hr ? Math.round(b.hr) : null,
@@ -25,61 +25,47 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
   }));
   const fc = trend?.forecast;
   if (fc && data.length && fc.projected_news2_at_arrival != null && fc.horizon_min) {
-    data[data.length - 1] = { ...data[data.length - 1], Forecast: data[data.length - 1].NEWS2 };
-    data.push({ t: `+${fmtMin(fc.horizon_min)}`, Forecast: fc.projected_news2_at_arrival });
+    data[data.length - 1] = { ...data[data.length - 1], Projection: data[data.length - 1].NEWS2 };
+    data.push({ t: `+${fmtMin(fc.horizon_min)}`, Projection: fc.projected_news2_at_arrival });
   }
   return (
-    <Card
-      className={className}
-      title="Trend"
-      aside={
-        <span className="flex flex-wrap gap-x-[.75rem] text-[0.875rem] text-muted">
-          {SERIES.map((s) => (
-            <span key={s.key} className="flex items-center gap-[.25rem]">
-              <span className="h-[.5rem] w-[.75rem] rounded-[.125rem]" style={{ background: s.color }} />
-              {s.key}
-            </span>
-          ))}
-        </span>
-      }
-    >
-      {data.length === 0 ? (
-        <p className="text-muted">Waiting for readings…</p>
+    <div className={className}>
+      <div className="mb-[.75rem] flex flex-wrap gap-x-[1rem] gap-y-[.25rem] text-[0.8125rem] text-ink-2">
+        {SERIES.map((s) => (
+          <span key={s.key} className="flex items-center gap-[.375rem]">
+            <span className="h-[.125rem] w-[.875rem] rounded-full" style={{ background: s.color }} />
+            {s.label}
+          </span>
+        ))}
+      </div>
+      {data.length < 2 ? (
+        <p className="py-[2rem] text-center text-ink-3">Trend appears after a few minutes of readings.</p>
       ) : (
-        <div className="h-[13rem] w-full">
+        <div className="h-[12rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: -18 }}>
-              <CartesianGrid stroke="#e1e7eb" vertical={false} />
-              <XAxis dataKey="t" tick={{ fontSize: 14, fill: "#8a979f" }} tickLine={false} axisLine={false} minTickGap={24} />
-              <YAxis yAxisId="v" tick={{ fontSize: 14, fill: "#8a979f" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+            <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
+              <CartesianGrid stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="t" tick={{ fontSize: 12, fill: "#8a9aaa" }} tickLine={false} axisLine={false} minTickGap={28} />
+              <YAxis yAxisId="v" tick={{ fontSize: 12, fill: "#8a9aaa" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
               <YAxis yAxisId="n" orientation="right" domain={[0, 20]} hide />
-              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e1e7eb", fontSize: 14 }} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7edf2", fontSize: 13, boxShadow: "0 8px 24px -8px rgba(23,42,58,.15)" }} />
               {SERIES.map((s) => (
-                <Line
-                  key={s.key}
-                  yAxisId={s.axis}
-                  dataKey={s.key}
-                  stroke={s.color}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                  isAnimationActive={false}
-                />
+                <Line key={s.key} yAxisId={s.axis} dataKey={s.key} stroke={s.color} strokeWidth={1.75} dot={false} connectNulls isAnimationActive={false} />
               ))}
-              <Line yAxisId="n" dataKey="Forecast" stroke="#c76a00" strokeDasharray="5 4" dot={false} connectNulls isAnimationActive={false} />
+              <Line yAxisId="n" dataKey="Projection" stroke="#a8620a" strokeWidth={1.5} strokeDasharray="4 4" dot={false} connectNulls isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
       {fc && (
-        <p className="mt-[.5rem] text-[0.875rem] text-muted">
-          Trend suggests NEWS2 is <strong className="text-fg">{fc.trend}</strong>
-          {fc.projected_news2_at_arrival != null && fc.horizon_min ? (
-            <> — about {fc.projected_news2_at_arrival} in {fmtMin(fc.horizon_min)}</>
-          ) : null}{" "}
-          ({fc.points_used} one-minute points, {fc.confidence} confidence).
+        <p className="mt-[.75rem] text-[0.875rem] text-ink-2">
+          Trend suggests NEWS2 is <span className="font-[600] text-ink">{fc.trend}</span>
+          {fc.projected_news2_at_arrival != null && fc.horizon_min ? <> — around {fc.projected_news2_at_arrival} in {fmtMin(fc.horizon_min)}</> : null}.{" "}
+          <span className="text-ink-3">
+            {fc.points_used} one-minute points, {fc.confidence} confidence.
+          </span>
         </p>
       )}
-    </Card>
+    </div>
   );
 }

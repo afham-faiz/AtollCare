@@ -53,7 +53,8 @@ def test_create_validates_region_facilities(client):
 def test_full_transfer_lifecycle(client):
     t = create(client)
     tid = t["id"]
-    assert t["status"] == "pending" and t["code"].startswith("AC-")
+    assert t["status"] == "preparing" and t["code"].startswith("AC-")
+    assert ok(client.get("/api/transfers?status=pending")) == []  # hospital doesn't see it yet
     assert t["briefing"]["generated_by"] == "template"
     assert t["notes"][0]["kind"] == "event"
 
@@ -73,7 +74,7 @@ def test_full_transfer_lifecycle(client):
     # crew note → interventions + briefing refresh
     t = ok(client.post(f"/api/transfers/{tid}/notes", json={"text": "Gave aspirin 300 mg. Pain 8 out of 10.",
                                                              "kind": "voice"}))
-    assert t["interventions"][0]["text"].lower().startswith("gave aspirin 300 mg")
+    assert t["interventions"][0]["text"].lower().startswith("aspirin 300 mg")
     assert "already given: aspirin" in t["briefing"]["recommendation"].lower()
 
     # hospital asks → crew answers (reply_to) → list shows no unanswered questions
@@ -84,7 +85,13 @@ def test_full_transfer_lifecycle(client):
     assert t["notes"][-1]["kind"] == "answer"
     assert ok(client.get("/api/transfers"))[0]["unanswered_questions"] == 0
 
-    # accept → message spoken in the vehicle
+    # accept before handoff is refused; handoff → visible to the hospital → accept
+    r = client.post(f"/api/transfers/{tid}/accept", json={"by": "Dr Shareef"})
+    assert r.status_code == 409
+    t = ok(client.post(f"/api/transfers/{tid}/handoff"))
+    assert t["status"] == "pending" and t["handoff_at"]
+    assert ok(client.post(f"/api/transfers/{tid}/handoff"))["status"] == "pending"  # idempotent
+    assert [i["id"] for i in ok(client.get("/api/transfers?status=pending"))] == [tid]
     t = ok(client.post(f"/api/transfers/{tid}/accept", json={"by": "Dr Shareef", "prepare": ["Cath lab"]}))
     assert t["status"] == "accepted" and t["acceptance"]["prepare"] == ["Cath lab"]
     assert "cath lab" in t["notes"][-1]["text"].lower()
@@ -126,15 +133,20 @@ def test_auto_arrival_at_eta(client):
     assert t["status"] == "arrived"
 
 
-def test_example_transfer_for_each_region(client):
-    for rid in ("maldives", "scotland"):
-        ok(client.patch("/api/demo/state", json={"region_id": rid}))
-        t = ok(client.post("/api/demo/example"))
-        assert t["region_id"] == rid
+def test_prepared_cases(client):
+    cases = ok(client.get("/api/demo/cases"))
+    assert {c["region_id"] for c in cases} >= {"maldives", "scotland"}
+    for c in cases:
+        t = ok(client.post(f"/api/demo/cases/{c['id']}"))
+        assert t["region_id"] == c["region_id"] and t["status"] == "preparing"
         assert len(t["vitals"]) >= 10 and t["news2"]["complete"]
-        assert t["interventions"] or rid == "scotland"
+        assert all(v["source"] in ("simulated", "manual") for v in t["vitals"])
+        assert ok(client.get("/api/meta"))["region"]["id"] == c["region_id"]
         trend = ok(client.get(f"/api/transfers/{t['id']}/vitals/trend"))
         assert len(trend["buckets"]) >= 5 and trend["forecast"]
+    ok(client.patch("/api/demo/state", json={"region_id": "scotland"}))
+    assert ok(client.post("/api/demo/example"))["region_id"] == "scotland"
+    assert client.post("/api/demo/cases/nope").status_code == 404
 
 
 def test_voice_and_speak_mock(client):

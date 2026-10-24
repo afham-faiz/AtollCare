@@ -25,6 +25,7 @@ from app.models import (
     Author,
     Briefing,
     CreateTransferRequest,
+    DemoCase,
     Extraction,
     Intervention,
     MessageRequest,
@@ -48,7 +49,7 @@ from app.models import (
 from app.services.context import AppError, Services
 
 log = logging.getLogger("atollcare.transfers")
-ACTIVE = {TransferStatus.pending, TransferStatus.accepted}
+ACTIVE = {TransferStatus.preparing, TransferStatus.pending, TransferStatus.accepted}
 CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 NEWS2_LOOKBACK_MIN = 60
 GEMINI_MIN_INTERVAL_S = 20.0
@@ -166,7 +167,7 @@ class TransferService:
         km, eta = regions.journey(origin, dest, req.mode, now)
         t = Transfer(
             id=uuid4(), code=await self._code(), region_id=region.id, created_at=now, updated_at=now,
-            status=TransferStatus.pending, patient=req.patient, complaint=req.complaint.strip(),
+            status=TransferStatus.preparing, patient=req.patient, complaint=req.complaint.strip(),
             origin_id=origin.id, destination_id=dest.id, mode=req.mode, departed_at=now, eta=eta, distance_km=km,
             position=regions.point(origin), origin_point=regions.point(origin), destination_point=regions.point(dest),
             monitoring=Monitoring(source=MonitoringSource.simulated), sim_profile=profile_for(req.complaint),
@@ -357,10 +358,24 @@ class TransferService:
         self._schedule_briefing(transfer_id)
         return await self.get(transfer_id)
 
+    async def handoff(self, transfer_id: UUID) -> Transfer:
+        """Crew sends the handoff: the transfer appears at the receiving hospital. Idempotent."""
+        async with self.locks[transfer_id]:
+            t = await self.get(transfer_id)
+            if t.status != TransferStatus.preparing:
+                return t
+            now = self.now()
+            t.status = TransferStatus.pending
+            t.handoff_at = now
+            await self._note(t, Author.crew, NoteKind.event, f"Handoff sent to {self.label(t, t.destination_id)}", at=now)
+            await self._save(t)
+        self._schedule_briefing(transfer_id, force=True)
+        return await self.get(transfer_id)
+
     async def accept(self, transfer_id: UUID, req: AcceptRequest) -> Transfer:
         async with self.locks[transfer_id]:
             t = await self.get(transfer_id)
-            if t.status not in ACTIVE:
+            if t.status != TransferStatus.pending:
                 raise AppError("invalid_state", f"Transfer is {t.status.value}", 409)
             now = self.now()
             t.status = TransferStatus.accepted
@@ -432,7 +447,7 @@ class TransferService:
                 unanswered_questions=sum(1 for n in notes if n.kind == NoteKind.question and n.id not in answered),
                 updated_at=t.updated_at,
             ))
-        order = {"pending": 0, "accepted": 1, "arrived": 2, "closed": 3}
+        order = {"pending": 0, "accepted": 1, "preparing": 2, "arrived": 3, "closed": 4}
         return sorted(items, key=lambda i: (order[i.status.value], i.eta))
 
     # ---------------------------------------------------------------- simulator tick
@@ -461,40 +476,44 @@ class TransferService:
                     await self._ingest(cur, VitalsRequest(source=VitalsSource.simulated, confidence=0.9, **values))
                 await self._save(cur)
 
-    # ---------------------------------------------------------------- demo example
-    async def example(self) -> Transfer:
-        region_id = self.svc.clock.state.region_id
-        ex = regions.example(region_id)
-        if ex is None:
-            raise AppError("no_example", f"Region {region_id} has no example transfer", 404)
+    # ---------------------------------------------------------------- prepared demo cases
+    def demo_cases(self) -> list[DemoCase]:
+        return [DemoCase(**{k: v for k, v in c.items() if k in DemoCase.model_fields}) for c in regions.cases()]
+
+    async def start_case(self, case_id: str | None = None, history_min: int = 8) -> Transfer:
+        """Start a prepared case in its region: patient, complaint and route filled in, crew-entered baseline vitals,
+        and `history_min` minutes of earlier contactless readings (labelled simulated) so trends are populated."""
+        if case_id is None:
+            region_id = self.svc.clock.state.region_id
+            c = next((x for x in regions.cases() if x["region_id"] == region_id), None)
+        else:
+            c = regions.case(case_id)
+        if c is None:
+            raise AppError("no_case", "No prepared case found", 404)
+        self.svc.clock.state.region_id = c["region_id"]
+        await self.repo.set_demo_state(self.svc.clock.state)
         now = self.now()
-        start = now - timedelta(minutes=8)
+        start = now - timedelta(minutes=history_min)
         t = await self.create(
-            CreateTransferRequest(patient=Patient(**ex["patient"]), complaint=ex["complaint"], origin_id=ex["origin_id"],
-                                  destination_id=ex["destination_id"], mode=ex["mode"]),
+            CreateTransferRequest(patient=Patient(**c["patient"]), complaint=c["complaint"], origin_id=c["origin_id"],
+                                  destination_id=c["destination_id"], mode=c["mode"]),
             at=start,
         )
-        profile = SimProfile(**ex.get("profile", {}))
+        profile = SimProfile(**c.get("profile", {}))
         async with self.locks[t.id]:
             cur = await self._load(t.id)
             cur.sim_profile = profile
-            # back-filled contactless history so the trend and forecast are populated from the first second
-            for i in range(0, 8 * 60, 30):
+            for i in range(0, history_min * 60, 30):
                 at = start + timedelta(seconds=i)
                 values = simulated_values(profile, start, at, zlib.crc32(cur.code.encode()))
                 reading = VitalsReading(id=uuid4(), transfer_id=cur.id, recorded_at=at, source=VitalsSource.simulated,
                                         confidence=0.9, **values)
                 await self.repo.add_vitals(reading)
                 cur.latest = update_latest(cur.latest, reading)
-            cur.monitoring.last_reading_at = start + timedelta(minutes=8)
-            base = ex.get("baseline_vitals")
+            cur.monitoring.last_reading_at = now
+            base = c.get("baseline_vitals")
             if base:
                 await self._ingest(cur, VitalsRequest(source="manual", recorded_at=start + timedelta(minutes=2), **base))
-            await self._save(cur)
-        for i, text in enumerate(ex.get("notes", [])):
-            await self.add_note(t.id, NoteRequest(text=text, kind="voice"), at=start + timedelta(minutes=3 + i))
-        async with self.locks[t.id]:
-            cur = await self._load(t.id)
             await self._reassess(cur)
             await self._save(cur)
         return await self.get(t.id)

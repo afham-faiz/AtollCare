@@ -1,59 +1,45 @@
-// Crew monitor (tablet/laptop on a mount): camera + Presage, live vitals, one voice button, hospital messages read
-// aloud. Everything else lives on the hospital screen.
+// Crew monitor (tablet/laptop on a mount). Hierarchy: who → contactless assessment → vitals → note → next step.
 "use client";
 
-import { Activity, Flag, HeartPulse, Plus, Volume2, VolumeX, Wind } from "lucide-react";
+import { ArrowUpRight, Check, CheckCircle2, Clock3, Flag, ListChecks, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { mutate } from "swr";
 import { twMerge } from "tailwind-merge";
 
 import ButtonBase from "@/app/components/(buttons)/ButtonBase";
-import AlertBanner from "@/app/components/(transfer)/AlertBanner";
-import EtaBar from "@/app/components/(transfer)/EtaBar";
-import StatusPill from "@/app/components/(transfer)/StatusPill";
+import ButtonGhost from "@/app/components/(buttons)/ButtonGhost";
+import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
+import Sheet from "@/app/components/(modals)/Sheet";
+import RouteLine from "@/app/components/(transfer)/RouteLine";
+import StatusChip from "@/app/components/(transfer)/StatusChip";
 import Timeline from "@/app/components/(transfer)/Timeline";
-import VitalTile, { type Tone } from "@/app/components/(transfer)/VitalTile";
-import Card from "@/app/components/Card";
 import Skeleton from "@/app/components/Skeleton";
 import { post, type MonitoringSource, type Note, type Transfer } from "@/lib/api";
-import { NEWS2_LABEL, num, patientLine } from "@/lib/format";
+import { patientTitle } from "@/lib/clinical";
+import { place } from "@/lib/format";
 import { useCamera, usePresage } from "@/lib/presage";
 import { speak, stopSpeaking } from "@/lib/speech";
 import { useMeta, useTransfer } from "@/lib/swr";
-import { toastError } from "@/lib/toast";
+import { toast, toastError } from "@/lib/toast";
 
-import BreathingWave from "./BreathingWave";
-import CameraPanel from "./CameraPanel";
-import ManualVitalsModal from "./ManualVitalsModal";
-import VoiceBar from "./VoiceBar";
-
-const PRESAGE_HR_MAX = 110; // Presage validated pulse range 40–110 BPM
-const CONVERSATION = new Set(["voice", "text", "answer", "question", "message"]);
-
-function hrTone(v: number | null): Tone {
-  if (v === null) return "muted";
-  if (v >= 131 || v <= 40) return "alert";
-  if (v >= 111 || v <= 50) return "warn";
-  return "normal";
-}
-
-function rrTone(v: number | null): Tone {
-  if (v === null) return "muted";
-  if (v >= 25 || v <= 8) return "alert";
-  if (v >= 21) return "warn";
-  return "normal";
-}
+import CameraInstrument, { instrumentPhase } from "./CameraInstrument";
+import styles from "./Crew.module.scss";
+import HandoffSheet from "./HandoffSheet";
+import VitalsPanel from "./VitalsPanel";
+import VitalsSheet from "./VitalsSheet";
+import VoiceCapture from "./VoiceCapture";
 
 export default function ({ transferId }: { transferId: string }) {
   const { data: t, error } = useTransfer(transferId);
   const { data: meta } = useMeta();
   const region = meta?.regions.find((r) => r.id === t?.region_id);
   const [voiceOn, setVoiceOn] = useState(true);
-  const [vitalsOpen, setVitalsOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | "handoff" | "vitals" | "notes">(null);
+  const [justSent, setJustSent] = useState(false);
 
-  // camera + Presage bridge
-  const active = !!t && (t.status === "pending" || t.status === "accepted");
+  // ── contactless instrument ────────────────────────────────────────────────
+  const active = !!t && (t.status === "preparing" || t.status === "pending" || t.status === "accepted");
   const cam = useCamera(active);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const videoRef = useCallback(
@@ -64,21 +50,20 @@ export default function ({ transferId }: { transferId: string }) {
     [cam.videoRef],
   );
   const presage = usePresage(active ? transferId : undefined, videoEl, cam.camera === "on");
-  const live = presage.state === "running" && cam.camera === "on";
+  const instrument = instrumentPhase(cam.camera, presage.state, presage.metrics);
+  const live = instrument.phase === "acquiring" || instrument.phase === "measuring";
 
-  // keep the engine's monitoring source in step: real Presage when measuring, labelled simulation otherwise
+  // keep the engine's monitoring source honest: Presage when measuring, labelled demo signal otherwise
   const requested = useRef<MonitoringSource | null>(null);
   useEffect(() => {
-    if (!t || !active) return;
-    const settled = cam.camera === "on" ? presage.state !== "starting" : cam.camera !== "starting";
-    if (!settled) return;
+    if (!t || !active || instrument.phase === "connecting" || cam.camera === "starting") return;
     const want: MonitoringSource = live ? "presage" : "simulated";
     if (t.monitoring.source === want || requested.current === want) return;
     requested.current = want;
     post(`/transfers/${transferId}/monitoring`, { source: want }).catch(() => (requested.current = null));
-  }, [t, active, live, cam.camera, presage.state, transferId]);
+  }, [t, active, live, instrument.phase, cam.camera, transferId]);
 
-  // speak new hospital messages and alerts once
+  // ── hospital → vehicle: speak new questions, messages and alerts once ─────
   const seen = useRef<Set<string> | null>(null);
   useEffect(() => {
     if (!t) return;
@@ -89,9 +74,8 @@ export default function ({ transferId }: { transferId: string }) {
     for (const n of t.notes) {
       if (seen.current.has(n.id)) continue;
       seen.current.add(n.id);
-      if (!voiceOn) continue;
-      if (n.author === "hospital") speak(n.kind === "question" ? `Question from ${n.text}` : n.text, "hospital");
-      if (n.kind === "alert") speak(`Alert. ${n.text}`, "hospital");
+      if (n.author === "hospital" && voiceOn) speak(n.kind === "question" ? `Question from ${n.text}` : n.text, "hospital");
+      if (n.kind === "alert" && voiceOn) speak(`Alert. ${n.text}`, "hospital");
     }
   }, [t, voiceOn]);
 
@@ -100,145 +84,184 @@ export default function ({ transferId }: { transferId: string }) {
     const answered = new Set(t.notes.filter((n) => n.reply_to).map((n) => n.reply_to));
     return [...t.notes].reverse().find((n) => n.kind === "question" && !answered.has(n.id)) ?? null;
   }, [t]);
-  const lastHospital = useMemo(() => (t ? [...t.notes].reverse().find((n) => n.author === "hospital") : undefined), [t]);
 
-  const refresh = (next?: Transfer) => mutate(`/transfers/${transferId}`, next, { revalidate: !next });
+  const refresh = useCallback((next?: Transfer) => mutate(`/transfers/${transferId}`, next, { revalidate: !next }), [transferId]);
 
   if (error && !t) {
     return (
-      <p className="py-[3rem] text-center">
-        Transfer not found. <Link href="/crew" className="text-brand underline">Start a new one</Link>
-      </p>
+      <div className="m-auto text-center">
+        <p className="text-[1.125rem] font-[600]">This transfer isn’t available.</p>
+        <Link href="/crew" className="mt-[.5rem] inline-block text-accent">
+          Back to transfers
+        </Link>
+      </div>
     );
   }
   if (!t || !meta) {
     return (
-      <div className="grid gap-[1rem] lg:grid-cols-[3fr_2fr]">
-        <Skeleton className="aspect-[16/9] w-full" />
-        <Skeleton className="h-[20rem]" />
+      <div className="flex flex-col gap-[1.5rem]">
+        <Skeleton className="h-[4.5rem] w-[50%]" />
+        <div className="grid gap-[1.5rem] md:grid-cols-[minmax(0,1.55fr)_minmax(21rem,1fr)]">
+          <Skeleton className="aspect-[16/10] w-full rounded-[1.5rem]" />
+          <Skeleton className="h-[26rem] rounded-[1.5rem]" />
+        </div>
       </div>
     );
   }
 
-  const hr = live && presage.metrics.hr ? presage.metrics.hr.value : num(t.latest.heart_rate?.value);
-  const rr = live && presage.metrics.rr ? presage.metrics.rr.value : num(t.latest.resp_rate?.value);
-  const hrv = live && presage.metrics.hrv ? presage.metrics.hrv.value : num(t.latest.hrv_rmssd?.value);
-  const hrStable = live ? !!presage.metrics.hr?.stable : true;
-  const rrStable = live ? !!presage.metrics.rr?.stable : true;
-  const sourceNote = live ? "Presage camera" : t.monitoring.source === "simulated" ? "Simulated" : "—";
-  const n2 = t.news2;
-  const n2Tone: Tone = !n2?.total ? "muted" : n2.total >= 7 ? "alert" : n2.total >= 5 || n2.any_single_3 ? "warn" : "normal";
-  const spo2 = num(t.latest.spo2?.value);
-  const sbp = num(t.latest.systolic_bp?.value);
-  const temp = num(t.latest.temperature_c?.value);
-  const acvpu = t.latest.consciousness?.value;
+  const dest = place(region, t.destination_id);
   const done = t.status === "arrived" || t.status === "closed";
+  const conversation = t.notes.filter((n) => n.author !== "system");
 
-  const arrive = async () => {
+  const act = async (path: "arrive" | "close") => {
     try {
-      refresh(await post<Transfer>(`/transfers/${transferId}/arrive`));
+      refresh(await post<Transfer>(`/transfers/${transferId}/${path}`));
     } catch (err) {
       toastError(err);
     }
   };
 
   return (
-    <div className="flex flex-col gap-[1rem]">
-      <header className="flex flex-wrap items-center gap-x-[1rem] gap-y-[.5rem]">
-        <h1 className="text-[1.75rem] font-bold tabular-nums">{t.code}</h1>
-        <span className="text-[1.0625rem]">
-          {patientLine(t.patient)} · <span className="text-muted">{t.complaint}</span>
-        </span>
-        <StatusPill status={t.status} />
-        <span className="ml-auto flex gap-[.5rem]">
-          <ButtonBase
-            onClick={() => {
-              if (voiceOn) stopSpeaking();
-              setVoiceOn(!voiceOn);
-            }}
-            aria-pressed={voiceOn}
-            title="Read hospital messages and alerts aloud"
-          >
-            {voiceOn ? <Volume2 size={18} /> : <VolumeX size={18} />} {voiceOn ? "Voice on" : "Voice off"}
-          </ButtonBase>
-          {!done && (
-            <ButtonBase onClick={arrive}>
-              <Flag size={18} /> Arrived
-            </ButtonBase>
-          )}
-        </span>
+    <div className={styles.page}>
+      {/* 1 · who, and where the transfer stands */}
+      <header className={styles.header}>
+        <div className={styles.who}>
+          <div className="flex flex-wrap items-center gap-[.625rem]">
+            <span className="font-mono text-[0.8125rem] font-[500] tracking-[0.02em] text-ink-3">{t.code}</span>
+            <span id="handoff-target" className={twMerge("inline-flex rounded-full", justSent && styles.arrived)}>
+              <StatusChip status={t.status} view="crew" />
+            </span>
+          </div>
+          <h1 className={styles.title}>{patientTitle(t.patient)}</h1>
+          <p className={styles.complaint} title={t.complaint}>
+            {t.complaint}
+          </p>
+        </div>
+        <div className={styles.headerEnd}>
+          <RouteLine t={t} region={region} now={meta.now} align="right" className="max-md:items-start max-md:text-left" />
+          <div className="flex gap-[.25rem] max-md:ml-[-0.75rem]">
+            <ButtonGhost size="sm" onClick={() => setSheet("notes")}>
+              <ListChecks size={16} /> Notes{conversation.length ? ` · ${conversation.length}` : ""}
+            </ButtonGhost>
+            <ButtonGhost
+              size="sm"
+              aria-pressed={voiceOn}
+              title="Read hospital messages and alerts aloud"
+              onClick={() => {
+                if (voiceOn) stopSpeaking();
+                setVoiceOn(!voiceOn);
+              }}
+            >
+              {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />} {voiceOn ? "Voice on" : "Muted"}
+            </ButtonGhost>
+          </div>
+        </div>
       </header>
 
-      <EtaBar t={t} region={region} now={meta.now} />
-      <AlertBanner alerts={t.alerts} />
+      {/* 2 + 3 · contactless assessment and vital signs */}
+      <div className={styles.stage}>
+        <CameraInstrument
+          videoRef={videoRef}
+          camera={cam.camera}
+          instrument={instrument}
+          hint={presage.hint}
+          since={presage.since}
+          rrStable={!!presage.metrics.rr?.stable}
+          onRetry={cam.retry}
+        />
+        <VitalsPanel
+          t={t}
+          now={meta.now}
+          live={live}
+          acquiring={instrument.phase === "acquiring"}
+          hr={live ? presage.metrics.hr : null}
+          rr={live ? presage.metrics.rr : null}
+          hrv={live && presage.metrics.hrv?.stable ? presage.metrics.hrv.value : typeof t.latest.hrv_rmssd?.value === "number" ? t.latest.hrv_rmssd.value : null}
+          trace={presage.metrics.trace}
+          onAddVitals={() => setSheet("vitals")}
+        />
+      </div>
 
-      {lastHospital && !done && (
-        <div className={twMerge("flex items-start gap-[.75rem] rounded-[.75rem] px-[1rem] py-[.75rem]", openQuestion ? "bg-info text-white" : "border-[1px] border-info/30 bg-info-soft text-info")}>
-          <Volume2 size={20} className="mt-[.125rem] shrink-0" />
-          <p className="text-[1.0625rem] font-medium">{(openQuestion ?? lastHospital).text}</p>
-        </div>
-      )}
-
-      <div className="grid gap-[1rem] lg:grid-cols-[3fr_2fr]">
-        <CameraPanel videoRef={videoRef} camera={cam.camera} presage={presage.state} hint={presage.hint} message={presage.message} />
-
-        <div className="grid grid-cols-2 content-start gap-[.75rem]">
-          <VitalTile
-            label="Heart rate"
-            icon={<HeartPulse size={18} className={twMerge(hr !== null && "animate-beat text-alert")} />}
-            value={hr !== null ? Math.round(hr) : "—"}
-            unit="bpm"
-            size="lg"
-            tone={hrStable ? hrTone(hr) : "muted"}
-            note={live && hr !== null && hr > PRESAGE_HR_MAX ? "Above validated range — confirm manually" : live && !hrStable ? "Measuring…" : sourceNote}
-          />
-          <VitalTile
-            label="Breathing"
-            icon={<Wind size={18} />}
-            value={rr !== null ? Math.round(rr) : "—"}
-            unit="/min"
-            size="lg"
-            tone={rrStable ? rrTone(rr) : "muted"}
-            note={live && !rrStable ? "Settling (needs 30 s still)" : sourceNote}
-          >
-            {live && <BreathingWave trace={presage.metrics.trace} className="mt-[.25rem] h-[2rem] w-full" />}
-          </VitalTile>
-          <VitalTile
-            label="NEWS2"
-            icon={<Activity size={18} />}
-            value={n2?.total ?? "—"}
-            tone={n2Tone}
-            note={n2?.band ? `${NEWS2_LABEL[n2.band]}${n2.complete ? "" : " · partial"}` : "Needs vitals"}
-          />
-          <VitalTile label="HRV" value={hrv !== null ? Math.round(hrv) : "—"} unit="ms" tone={hrv === null ? "muted" : "normal"} note="RMSSD" />
-          <button type="button" onClick={() => setVitalsOpen(true)} className="col-span-2 flex min-h-[3.5rem] items-center justify-between gap-[.75rem] rounded-[.75rem] border-[1px] border-dashed border-border bg-surface px-[1rem] text-left hover:border-brand">
-            <span className="flex flex-wrap gap-x-[1rem] text-[0.9375rem] tabular-nums">
-              <span>SpO₂ <strong>{spo2 ?? "—"}</strong></span>
-              <span>BP <strong>{sbp ?? "—"}</strong></span>
-              <span>T <strong>{temp ?? "—"}</strong></span>
-              <span>ACVPU <strong>{acvpu ? String(acvpu) : "—"}</strong></span>
-            </span>
-            <span className="flex shrink-0 items-center gap-[.25rem] font-medium text-brand-strong">
-              <Plus size={18} /> Add
-            </span>
-          </button>
+      {/* 4 + 5 · note capture and the next step — the hospital's questions land on the mic itself */}
+      <div className={twMerge(styles.dock, openQuestion && !done && styles.asking)}>
+        <div className={styles.dockRow}>
+          {!done ? (
+            <VoiceCapture
+              transferId={transferId}
+              serverStt={meta.adapters.elevenlabs === "real"}
+              question={openQuestion}
+              askedBy={dest}
+              onSaved={(next) => refresh(next)}
+            />
+          ) : (
+            <p className="flex items-center gap-[.5rem] px-[.25rem] text-[1rem] font-[600]">
+              <Check size={18} className="text-teal" /> Handed over at {dest}
+            </p>
+          )}
+          <div className={styles.next}>
+            {t.status === "preparing" && (
+              <ButtonPrimary size="lg" onClick={() => setSheet("handoff")}>
+                Send handoff <ArrowUpRight size={18} />
+              </ButtonPrimary>
+            )}
+            {t.status === "pending" && (
+              <>
+                <span className={styles.waiting}>
+                  <Clock3 size={16} /> <span className="max-sm:hidden">Waiting for {dest}</span>
+                  <span className="sm:hidden">Waiting</span>
+                </span>
+                <ButtonBase onClick={() => setSheet("handoff")}>View handoff</ButtonBase>
+              </>
+            )}
+            {t.status === "accepted" && t.acceptance && (
+              <>
+                <button type="button" className={styles.accepted} onClick={() => setSheet("notes")} title={t.acceptance.message ?? "Notes and messages"}>
+                  <CheckCircle2 size={18} className="shrink-0" />
+                  <span className="min-w-0 text-left">
+                    <span className="block truncate font-[600]">Accepted · {t.acceptance.by}</span>
+                    {/* the hospital's own words come first: they're what the crew acts on */}
+                    <span className="block truncate text-[0.8125rem] opacity-80">
+                      {t.acceptance.message
+                        ? `“${t.acceptance.message}”`
+                        : t.acceptance.prepare.length
+                          ? `Preparing ${t.acceptance.prepare.join(", ").toLowerCase()}`
+                          : "Receiving team ready"}
+                    </span>
+                  </span>
+                </button>
+                <ButtonBase size="lg" onClick={() => act("arrive")}>
+                  <Flag size={18} /> Arrived
+                </ButtonBase>
+              </>
+            )}
+            {t.status === "arrived" && (
+              <ButtonBase size="lg" onClick={() => act("close")}>
+                Close transfer
+              </ButtonBase>
+            )}
+          </div>
         </div>
       </div>
 
-      {!done && (
-        <VoiceBar
-          transferId={transferId}
-          serverStt={meta.adapters.elevenlabs === "real"}
-          question={openQuestion}
-          onSaved={(next) => refresh(next)}
-        />
-      )}
-
-      <Card title="Notes and messages">
-        <Timeline notes={t.notes.filter((n) => CONVERSATION.has(n.kind))} tz={region?.timezone} limit={5} />
-      </Card>
-
-      <ManualVitalsModal transferId={transferId} open={vitalsOpen} onClose={() => setVitalsOpen(false)} onSaved={() => refresh()} />
+      <HandoffSheet
+        t={t}
+        region={region}
+        now={meta.now}
+        open={sheet === "handoff"}
+        readOnly={t.status !== "preparing"}
+        onClose={() => setSheet(null)}
+        onSent={(next) => {
+          setSheet(null);
+          refresh(next);
+          setJustSent(true);
+          window.setTimeout(() => setJustSent(false), 1400);
+          toast(`Handoff sent to ${dest}`);
+        }}
+      />
+      <VitalsSheet transferId={transferId} open={sheet === "vitals"} onClose={() => setSheet(null)} onSaved={() => refresh()} />
+      <Sheet open={sheet === "notes"} onClose={() => setSheet(null)} title="Notes and messages" subtitle={`${t.code} · ${patientTitle(t.patient)}`}>
+        <Timeline notes={t.notes} tz={region?.timezone} />
+      </Sheet>
     </div>
   );
 }

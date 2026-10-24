@@ -32,7 +32,7 @@ export default function ({ t, region, height = "16rem" }: { t: Transfer; region?
     () =>
       L.divIcon({
         className: "",
-        html: '<div style="width:16px;height:16px;border-radius:50%;background:#0e7c86;border:3px solid #fff;box-shadow:0 0 0 2px #0e7c86"></div>',
+        html: '<div style="width:16px;height:16px;border-radius:50%;background:#0f9286;border:3px solid #fff;box-shadow:0 0 0 2px #0f9286"></div>',
         iconSize: [16, 16],
         iconAnchor: [8, 8],
       }),
@@ -42,17 +42,17 @@ export default function ({ t, region, height = "16rem" }: { t: Transfer; region?
   const d: [number, number] = [t.destination_point.lat, t.destination_point.lng];
   const p: [number, number] = [t.position.lat, t.position.lng];
   return (
-    <div style={{ height }} className="w-full overflow-hidden rounded-[.75rem] border-[1px] border-border">
+    <div style={{ height }} className="w-full overflow-hidden rounded-[1.25rem] border-[1px] border-line">
       <MapContainer center={o} zoom={8} scrollWheelZoom={false} zoomControl={false} style={{ height: "100%", width: "100%" }}>
         <TileLayer url={BASE} attribution="Tiles &copy; Esri — Esri, HERE, Garmin, &copy; OpenStreetMap contributors" maxZoom={16} />
         <TileLayer url={LABELS} maxZoom={16} />
         <Fit t={t} />
-        <Polyline positions={[o, d]} pathOptions={{ color: "#8a979f", weight: 2, dashArray: "6 6" }} />
-        <Polyline positions={[o, p]} pathOptions={{ color: "#0e7c86", weight: 3 }} />
-        <CircleMarker center={o} radius={6} pathOptions={{ color: "#5d6b75", fillColor: "#fff", fillOpacity: 1, weight: 2 }}>
+        <Polyline positions={[o, d]} pathOptions={{ color: "#8a9aaa", weight: 2, dashArray: "6 6" }} />
+        <Polyline positions={[o, p]} pathOptions={{ color: "#0f9286", weight: 3 }} />
+        <CircleMarker center={o} radius={6} pathOptions={{ color: "#4f6377", fillColor: "#fff", fillOpacity: 1, weight: 2 }}>
           <Tooltip>{place(region, t.origin_id)}</Tooltip>
         </CircleMarker>
-        <CircleMarker center={d} radius={7} pathOptions={{ color: "#0a5f67", fillColor: "#0e7c86", fillOpacity: 1, weight: 2 }}>
+        <CircleMarker center={d} radius={7} pathOptions={{ color: "#0b766c", fillColor: "#0f9286", fillOpacity: 1, weight: 2 }}>
           <Tooltip permanent direction="top" offset={[0, -6]}>
             {place(region, t.destination_id)}
           </Tooltip>

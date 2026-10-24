@@ -107,6 +107,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/demo/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Demo Cases */
+        get: operations["demo_cases_api_demo_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Case */
+        post: operations["start_case_api_demo_cases__case_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/demo/example": {
         parameters: {
             query?: never;
@@ -116,7 +150,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Example */
+        /**
+         * Example
+         * @description First prepared case of the active region.
+         */
         post: operations["example_api_demo_example_post"];
         delete?: never;
         options?: never;
@@ -272,6 +309,23 @@ export interface paths {
         put?: never;
         /** Message */
         post: operations["message_api_transfers__transfer_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/{transfer_id}/handoff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Handoff */
+        post: operations["handoff_api_transfers__transfer_id__handoff_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -489,6 +543,25 @@ export interface components {
             /** Destination Id */
             destination_id: string;
             mode: components["schemas"]["TransportMode"];
+        };
+        /** DemoCase */
+        DemoCase: {
+            /** Id */
+            id: string;
+            /** Region Id */
+            region_id: string;
+            /** Title */
+            title: string;
+            patient: components["schemas"]["Patient"];
+            /** Complaint */
+            complaint: string;
+            /** Origin Id */
+            origin_id: string;
+            /** Destination Id */
+            destination_id: string;
+            mode: components["schemas"]["TransportMode"];
+            /** Suggested Note */
+            suggested_note?: string | null;
         };
         /** DemoState */
         DemoState: {
@@ -910,7 +983,16 @@ export interface components {
              * @default []
              */
             alerts: components["schemas"]["Alert"][];
+            /**
+             * Alerts Announced
+             * @default {}
+             */
+            alerts_announced: {
+                [key: string]: string;
+            };
             briefing?: components["schemas"]["Briefing"] | null;
+            /** Handoff At */
+            handoff_at?: string | null;
             acceptance?: components["schemas"]["Acceptance"] | null;
             /**
              * Interventions
@@ -981,7 +1063,7 @@ export interface components {
          * TransferStatus
          * @enum {string}
          */
-        TransferStatus: "pending" | "accepted" | "arrived" | "closed";
+        TransferStatus: "preparing" | "pending" | "accepted" | "arrived" | "closed";
         /**
          * TransportMode
          * @enum {string}
@@ -1306,6 +1388,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+        };
+    };
+    demo_cases_api_demo_cases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoCase"][];
+                };
+            };
+        };
+    };
+    start_case_api_demo_cases__case_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1643,6 +1776,37 @@ export interface operations {
                 "application/json": components["schemas"]["MessageRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    handoff_api_transfers__transfer_id__handoff_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

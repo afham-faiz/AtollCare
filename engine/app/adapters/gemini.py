@@ -33,6 +33,7 @@ Rules:
 - At most 110 words across the four fields. Plain clinical English, no markdown.
 - Use ONLY facts in the JSON. Never invent vitals, history, times or drugs. Say "not recorded" when missing.
 - Contactless values (source "presage") are camera estimates; if a value has a flag, mention it needs confirmation.
+- Values with source "simulated" are a demo signal, not measurements: always write "(demo signal)" after them.
 - suspected_condition: a short working impression supported by the JSON, or null.
 - recommendation: what the receiving team should prepare (team, imaging, theatre, blood), not treatment orders."""
 

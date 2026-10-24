@@ -1,49 +1,46 @@
-# Known issues
+# Known issues (v2)
 
-Things the one-shot could not verify or deliberately simplified. Triage these first (log progress in `FEEDBACK.md`).
+What hasn't been verified, and what's deliberately simple. Log triage progress in `FEEDBACK.md`.
 
-## Not verified on the build machine
+## Not verified
 
-- **Docker / TimescaleDB path never ran.** Docker Desktop's engine was not available, so `docker compose up`, both
-  Dockerfiles and `PgRepo` (asyncpg + migrations + `vitals_1m` continuous aggregate) are untested. Everything was
-  verified against the in-memory store, which implements the same `Repo` interface. First thing to do:
-  `docker compose up`, then `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/atollcare uv run pytest`
-  (the API tests honour `TEST_DATABASE_URL`; they reset demo rows).
-- **Real adapters untested** (no keys): Gemini (intake, SBAR, explanation, guidance), ElevenLabs (Scribe STT, TTS),
-  Presage (`sdk`/`cloud` are placeholders marked `TODO(presage-verify)`), S3 storage. Mock paths are tested.
-  - Gemini: uses `google-genai` `response_schema` with Pydantic classes; confirm `gemini-flash-latest` is a valid id.
-  - ElevenLabs: default voice ids are public premade voices — set `ELEVENLABS_VOICE_GUIDE/STATUS` explicitly.
-  - Presage: the browser records WebM; the SDK may need MP4 or raw frames. Confirm with the Presage booth.
-- **Camera scan, microphone and offline queue** were built but not exercised in a real browser with devices / DevTools
-  offline. Camera and mic need HTTPS (fine on Vultr via Caddy, fine on `localhost`).
+- **Live Presage measurement.** The official `@smartspectra/node-sdk` loads on Windows x64, and a dummy key
+  exercised the auth-failure path. No real key was available, so HR / RR / HRV from a real face has not been seen
+  end to end. First thing to do with a key: run the bridge, open `/crew/<id>` in Chrome or Edge, sit still 50–80 cm
+  from the camera with face and upper chest in the guide, and check "Presage · live" values against a pulse oximeter.
+- **Camera and microphone in a real browser.** All UI passes ran in a browser pane that blocks capture, so the live
+  instrument (acquiring → measuring), the mic level meter and live dictation weren't seen working. The blocked,
+  busy and no-camera states and the typed-note path were verified.
+- **Browser speech recognition** (the fallback when ElevenLabs isn't configured) sends audio to the browser vendor's
+  service in Chrome and Edge. Fine for a demo; use Scribe (`ELEVENLABS_MODE=real`) for anything else.
+- **Real adapters** (no keys): Gemini SBAR + extraction, ElevenLabs Scribe + TTS, S3 storage. The mock and fallback
+  paths are tested.
+- **Docker / TimescaleDB.** Docker Desktop's engine wasn't available on the build machine, so `docker compose up`,
+  both Dockerfiles and `PgRepo` (asyncpg, migrations, the `vitals_1m` continuous aggregate) have not run. Everything
+  ran against the in-memory store, which implements the same `Repo` interface. To check:
+  `docker compose up`, then `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/atollcare uv run pytest`.
 
 ## Simplifications
 
-- Breach penalty is measured as `elapsed_since_window_start + total_min − window_min` (the PRD formula omits elapsed
-  time, which would let a late case look in-window). Interim plans take the 3× penalty on the *interim* window and 1×
-  on definitive-care delay, so the chosen interim plan also scores best (`core/decision.py::score_route`).
-- Added `preferred_capabilities` (stroke → `stroke_unit`, IGMH only, −30 min bonus, only within window) so the stroke
-  scenario starts at IGMH as the PRD story requires; without it the engine (correctly) prefers Kulhudhuffushi's
-  airport-side hospital by 10 min. Team decision: keep, tune, or drop.
-- Added Laamu link road (`gan_l_rh ↔ kadhdhoo`) as a ground link alongside the Hulhulé ↔ Malé bridge.
-- Forecast extrapolation is capped at 2× the observed span, and parameters first measured later are back-filled, so
-  a partial → complete NEWS2 jump is not read as deterioration. Copy is hedged.
-- Automatic re-assessments (capacity, asset, demo-state changes) are debounced to once per 2 s per case — the
-  trailing run lands ≤ 2 s later. Direct case mutations (intake, vitals, decline) assess immediately.
-- Scan jobs and the guidance cache are in-memory (lost on engine restart); scan videos are not deleted by the app —
-  rely on the S3 lifecycle rule (README).
-- `pph_weather`: at sea state 6 nothing is feasible until the helicopter is toggled on — the engine says so
-  explicitly. That is the intended "constraint reasoning" demo but the presenter must know to toggle the helicopter.
-- Sim-clock times written to hypertables can be "in the future" relative to real time during a demo; the CAgg has
-  real-time aggregation on, and the trend query falls back to raw rows.
-- Map tiles default to OpenStreetMap's public tile server (CARTO now needs a key). Fine for a demo; set
-  `NEXT_PUBLIC_MAP_TILES` for anything heavier.
+- **No authentication.** Anyone with the URL can act as crew or hospital. Presenter tools are hidden behind a shortcut,
+  not protected.
+- **Polling, not push.** Both screens poll every 2 s (SWR). Hospital → crew questions can take up to ~2 s to appear.
+- **One shared hospital view.** The rail lists every handed-off transfer, whatever its destination. There's no
+  per-hospital inbox.
+- **Rule-based extraction** (when Gemini is off) understands common drugs, doses, routes and a few procedures. It
+  splits on clause boundaries, so "aspirin and GTN, oxygen 4 litres" gives three items, but unusual phrasing can be
+  missed. The crew's own words are always kept beside the chips.
+- **NEWS2 from contactless vitals is partial** until the crew adds SpO₂, BP, temperature and ACVPU. The UI says so and
+  prompts "Complete NEWS2".
+- **Simulated vitals** (demo signal) follow a profile picked from the complaint (for example, chest pain → HR rising
+  over the journey), so trends and alerts have something to show. They're labelled everywhere and never posted as
+  `presage`.
+- **Sim clock.** Journeys run on an accelerated clock (presenter speed 1–60×). Times written to the database can be
+  "in the future" relative to wall-clock time during a demo. The continuous aggregate has real-time aggregation on.
+- **Map tiles** come from Esri's public World Light Gray service (English labels, no key). Fine for a demo.
 
 ## Rough edges
 
-- No auth by design; the role switcher only sets the `X-Role` header used for timeline attribution.
-- `Date.now()` drives the 10 s "pulse" highlight in the hospital inbox; rows that arrive while the tab is hidden
-  won't pulse.
-- Board/map pages fetch each active case individually every 2 s — fine for a demo, not for many cases.
-- Engine pins the referred destination while a referral is pending; if it becomes incapable, the engine re-routes and
-  re-sends (visible as a `replanned` event), even if the specialist had already accepted.
+- The trend window is 60 sim-minutes. After a long fast-forward the oldest readings drop out of the chart.
+- Closing the transfer is crew-side only; the hospital sees `arrived` until then.
+- `docs/PRD.md` and `docs/CONCEPT.md` describe v1 (route optimiser, island reporter app) and are kept for history.

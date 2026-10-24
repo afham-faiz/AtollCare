@@ -4,7 +4,7 @@ export default function ({ className, ...props }: React.JSX.IntrinsicElements["s
   return (
     <span
       className={twMerge(
-        "inline-flex items-center gap-[.25rem] whitespace-nowrap rounded-[1rem] border-[1px] border-border bg-subtle px-[.625rem] py-[.125rem] text-[0.875rem] font-medium leading-[1.25rem] text-fg",
+        "inline-flex items-center gap-[.375rem] whitespace-nowrap rounded-full bg-well px-[.625rem] py-[.1875rem] text-[0.8125rem] font-[550] leading-[1.25rem] text-ink-2",
         className,
       )}
       {...props}

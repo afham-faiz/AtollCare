@@ -1,7 +1,8 @@
 """E2E: play the demo story through the live API.
 
-start transfer → contactless vitals (as the Presage bridge would post) → manual vitals → crew voice note →
-hospital question → crew answer → accept → fast-forward to arrival → close.
+start transfer (crew only, "preparing") → contactless vitals (as the Presage bridge would post) → manual vitals →
+crew voice note → send handoff (now the hospital sees it) → hospital question → crew answer → accept →
+fast-forward to arrival → close.
 
 Usage:  uv run --project engine python scripts/demo_e2e.py [--base http://localhost:8000]
 """
@@ -46,9 +47,18 @@ def main() -> int:
                                                           "temperature_c": 36.8, "consciousness": "A"})
     print("NEWS2:", ack["news2"]["total"], ack["news2"]["band"], "alerts:", [a["text"] for a in ack["alerts"]])
 
-    t = call("POST", f"/transfers/{tid}/notes", json={"text": "Gave aspirin 300 mg. Pain 8 out of 10, sweating.",
-                                                       "kind": "voice"})
+    t = call("POST", f"/transfers/{tid}/notes", json={"text": "Gave aspirin 300 mg and GTN spray. Oxygen 4 litres. "
+                                                               "Pain 8 out of 10, sweating.", "kind": "voice"})
     print("interventions:", [i["text"] for i in t["interventions"]])
+
+    def hospital_sees() -> bool:
+        return any(x["id"] == tid for x in call("GET", "/transfers", params={"status": "pending,accepted,arrived"}))
+
+    assert not hospital_sees(), "a transfer still being prepared must not reach the hospital"
+    t = call("POST", f"/transfers/{tid}/handoff")
+    assert t["status"] == "pending", t["status"]
+    assert hospital_sees()
+    print("handoff sent:", t["notes"][-1]["text"])
     t = call("POST", f"/transfers/{tid}/messages", json={"text": "Any allergy to blood thinners?", "sender": "Dr E2E"})
     q = next(n for n in t["notes"] if n["kind"] == "question")
     call("POST", f"/transfers/{tid}/notes", json={"text": "No known allergies", "reply_to": q["id"]})

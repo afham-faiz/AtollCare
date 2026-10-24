@@ -27,7 +27,7 @@ def _raw_regions() -> dict[str, dict[str, Any]]:
 
 @lru_cache
 def regions() -> dict[str, Region]:
-    return {rid: Region.model_validate({k: v for k, v in d.items() if k != "example"}) for rid, d in _raw_regions().items()}
+    return {rid: Region.model_validate({k: v for k, v in d.items() if k != "cases"}) for rid, d in _raw_regions().items()}
 
 
 def region(region_id: str) -> Region | None:
@@ -38,8 +38,13 @@ def region_summaries() -> list[RegionSummary]:
     return [RegionSummary(id=r.id, name=r.name, country=r.country, description=r.description) for r in regions().values()]
 
 
-def example(region_id: str) -> dict[str, Any] | None:
-    return _raw_regions().get(region_id, {}).get("example")
+def cases() -> list[dict[str, Any]]:
+    """Prepared demo cases from every region pack (each tagged with its region)."""
+    return [{**c, "region_id": rid} for rid, d in _raw_regions().items() for c in d.get("cases", [])]
+
+
+def case(case_id: str) -> dict[str, Any] | None:
+    return next((c for c in cases() if c["id"] == case_id), None)
 
 
 def facility(region_id: str, facility_id: str) -> Facility | None:

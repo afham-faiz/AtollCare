@@ -12,7 +12,8 @@ from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------- enums
 class TransferStatus(str, Enum):
-    pending = "pending"  # en route, awaiting hospital acceptance
+    preparing = "preparing"  # crew assessing; handoff not yet sent (not visible to the hospital)
+    pending = "pending"  # handoff sent, awaiting hospital acceptance
     accepted = "accepted"  # en route, receiving team accepted and is preparing
     arrived = "arrived"  # handed over at the destination
     closed = "closed"
@@ -246,6 +247,7 @@ class Transfer(BaseModel):
     alerts: list[Alert] = []
     alerts_announced: dict[str, datetime] = {}  # code → last time it was announced (spoken / timeline)
     briefing: Briefing | None = None
+    handoff_at: datetime | None = None
     acceptance: Acceptance | None = None
     interventions: list[Intervention] = []
     notes: list[Note] = []
@@ -330,6 +332,18 @@ class SpeakRequest(BaseModel):
 class DemoStatePatch(BaseModel):
     speed_multiplier: float | None = Field(None, gt=0, le=600)
     region_id: str | None = None
+
+
+class DemoCase(BaseModel):
+    id: str
+    region_id: str
+    title: str
+    patient: Patient
+    complaint: str
+    origin_id: str
+    destination_id: str
+    mode: TransportMode
+    suggested_note: str | None = None
 
 
 class BridgeHeartbeat(BaseModel):

@@ -80,7 +80,11 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
     n2_txt = "NEWS2 not yet available"
     if n2 and n2.total is not None:
         n2_txt = f"NEWS2 {n2.total} ({(n2.band or '').replace('_', '-')})" + ("" if n2.complete else f", {partial_label(n2).lower()}")
-    vitals = ", ".join(f"{lbl} {data['latest_vitals'][k]['value']}" for k, lbl in VITAL_LABELS if k in data["latest_vitals"])
+    def vital(k: str, lbl: str) -> str:
+        v = data["latest_vitals"][k]
+        return f"{lbl} {v['value']}" + (" (demo signal)" if v["source"] == "simulated" else "")
+
+    vitals = ", ".join(vital(k, lbl) for k, lbl in VITAL_LABELS if k in data["latest_vitals"])
     situation = f"{who} from {data['from']} by {data['transport'].lower()}, ETA {data['eta_local']}. {t.complaint.rstrip('.')}."
     background_parts = [n for n in data["crew_notes"]][-2:]
     background = "Crew notes: " + " · ".join(background_parts) if background_parts else "No crew notes yet."
@@ -105,12 +109,18 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
 
 
 # ---------------------------------------------------------------- note extraction (fallback when Gemini is off)
-INTERVENTION = re.compile(
-    r"\b(gave|given|administered|started|applied|inserted|put on|commenced|nebuli[sz]ed)\b[^.;,]*",
-    re.I,
-)
-DRUGS = re.compile(r"\b(aspirin|gtn|nitro\w*|morphine|oxygen|o2|adrenaline|salbutamol|txa|tranexamic acid|"
-                   r"fluids?|saline|paracetamol|ondansetron|heparin|clopidogrel|ticagrelor)\b[^.;,]*", re.I)
+# Works clause by clause so "gave aspirin 300 mg and GTN spray, oxygen 4 litres" yields three items, not one.
+CLAUSE = re.compile(r"\.(?!\d)|[;,]|\band\b|\bthen\b|\bplus\b", re.I)  # keeps "0.5 mg" whole
+GIVEN = re.compile(r"\b(gave|given|administered|started|applied|inserted|put on|commenced|nebuli[sz]ed|splinted)\b\s*", re.I)
+DRUG = re.compile(r"\b(aspirin|gtn|glyceryl trinitrate|nitro\w*|morphine|fentanyl|ketamine|methoxyflurane|penthrox|oxygen|o2|"
+                  r"adrenaline|epinephrine|salbutamol|ipratropium|txa|tranexamic acid|iv fluids?|fluids?|saline|"
+                  r"hartmann'?s|paracetamol|ondansetron|heparin|clopidogrel|ticagrelor|glucagon|glucose|naloxone|"
+                  r"midazolam|amiodarone)\b", re.I)
+PROCEDURE = re.compile(r"\b(iv access|cannula\w*|splint\w*|tourniquet|c-?collar|pelvic binder|traction|intubat\w*|"
+                       r"defibrillat\w*|cpr|12-lead)\b", re.I)
+DOSE = re.compile(r"\d+(\.\d+)?\s*(mg|mcg|micrograms?|g|ml|l|litres?|liters?|units?)\b|"
+                  r"\b(spray|puffs?|nebuli[sz]er|neb|iv|im|io|sublingual|bolus|infusion)\b", re.I)
+NOT_GIVEN = re.compile(r"\b(no|not|without|declined|refused|allergic|takes|taking|regular|usual|history)\b", re.I)
 OBSERVATION = re.compile(r"\b(pain [^.;,]*|sweat\w*|vomit\w*|pale|clammy|drowsy|confused|unresponsive|"
                          r"st elevation[^.;,]*|facial droop[^.;,]*|blood glucose [^.;,]*)", re.I)
 
@@ -120,12 +130,19 @@ def _cap(s: str) -> str:
     return s[:1].upper() + s[1:]
 
 
+def _intervention(clause: str) -> str | None:
+    thing = DRUG.search(clause) or PROCEDURE.search(clause)
+    if not thing or NOT_GIVEN.search(clause[: thing.start()]):
+        return None
+    given = GIVEN.search(clause)
+    # a drug named without a verb counts only with a dose or route ("oxygen 4 litres", "GTN spray")
+    if not given and not PROCEDURE.search(clause) and not DOSE.search(clause[thing.end():]):
+        return None
+    item = clause[given.end():] if given and given.end() <= thing.start() else clause[thing.start():]
+    return _cap(item.strip(" -")) or None
+
+
 def extract(text: str) -> Extraction:
-    interventions: list[str] = []
-    for m in INTERVENTION.finditer(text):
-        interventions.append(_cap(m.group(0)))
-    if not interventions:
-        interventions = [_cap(m.group(0)) for m in DRUGS.finditer(text)
-                         if not re.search(r"\bnot on\b|\bno\b", text[max(0, m.start() - 8): m.start()], re.I)]
+    interventions = [i for c in CLAUSE.split(text) if c and (i := _intervention(c))]
     observations = [_cap(m.group(0)) for m in OBSERVATION.finditer(text)]
-    return Extraction(observations=list(dict.fromkeys(observations))[:6], interventions=list(dict.fromkeys(interventions))[:4])
+    return Extraction(observations=list(dict.fromkeys(observations))[:6], interventions=list(dict.fromkeys(interventions))[:5])

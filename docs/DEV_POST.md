@@ -1,77 +1,71 @@
 ---
-title: "AtollCare: turning a phone chain into a parallel handoff for island emergencies"
+title: "AtollCare: the patient's story arrives before the patient does"
 published: false
-tags: hackathon, healthtech, ai, python
+tags: hackathon, healthtech, ai, webdev
 ---
 
-> Draft for the DEV Writing Challenge — edit, add screenshots and the live URL, then publish.
+> Draft for the DEV Writing Challenge. Add screenshots, a short video and the live URL, then publish.
 
-## The problem: distance and handoffs, not money
+## The problem
 
-The Maldives has around 190 inhabited islands across ~90,000 km² of ocean. Specialist care — cath lab, neurosurgery,
-ICU — is concentrated in Malé. When someone on an outer island has a heart attack, the clock is eaten by a
-*sequential phone chain*: health centre → atoll hospital → specialist in Malé → evacuation approval → transport
-operator. Each call waits for the previous one; information is lost at every hop.
+Remote emergency transfers (island, rural, maritime, mountain) can put a patient in a boat, ambulance or aircraft
+for an hour or more before they reach the hospital that can treat them. The crew have both hands on the patient. The
+receiving team, meanwhile, knows almost nothing until the doors open.
 
-Transport is constrained too. Seaplanes are fast but daylight-only. Speedboats stop running in rough seas. Fixed-wing
-flights only connect airports. A good decision needs the clock, the weather, the treatment window *and* live hospital
-capacity at the same time.
+We started with a nine-screen prototype for the Maldives: route optimiser, reporter app, dispatch board. Our
+testers were blunt. Too much, too specific, and the one thing that should feel magic (contactless vitals) didn't work.
+So we cut it to **two screens** and one loop.
 
 ## What we built
 
-**AtollCare** is one live case that travels with the patient:
+1. **Crew screen**: a tablet on a mount. The camera reads heart rate, breathing rate and HRV with **Presage**. The
+   crew tap once and talk. **ElevenLabs Scribe** transcribes, and **Gemini** pulls out what was given ("Aspirin
+   300 mg · GTN spray · Oxygen 4 litres"). One tap sends the handoff.
+2. **Hospital screen**: who's arriving, how sick, what's been given, every measurement with its source and age, an
+   SBAR, the ETA, and one primary decision: **Accept**. Questions typed here are spoken aloud in the vehicle. The
+   acceptance, and what's being prepared, appears on the crew screen.
 
-1. **Island** — a giant *Raise medical alert* button, voice or text description, a 30-second contactless face scan for
-   heart and breathing rate, and first-aid guidance read aloud.
-2. **Decision engine** — NEWS2 scoring, condition and treatment window, every feasible route (sea, seaplane,
-   fixed-wing chains, interim stabilisation stops), scored and explained.
-3. **Hospital** — an SBAR referral, vitals trend with a hedged deterioration forecast, one-click accept / decline /
-   request info. Declines re-route automatically.
-4. **Transport** — dispatch board, live map, accelerated simulator, spoken status updates for the family.
+## Presage: making the camera an instrument
 
-The headline on every screen: *Symptom → definitive care: X h Y min, Z min faster than the phone chain.*
+Presage's SmartSpectra is validated for a camera that *isn't* handheld, with the face and upper chest in view, a
+still patient, and about 30 seconds for breathing to settle. That's exactly a mounted tablet in an ambulance, so we
+designed around it:
 
-## How each sponsor's tech fits
+- **`presage-bridge/`** runs the official `@smartspectra/node-sdk` next to the camera. The browser streams RGBA frames
+  over a local WebSocket (16-byte header: magic, width, height, capture time) into `sendFrame`, and gets back HR, RR,
+  HRV, the breathing trace and framing hints ("Too far — move the camera closer", "Chest not visible — show the
+  upper chest").
+- **Video never leaves the vehicle.** Every 5 s the bridge posts only *stable* numbers to the engine.
+- **The UI tells the truth.** Readings show *Presage · acquiring* until they're stable. Pulse above the validated
+  110 BPM is flagged *confirm with a monitor*. Without a key the screen switches to a **Demo signal**, labelled on both
+  screens and in the SBAR as "(demo signal)".
 
-- **Presage SmartSpectra** — the phone records a 30 s face video; the engine's `PresageAdapter` turns it into HR and
-  RR, which feed NEWS2 (as a clearly labelled *partial* score) and the vitals trend.
-- **Gemini** — structured intake from messy text (JSON schema output constrained to our condition IDs), SBAR summaries,
-  a plain-language explanation of why a route won, and *selecting* (never writing) steps from a vetted first-aid
-  library. Every call has a deterministic fallback.
-- **ElevenLabs** — Scribe speech-to-text for voice intake; TTS for first-aid steps, family status updates and a crew
-  brief, cached by content hash in object storage.
-- **Tiger Data** — `vitals_readings`, `transport_positions` and `case_events` are hypertables; a `vitals_1m`
-  continuous aggregate with real-time aggregation feeds the trend chart and the least-squares forecast.
-- **Vultr** — the whole stack runs on a Cloud Compute VM with Docker Compose and Caddy (automatic HTTPS via
-  `sslip.io`), with scan videos and audio in Vultr Object Storage.
+## The rest of the stack
 
-## The engine, briefly
+- **Engine (FastAPI + Pydantic):** transfer lifecycle (`preparing → pending → accepted → arrived → closed`), NEWS2
+  (partial until the crew add SpO₂ / BP / temperature / ACVPU), a least-squares deterioration forecast, and alerts with
+  hysteresis so they don't flap. Pydantic models generate the OpenAPI spec and, from that, the web app's TypeScript
+  types.
+- **Gemini** writes the SBAR with a JSON response schema and only from recorded facts. A deterministic template takes
+  over if it fails, and the UI says which one wrote it.
+- **Tiger Data:** vitals and notes are hypertables. A one-minute continuous aggregate with real-time aggregation feeds
+  the trend chart and forecast.
+- **Vultr:** engine + web on Cloud Compute behind Caddy (automatic HTTPS). The bridge in the vehicle posts to it.
+- **Web (Next.js 16):** a light, quiet clinical interface. The crew screen fits a 1024×768 tablet without scrolling,
+  and the hospital detail pane lays out by its own width with container queries.
 
-The interesting part is deterministic and tested. Routes are enumerated per candidate hospital from templates —
-direct sea, seaplane (with Malé reached via the Hulhulé seaplane base), sea → fixed-wing → ground chains, and
-*interim-stop* plans (e.g. fibrinolysis at a regional hospital, then onward). Assets are dispatched in parallel at time
-zero, so a fixed-wing can be flying to Kadhdhoo while the speedboat is still at sea.
+## What was hard
 
-```
-score = total_min + 3 × window breach − medic bonus + 15 per extra handover + 1000 if infeasible
-```
-
-If no route reaches definitive care inside the window, the engine picks the best plan that meets the *interim*
-window and says so: "No route reaches PCI within 120 min. Recommended: fibrinolysis at Gan Regional (ETA 51 min), then
-by fixed-wing to IGMH." Infeasible routes stay visible with reasons ("seaplane: night — after sunset 18:15").
-
-## Challenges
-
-- **A night scenario during a daytime pitch.** Everything runs on a simulated clock with an offset and speed
-  multiplier, so we can jump to 21:00 and watch a boat cross an atoll at 60×.
-- **Not letting AI make clinical decisions.** The LLM extracts and explains; a clinical standard scores; an auditable
-  optimiser decides; humans act.
-- **Presage in the browser.** There's no confirmed browser SDK, so we record video client-side and process it on the
-  server behind an adapter with `sdk | cloud | mock | manual` modes.
+- **Being honest about data provenance.** Every value carries `presage`, `manual` or `simulated` and a timestamp.
+  We render it next to the number, not in a legend.
+- **Designing for a moving vehicle.** One primary action at a time, status in words as well as colour, a hospital
+  question that lands *on* the mic button, and everything spoken aloud once.
+- **A demo that survives stage conditions.** Prepared cases, a presenter panel behind a shortcut, a sim clock for the
+  journey, and a typed fallback for every voice step.
 
 ## What's next
 
-Real referral and transport timing data, Dhivehi voice once verified, SMS/WhatsApp intake, and integration with
-national health records — plus the same model for the Pacific, Indonesia, the Philippines and the Scottish isles.
+Per-hospital inboxes and authentication, push instead of polling, SMS fallback for low-connectivity legs, and
+validation of the contactless readings against a monitor in a real vehicle.
 
-*Decision support only. All clinical windows, speeds and capabilities in the demo are illustrative assumptions.*
+*Decision support only. No real patient data. Clinical thresholds and timings in the demo are illustrative.*

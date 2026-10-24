@@ -4,29 +4,127 @@
   "country": "United Kingdom",
   "description": "Island and Highland communities hours from Glasgow and Inverness; fixed-wing and helicopter air ambulances.",
   "timezone": "Europe/London",
-  "center": {"lat": 57.2, "lng": -5.6},
+  "center": {
+    "lat": 57.2,
+    "lng": -5.6
+  },
   "zoom": 6,
-  "modes": ["road", "boat", "helicopter", "plane"],
-  "facilities": [
-    {"id": "qeuh", "name": "Queen Elizabeth University Hospital, Glasgow", "short_name": "QEUH Glasgow", "kind": "hospital", "lat": 55.862, "lng": -4.339},
-    {"id": "golden_jubilee", "name": "Golden Jubilee National Hospital, Clydebank", "short_name": "Golden Jubilee", "kind": "hospital", "lat": 55.9036, "lng": -4.4042},
-    {"id": "raigmore", "name": "Raigmore Hospital, Inverness", "short_name": "Raigmore Inverness", "kind": "hospital", "lat": 57.4746, "lng": -4.1965},
-    {"id": "western_isles", "name": "Western Isles Hospital, Stornoway", "short_name": "Western Isles Hospital", "kind": "hospital", "lat": 58.214, "lng": -6.387},
-    {"id": "uist_barra", "name": "Uist & Barra Hospital, Benbecula", "short_name": "Uist & Barra Hospital", "kind": "hospital", "lat": 57.472, "lng": -7.374},
-    {"id": "broadford", "name": "Broadford Hospital, Isle of Skye", "short_name": "Broadford Hospital", "kind": "hospital", "lat": 57.241, "lng": -5.913},
-    {"id": "castlebay", "name": "Castlebay Health Centre, Barra", "short_name": "Castlebay (Barra)", "kind": "clinic", "lat": 56.955, "lng": -7.487},
-    {"id": "tarbert", "name": "Tarbert Health Centre, Harris", "short_name": "Tarbert (Harris)", "kind": "clinic", "lat": 57.898, "lng": -6.802},
-    {"id": "tiree", "name": "Tiree Medical Practice", "short_name": "Tiree", "kind": "clinic", "lat": 56.503, "lng": -6.88},
-    {"id": "coll", "name": "Coll Medical Practice", "short_name": "Coll", "kind": "clinic", "lat": 56.616, "lng": -6.55}
+  "modes": [
+    "road",
+    "boat",
+    "helicopter",
+    "plane"
   ],
-  "example": {
-    "patient": {"label": "Morag (demo)", "age": 67, "sex": "F"},
-    "origin_id": "castlebay",
-    "destination_id": "qeuh",
-    "mode": "plane",
-    "complaint": "Sudden weakness of the left arm and slurred speech, started 50 minutes ago.",
-    "profile": {"heart_rate": 88, "heart_rate_per_hour": 6, "resp_rate": 17, "resp_rate_per_hour": 2, "hrv_rmssd": 30},
-    "baseline_vitals": {"spo2": 96, "on_oxygen": false, "systolic_bp": 182, "temperature_c": 36.9, "consciousness": "A"},
-    "notes": ["Facial droop on the left. Last seen well at 14:10. Blood glucose 6.2. Not on anticoagulants."]
-  }
+  "facilities": [
+    {
+      "id": "qeuh",
+      "name": "Queen Elizabeth University Hospital, Glasgow",
+      "short_name": "QEUH Glasgow",
+      "kind": "hospital",
+      "lat": 55.862,
+      "lng": -4.339
+    },
+    {
+      "id": "golden_jubilee",
+      "name": "Golden Jubilee National Hospital, Clydebank",
+      "short_name": "Golden Jubilee",
+      "kind": "hospital",
+      "lat": 55.9036,
+      "lng": -4.4042
+    },
+    {
+      "id": "raigmore",
+      "name": "Raigmore Hospital, Inverness",
+      "short_name": "Raigmore Inverness",
+      "kind": "hospital",
+      "lat": 57.4746,
+      "lng": -4.1965
+    },
+    {
+      "id": "western_isles",
+      "name": "Western Isles Hospital, Stornoway",
+      "short_name": "Western Isles Hospital",
+      "kind": "hospital",
+      "lat": 58.214,
+      "lng": -6.387
+    },
+    {
+      "id": "uist_barra",
+      "name": "Uist & Barra Hospital, Benbecula",
+      "short_name": "Uist & Barra Hospital",
+      "kind": "hospital",
+      "lat": 57.472,
+      "lng": -7.374
+    },
+    {
+      "id": "broadford",
+      "name": "Broadford Hospital, Isle of Skye",
+      "short_name": "Broadford Hospital",
+      "kind": "hospital",
+      "lat": 57.241,
+      "lng": -5.913
+    },
+    {
+      "id": "castlebay",
+      "name": "Castlebay Health Centre, Barra",
+      "short_name": "Castlebay (Barra)",
+      "kind": "clinic",
+      "lat": 56.955,
+      "lng": -7.487
+    },
+    {
+      "id": "tarbert",
+      "name": "Tarbert Health Centre, Harris",
+      "short_name": "Tarbert (Harris)",
+      "kind": "clinic",
+      "lat": 57.898,
+      "lng": -6.802
+    },
+    {
+      "id": "tiree",
+      "name": "Tiree Medical Practice",
+      "short_name": "Tiree",
+      "kind": "clinic",
+      "lat": 56.503,
+      "lng": -6.88
+    },
+    {
+      "id": "coll",
+      "name": "Coll Medical Practice",
+      "short_name": "Coll",
+      "kind": "clinic",
+      "lat": 56.616,
+      "lng": -6.55
+    }
+  ],
+  "cases": [
+    {
+      "id": "sc-stroke",
+      "title": "Suspected stroke, island to Glasgow",
+      "patient": {
+        "label": "Morag (demo)",
+        "age": 67,
+        "sex": "F"
+      },
+      "origin_id": "castlebay",
+      "destination_id": "qeuh",
+      "mode": "plane",
+      "complaint": "Sudden weakness of the left arm and slurred speech, started 50 minutes ago.",
+      "profile": {
+        "heart_rate": 88,
+        "heart_rate_per_hour": 6,
+        "resp_rate": 17,
+        "resp_rate_per_hour": 2,
+        "hrv_rmssd": 30
+      },
+      "baseline_vitals": {
+        "spo2": 96,
+        "on_oxygen": false,
+        "systolic_bp": 182,
+        "temperature_c": 36.9,
+        "consciousness": "A"
+      },
+      "suggested_note": "Facial droop on the left. Last seen well at ten past two. Blood glucose six point two. Not on anticoagulants."
+    }
+  ]
 }

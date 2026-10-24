@@ -4,7 +4,7 @@
 import useSWR from "swr";
 
 import { POLL_MS } from "@/app/config";
-import { fetcher, type MetaResponse, type Transfer, type TransferListItem, type TrendResponse } from "@/lib/api";
+import { fetcher, type DemoCase, type MetaResponse, type Transfer, type TransferListItem, type TrendResponse } from "@/lib/api";
 
 const live = { refreshInterval: POLL_MS, keepPreviousData: true };
 
@@ -14,3 +14,4 @@ export const useTransfers = (status = "") =>
   useSWR<TransferListItem[]>(`/transfers${status ? `?status=${status}` : ""}`, fetcher, live);
 export const useTrend = (id?: string) =>
   useSWR<TrendResponse>(id ? `/transfers/${id}/vitals/trend?window_min=90` : null, fetcher, { ...live, refreshInterval: 5000 });
+export const useDemoCases = (enabled: boolean) => useSWR<DemoCase[]>(enabled ? "/demo/cases" : null, fetcher);

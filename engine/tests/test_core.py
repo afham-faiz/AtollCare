@@ -20,12 +20,12 @@ NOW = datetime(2026, 10, 24, 12, tzinfo=UTC)
 def test_region_packs_load_and_examples_are_valid():
     packs = regions.regions()
     assert {"maldives", "scotland"} <= set(packs)
-    for rid, r in packs.items():
-        ex = regions.example(rid)
-        assert ex, rid
-        assert regions.facility(rid, ex["origin_id"]) and regions.facility(rid, ex["destination_id"])
-        assert TransportMode(ex["mode"]) in r.modes
+    for r in packs.values():
         assert any(f.kind == "hospital" for f in r.facilities)
+    for c in regions.cases():
+        r = packs[c["region_id"]]
+        assert regions.facility(r.id, c["origin_id"]) and regions.facility(r.id, c["destination_id"]), c["id"]
+        assert TransportMode(c["mode"]) in r.modes
 
 
 def test_journey_eta_scales_with_mode():
@@ -84,6 +84,15 @@ def test_rule_extraction_of_interventions_and_observations():
     assert any(o.lower().startswith("pain 8") for o in e.observations)
     assert any("st elevation" in o.lower() for o in e.observations)
     assert briefing.extract("Not on anticoagulants").interventions == []
+
+
+def test_rule_extraction_splits_each_treatment():
+    e = briefing.extract("Gave aspirin 300 mg and GTN spray. Oxygen 4 litres. Pain 8 out of 10.")
+    assert e.interventions == ["Aspirin 300 mg", "GTN spray", "Oxygen 4 litres"]
+    assert briefing.extract("Gave adrenaline 0.5 mg IM").interventions == ["Adrenaline 0.5 mg IM"]
+    assert briefing.extract("Started IV fluids 500 ml, applied pelvic binder").interventions == ["IV fluids 500 ml", "Pelvic binder"]
+    # patient's own medication and negatives are not treatments given
+    assert briefing.extract("Takes aspirin daily. No blood thinners").interventions == []
 
 
 def test_suspected_condition_keywords():

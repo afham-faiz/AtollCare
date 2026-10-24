@@ -1,12 +1,13 @@
 import { twMerge } from "tailwind-merge";
 
-import ButtonBase from "./ButtonBase";
+import styles from "./Button.module.scss";
+import type { ButtonSize } from "./ButtonBase";
 
-export default function ({ className, ...props }: React.JSX.IntrinsicElements["button"]) {
-  return (
-    <ButtonBase
-      className={twMerge("border-alert bg-alert text-white hover:bg-alert hover:opacity-90", className)}
-      {...props}
-    />
-  );
+export default function ({
+  className,
+  type = "button",
+  size = "md",
+  ...props
+}: React.JSX.IntrinsicElements["button"] & { size?: ButtonSize }) {
+  return <button type={type} className={twMerge(styles.button, styles[size], styles.danger, className)} {...props} />;
 }

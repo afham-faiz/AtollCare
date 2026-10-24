@@ -76,6 +76,11 @@ async def message(transfer_id: UUID, body: MessageRequest, h: Hub = Depends(hub)
     return await h.transfers.message(transfer_id, body)
 
 
+@router.post("/{transfer_id}/handoff", response_model=Transfer)
+async def handoff(transfer_id: UUID, h: Hub = Depends(hub)):
+    return await h.transfers.handoff(transfer_id)
+
+
 @router.post("/{transfer_id}/accept", response_model=Transfer)
 async def accept(transfer_id: UUID, body: AcceptRequest, h: Hub = Depends(hub)):
     return await h.transfers.accept(transfer_id, body)

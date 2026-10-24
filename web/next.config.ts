@@ -6,6 +6,8 @@ const ENGINE_INTERNAL_URL = process.env.ENGINE_INTERNAL_URL ?? "http://localhost
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // The floating dev badge sits on top of the crew screen's mic button; build/runtime errors still surface.
+  devIndicators: false,
   turbopack: {
     rules: {
       // Only the global stylesheet needs Tailwind; matching "*.css" would also swallow compiled *.module.scss

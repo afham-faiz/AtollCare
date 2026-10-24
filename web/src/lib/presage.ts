@@ -21,9 +21,25 @@ const FRAME_WIDTH = 640;
 const FPS = 20;
 const MAX_BUFFERED = 4 * 1024 * 1024;
 
+// denied: the user or browser refused; busy: another app holds the camera (common on Windows); unavailable: none found
+export type CameraState = "off" | "starting" | "on" | "denied" | "busy" | "unavailable";
+
+const PREFERRED: MediaStreamConstraints = {
+  video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
+  audio: false,
+};
+
+function cameraError(err: unknown): CameraState {
+  const name = err instanceof DOMException ? err.name : "";
+  if (name === "NotAllowedError" || name === "SecurityError") return "denied";
+  if (name === "NotReadableError" || name === "AbortError") return "busy";
+  return "unavailable";
+}
+
 export function useCamera(enabled: boolean) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [camera, setCamera] = useState<"off" | "starting" | "on" | "denied" | "unavailable">("off");
+  const [camera, setCamera] = useState<CameraState>("off");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!enabled) return;
@@ -36,21 +52,22 @@ export function useCamera(enabled: boolean) {
       }
       setCamera("starting");
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-          audio: false,
-        });
+        // some USB and virtual cameras reject the preferred shape; any frame size works for Presage
+        const opened = await navigator.mediaDevices
+          .getUserMedia(PREFERRED)
+          .catch((err) => (err instanceof DOMException && err.name === "OverconstrainedError" ? navigator.mediaDevices.getUserMedia({ video: true }) : Promise.reject(err)));
+        stream = opened;
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          opened.getTracks().forEach((t) => t.stop());
           return;
         }
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = opened;
           await videoRef.current.play().catch(() => undefined);
         }
         setCamera("on");
       } catch (err) {
-        setCamera(err instanceof DOMException && err.name === "NotAllowedError" ? "denied" : "unavailable");
+        setCamera(cameraError(err));
       }
     };
     open();
@@ -58,9 +75,9 @@ export function useCamera(enabled: boolean) {
       cancelled = true;
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [enabled]);
+  }, [enabled, attempt]);
 
-  return { videoRef, camera };
+  return { videoRef, camera, retry: () => setAttempt((a) => a + 1) };
 }
 
 export function usePresage(transferId: string | undefined, video: HTMLVideoElement | null, cameraOn: boolean) {
@@ -68,6 +85,7 @@ export function usePresage(transferId: string | undefined, video: HTMLVideoEleme
   const [message, setMessage] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<PresageMetrics>({ hr: null, rr: null, hrv: null, trace: [] });
+  const [since, setSince] = useState<number | null>(null); // when the SDK started measuring (for the 30 s window)
   const wsRef = useRef<WebSocket | null>(null);
 
   const sendFrames = useCallback((ws: WebSocket, el: HTMLVideoElement) => {
@@ -120,6 +138,7 @@ export function usePresage(transferId: string | undefined, video: HTMLVideoEleme
         setMessage(msg.message ?? null);
         if (msg.state === "running") {
           setState("running");
+          setSince(Date.now());
           stopFrames?.();
           stopFrames = sendFrames(ws, video);
         } else if (msg.state === "no_api_key") {
@@ -140,5 +159,5 @@ export function usePresage(transferId: string | undefined, video: HTMLVideoEleme
     };
   }, [transferId, cameraOn, video, sendFrames]);
 
-  return { state, message, hint, metrics };
+  return { state, message, hint, metrics, since };
 }

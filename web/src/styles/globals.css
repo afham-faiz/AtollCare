@@ -1,78 +1,182 @@
 @import "tailwindcss";
 
-/* Light, clinical palette: neutrals + ocean teal (brand) + red (critical only) + amber (warnings) + blue (hospital). */
+/* ───────────────────────────────────────────────────────────────────────────────
+   AtollCare design tokens — light, clinical, calm. 90% calm, 10% extraordinary.
+   Colour is never the only carrier of meaning: every status also has text/icon.
+   ─────────────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg: #f5f7f8;
+  /* surfaces */
+  --canvas: #f7f9fb;
   --surface: #ffffff;
-  --subtle: #eef2f4;
-  --fg: #0f1a21;
-  --muted: #5d6b75;
-  --faint: #8a979f;
-  --border: #e1e7eb;
-  --brand: #0e7c86;
-  --brand-strong: #0a5f67;
-  --brand-soft: #e5f3f4;
-  --alert: #d92d20;
-  --alert-soft: #fdeceb;
-  --warn: #c76a00;
-  --warn-soft: #fef3e2;
-  --info: #2563c9;
-  --info-soft: #eaf1fd;
+  --well: #f1f5f8; /* recessed fills: inputs, segmented tracks */
+  --line: #e7edf2; /* hairlines */
+  --line-strong: #d5dee6;
+
+  /* ink */
+  --ink: #172a3a;
+  --ink-2: #4f6377; /* secondary text */
+  --ink-3: #8a9aaa; /* tertiary, meta */
+
+  /* accents — used sparingly */
+  --accent: #2579ce; /* actions, links, the hospital */
+  --accent-strong: #1b62ad;
+  --accent-soft: #eaf2fb;
+  --teal: #0f9286; /* live sensor, accepted, healthy */
+  --teal-strong: #0b766c;
+  --teal-soft: #e5f4f2;
+  --caution: #a8620a; /* text-safe amber */
+  --caution-fill: #f2a33a;
+  --caution-soft: #fff4e3;
+  --critical: #c8322a; /* genuine clinical urgency only */
+  --critical-soft: #fdeceb;
+  --viewport: #0e1922; /* the camera instrument */
+
+  /* elevation */
+  --shadow-1: 0 1px 2px rgba(23, 42, 58, 0.04);
+  --shadow-2: 0 1px 2px rgba(23, 42, 58, 0.04), 0 8px 24px -8px rgba(23, 42, 58, 0.1);
+  --shadow-3: 0 2px 6px rgba(23, 42, 58, 0.06), 0 24px 60px -12px rgba(23, 42, 58, 0.22);
+
+  /* motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-1: 140ms;
+  --dur-2: 240ms;
+  --dur-3: 420ms;
+  --dur-4: 700ms;
+
   color-scheme: light;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
-  --color-subtle: var(--subtle);
-  --color-fg: var(--fg);
-  --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --color-border: var(--border);
-  --color-brand: var(--brand);
-  --color-brand-strong: var(--brand-strong);
-  --color-brand-soft: var(--brand-soft);
-  --color-alert: var(--alert);
-  --color-alert-soft: var(--alert-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-info: var(--info);
-  --color-info-soft: var(--info-soft);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --animate-skeleton: skeleton 1.4s ease-in-out infinite;
-  --animate-beat: beat 1s ease-in-out infinite;
+  --color-well: var(--well);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-teal: var(--teal);
+  --color-teal-strong: var(--teal-strong);
+  --color-teal-soft: var(--teal-soft);
+  --color-caution: var(--caution);
+  --color-caution-fill: var(--caution-fill);
+  --color-caution-soft: var(--caution-soft);
+  --color-critical: var(--critical);
+  --color-critical-soft: var(--critical-soft);
+  --color-viewport: var(--viewport);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --animate-skeleton: skeleton 1.6s var(--ease-in-out) infinite;
 }
 
-@keyframes skeleton {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes beat {
-  0%, 100% { transform: scale(1); }
-  15% { transform: scale(1.18); }
-  30% { transform: scale(1); }
-}
-
+/* ─── base ───────────────────────────────────────────────────────────────────── */
 html,
 body {
-  background: var(--bg);
+  background: var(--canvas);
 }
 
 body {
-  color: var(--fg);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
 }
 
 input,
 select,
-textarea {
-  font-size: 1rem;
+textarea,
+button {
+  font: inherit;
+  color: inherit;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "ss01";
+}
+
+/* ─── motion primitives ──────────────────────────────────────────────────────── */
+@keyframes skeleton {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes value-in {
+  from { opacity: 0.25; transform: translateY(0.25rem); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 45%, transparent); }
+  70% { box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--teal) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.rise-in {
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+}
+
+.fade-in {
+  animation: fade-in var(--dur-2) var(--ease-out) both;
+}
+
+.value-in {
+  display: inline-block;
+  animation: value-in var(--dur-3) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── third party ────────────────────────────────────────────────────────────── */
 .leaflet-container {
   font-family: var(--font-sans);
-  background: var(--subtle);
+  background: var(--well);
+}
+
+.leaflet-tooltip {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-2);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }

@@ -1,10 +1,12 @@
-// Accept the transfer and say what is being prepared — read aloud in the vehicle.
+// Accept the transfer and say what's being prepared — read aloud in the vehicle.
 "use client";
 
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import ButtonBase from "@/app/components/(buttons)/ButtonBase";
 import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
+import field from "@/app/components/(controls)/Field.module.scss";
 import ModalPrimary from "@/app/components/(modals)/ModalPrimary";
 import { post, type Transfer } from "@/lib/api";
 import { toastError } from "@/lib/toast";
@@ -62,40 +64,35 @@ export default function ({
     <ModalPrimary
       open={open}
       onClose={onClose}
-      title={`Accept ${t.code}`}
+      title="Accept transfer"
+      subtitle="Your response is read aloud to the crew"
       footer={
         <>
           <ButtonBase onClick={onClose}>Cancel</ButtonBase>
           <ButtonPrimary onClick={submit} disabled={busy || !by.trim()}>
-            Accept
+            <Check size={18} /> Accept
           </ButtonPrimary>
         </>
       }
     >
-      <label className={styles.field}>
-        <span>Your name</span>
-        <input value={by} onChange={(e) => setBy(e.target.value)} placeholder="Dr … (Cardiology)" autoFocus />
+      <label className={field.field}>
+        <span className={field.label}>Accepting clinician</span>
+        <input className={field.input} value={by} onChange={(e) => setBy(e.target.value)} placeholder="Dr … , Cardiology" autoFocus />
       </label>
-      <div className={styles.field}>
-        <span>Preparing</span>
+      <div className={field.field}>
+        <span className={field.label}>Preparing</span>
         <div className={styles.chips}>
           {options.map((o) => (
-            <button
-              key={o}
-              type="button"
-              aria-pressed={prepare.includes(o)}
-              onClick={() => setPrepare((p) => (p.includes(o) ? p.filter((x) => x !== o) : [...p, o]))}
-            >
+            <button key={o} type="button" aria-pressed={prepare.includes(o)} onClick={() => setPrepare((p) => (p.includes(o) ? p.filter((x) => x !== o) : [...p, o]))}>
               {o}
             </button>
           ))}
         </div>
       </div>
-      <label className={styles.field}>
-        <span>Message to the crew (optional)</span>
-        <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="e.g. Come straight to resus bay 2" />
+      <label className={field.field}>
+        <span className={field.label}>Message to the crew</span>
+        <input className={field.input} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Optional — e.g. come straight to resus bay 2" />
       </label>
-      <p className="text-[0.875rem] text-muted">This is read aloud in the vehicle.</p>
     </ModalPrimary>
   );
 }

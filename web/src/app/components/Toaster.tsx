@@ -1,35 +1,36 @@
 "use client";
 
-import { X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 
 import { dismiss, useToasts } from "@/lib/toast";
 
 const TONE = {
-  info: "border-l-brand",
-  warn: "border-l-warn",
-  error: "border-l-alert",
+  info: { icon: CheckCircle2, cls: "text-teal" },
+  warn: { icon: Info, cls: "text-caution" },
+  error: { icon: AlertCircle, cls: "text-critical" },
 };
 
 export default function () {
   const toasts = useToasts();
   return (
-    <div className="fixed bottom-[1rem] right-[1rem] left-[1rem] z-[3000] flex flex-col items-end gap-[.5rem] pointer-events-none">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          className={twMerge(
-            "pointer-events-auto flex max-w-[28rem] items-start gap-[.75rem] rounded-[.5rem] border-l-[.25rem] border-[1px] border-border bg-surface px-[1rem] py-[.75rem] shadow-lg",
-            TONE[t.tone],
-          )}
-        >
-          <p className="text-[0.875rem]">{t.text}</p>
-          <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="text-muted">
-            <X size={16} />
-          </button>
-        </div>
-      ))}
+    <div className="pointer-events-none fixed top-[4.5rem] left-1/2 z-[3000] flex w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-[.5rem]" aria-live="polite">
+      {toasts.map((t) => {
+        const { icon: Icon, cls } = TONE[t.tone];
+        return (
+          <div
+            key={t.id}
+            role="status"
+            className="rise-in pointer-events-auto flex items-start gap-[.75rem] rounded-[1rem] border-[1px] border-line bg-surface px-[1rem] py-[.75rem] shadow-3"
+          >
+            <Icon size={18} className={twMerge("mt-[.125rem] shrink-0", cls)} />
+            <p className="flex-1 text-[0.9375rem]">{t.text}</p>
+            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="text-ink-3 hover:text-ink">
+              <X size={16} />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

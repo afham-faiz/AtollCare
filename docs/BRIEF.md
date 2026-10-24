@@ -20,8 +20,10 @@ Western Isles ship as examples, and a new region is a single JSON file.
 
 | Screen | Device | What it shows (nothing else) |
 |---|---|---|
-| **Crew** `/crew` | Tablet or laptop on a mount, landscape | Camera with framing guide · live HR / RR / HRV and breathing waveform (Presage) · NEWS2 · one big **Speak** button · hospital messages read aloud · ETA |
-| **Hospital** `/hospital` | Desktop / tablet | Incoming transfers · live vitals tiles and trend · AI briefing (SBAR) · timeline of crew notes and interventions · ETA map · **Accept** / **Ask crew** |
+| **Crew** `/crew` | Tablet or laptop on a mount, landscape | Patient + status · camera instrument with framing guide · live HR / RR / HRV and breathing waveform (Presage) · crew-entered SpO₂ / BP / temp / ACVPU · NEWS2 · one mic button · **Send handoff** · hospital questions and acceptance, read aloud · ETA |
+| **Hospital** `/hospital` | Desktop / tablet | Incoming transfers · condition, urgency, arrival · vitals with source and age · SBAR + what's been given · trend · **Accept** (primary) · Ask the crew · map (secondary) |
+
+A transfer is **crew-only while it's being prepared**. The hospital sees it the moment the crew send the handoff.
 
 ## Why Presage is the main track
 
@@ -34,7 +36,7 @@ Western Isles ship as examples, and a new region is a single JSON file.
 - **Honest limits shown in the UI:** pulse is validated for 40–110 BPM (higher readings are flagged *confirm
   manually*). Breathing takes 30 s to settle. Contactless HR + RR give only a *partial* NEWS2, and the crew adds
   SpO₂ / BP / temperature / ACVPU with a few taps.
-- **No API key? The demo still works:** a clearly labelled *simulated* vitals source takes over.
+- **No API key? The demo still works:** a clearly labelled *demo signal* takes over, on both screens and in the SBAR.
 
 ## Sponsor tracks
 
@@ -48,13 +50,17 @@ Western Isles ship as examples, and a new region is a single JSON file.
 
 ## The demo (3 minutes)
 
-1. **Crew screen** on a laptop on a stand. A teammate lies back as the patient. *Start transfer*: chest pain, Isdhoo →
-   Malé by sea ambulance. Camera on → Presage hints "hold still" → HR and RR appear, breathing waveform moves.
-2. Crew taps **Speak**: "Gave 300 mg aspirin, pain eight out of ten, sweating." → note and intervention appear.
-3. **Hospital screen**: the transfer is already there, with the briefing written and the trend drawing. Doctor taps
-   **Ask crew**: "Any allergy to blood thinners?" → the laptop speaks it → crew answers by voice.
-4. Doctor taps **Accept · prepare cath lab** → the vehicle hears "IGMH accepted, cath lab is being prepared."
-5. Close: "Same app, any region": switch the region pack to the Western Isles → Glasgow by air.
+Full script with setup and backups: [`PITCH.md`](PITCH.md).
+
+1. **Crew screen** on a laptop on a stand. A teammate lies back as the patient. Prepared case *Chest pain on a sea
+   ambulance* (presenter panel, Ctrl + .). Presage acquires → HR and RR appear as *Presage · live*, the breathing
+   waveform moves.
+2. Crew taps the mic: "Gave aspirin 300 milligrams and GTN spray, oxygen four litres, pain eight out of ten." → chips
+   appear. **Send handoff** → review → send.
+3. **Hospital screen**: the transfer arrives with condition, urgency, arrival time, sourced vitals and the SBAR.
+   **Ask the crew**: "On blood thinners?" → the laptop speaks it → crew answer by voice.
+4. **Accept** · cath lab · "Come straight to the cath lab" → the crew dock shows it, and the vehicle hears it.
+5. Close: "Same app, any region": Western Isles → *Suspected stroke, island to Glasgow*.
 
 ## What we are dropping
 
