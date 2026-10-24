@@ -1,70 +1,82 @@
-# Feature checklist (v2: two screens)
+# Feature checklist (v2: two screens + network insights)
 
 ✅ built and exercised · ⚠️ built, not verified end to end (see the note) · ❌ not built.
 
-**How it was verified:** 81 engine tests (`engine/tests`); `scripts/demo_e2e.py` against a live engine (in-memory
-store, mock adapters); `bun run typecheck`, `lint` and `build`; manual browser passes of the full story at
-1440×900, 1024×768 and 390×844 (plus ~800 px), in a browser where **camera and microphone were blocked**. Live capture
-paths therefore show ⚠️ below.
+**How it was verified:** 88 engine tests, run against both the in-memory store and TimescaleDB 2.31 / Postgres 17
+(`TEST_DATABASE_URL`); 7 web unit tests (`bun run test`); `scripts/demo_e2e.py` against a live engine; `ruff check`,
+`bun run typecheck`, `lint` and `build`; production images built and smoke-tested; browser passes at 1440×900,
+1024×768 and 390×844. Real Gemini and ElevenLabs calls verified; camera and mic seen working in Chrome by a teammate.
 
 ## Crew screen — `/crew`, `/crew/[transferId]`
 
 | Feature | Status | Files |
 |---|---|---|
 | Start a transfer: "What's happening" (type or dictate), age, sex, from → to, transport | ✅ | `crew/CrewStartClient.tsx` |
-| In-progress list on the start screen | ✅ | `crew/CrewStartClient.tsx` |
-| Monitor hierarchy: patient + status → camera instrument → vitals → note dock → next action | ✅ | `crew/[transferId]/CrewClient.tsx` |
-| Camera instrument: face + upper-chest guide, acquiring sweep, status capsule, framing hints, 30 s breathing settle | ⚠️ camera blocked in the test browser; empty/blocked/busy/no-camera states verified | `CameraInstrument.tsx`, `lib/presage.ts` |
-| Presage live HR / RR / HRV + breathing waveform; >110 BPM flagged "confirm with a monitor" | ⚠️ needs a real `PRESAGE_API_KEY` and a camera | `VitalsPanel.tsx`, `BreathingWave.tsx` |
-| Simulated values when Presage isn't live: labelled, muted, no status word (both screens, SBAR); camera says why it isn't measuring | ✅ | `VitalsPanel.tsx`, `core/briefing.py`, `adapters/gemini.py` |
-| Crew-entered SpO₂ / BP / temp / ACVPU with freshness; "Complete NEWS2" prompt | ✅ | `VitalsSheet.tsx`, `VitalsPanel.tsx` |
-| Alerts (NEWS2 band, HR trend, forecast) with "+N more" | ✅ | `VitalsPanel.tsx`, `core/alerts.py` |
-| Voice note: tap, speak, tap; real mic level meter; live transcript; "Structuring note…" → chips | ⚠️ mic blocked in the test browser; typed path verified | `VoiceCapture.tsx`, `lib/dictation.ts`, `lib/audio.ts` |
-| Typed notes stored as `text`, dictated as `voice` (provenance) | ✅ | `VoiceCapture.tsx` |
-| Hospital question lands on the mic ("IGMH asks · …"); answer by voice or typing | ✅ (typed) | `VoiceCapture.tsx`, `CrewClient.tsx` |
-| Review + send handoff (urgency, key vitals with source, demo-signal disclaimer, SBAR) | ✅ | `HandoffSheet.tsx` |
-| Hospital acceptance + its message shown in the dock; "Arrived" → "Close transfer" | ✅ | `CrewClient.tsx` |
-| Hospital messages and alerts read aloud once ("Voice on" / "Muted") | ⚠️ browser speech untested audibly; ElevenLabs TTS untested | `lib/speech.ts` |
-| Notes and messages timeline sheet | ✅ | `components/(transfer)/Timeline.tsx` |
+| Monitor hierarchy: patient + status → camera instrument → vitals → note dock → next action; fits 1024×768 | ✅ | `crew/[transferId]/CrewClient.tsx` |
+| Camera instrument: face + upper-chest guide, acquiring sweep, framing hints, 30 s breathing settle | ⚠️ live phases need a Presage measurement | `CameraInstrument.tsx`, `lib/presage.ts` |
+| Says why it isn't measuring (API key missing / bridge offline / unavailable); blocked / busy / no-camera states; any-size camera fallback | ✅ | `CameraInstrument.tsx`, `lib/presage.ts` |
+| Presage live HR / RR / HRV + breathing wave; >110 BPM flagged "confirm with a monitor" | ⚠️ SDK ready with a real key; no live face measurement observed yet | `VitalsPanel.tsx`, `BreathingWave.tsx` |
+| Simulated values: labelled, muted, no status word; never scored | ✅ | `VitalsPanel.tsx`, `services/transfers.py` |
+| Crew-entered SpO₂ / BP / temp / ACVPU with freshness; "Complete NEWS2" | ✅ | `VitalsSheet.tsx`, `VitalsPanel.tsx` |
+| Alerts (NEWS2 band, HR trend, forecast) from measured readings only, with "+N more" | ✅ | `core/alerts.py`, `VitalsPanel.tsx` |
+| Voice note: real mic level, live transcript, Scribe or browser speech → structured chips | ✅ | `VoiceCapture.tsx`, `lib/dictation.ts` |
+| Strike a wrong extraction (chip ×, or in the handoff's "Given" list); recorded in the timeline | ✅ | `VoiceCapture.tsx`, `SbarDocument.tsx`, `services/transfers.py` |
+| Typed notes stored as `text`, dictated as `voice` | ✅ | `VoiceCapture.tsx` |
+| Hospital question lands on the mic; answer by voice or typing | ✅ | `VoiceCapture.tsx` |
+| Review + send handoff (urgency, sourced vitals, simulated disclaimer, SBAR) | ✅ | `HandoffSheet.tsx` |
+| Acceptance + hospital's message in the dock; "Arrived" → "Close transfer" | ✅ | `CrewClient.tsx` |
+| Hospital messages and alerts read aloud (ElevenLabs voice, browser fallback) | ✅ | `lib/speech.ts` |
 
 ## Hospital screen — `/hospital`, `/hospital/[transferId]`
 
 | Feature | Status | Files |
 |---|---|---|
-| Incoming rail: urgency rule, ETA, NEWS2, "Needs response", question count, fresh-arrival highlight + toast | ✅ | `hospital/HospitalClient.tsx` |
-| Only handed-off transfers appear (not `preparing`) | ✅ (API test + e2e) | `services/transfers.py` |
-| Hero: suspected condition, patient, urgency + status, alerts; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
-| Layout by container width (rail-aware): hero band, 3/6-column vitals, sticky decision bar on phones | ✅ | `hospital/Hospital.module.scss` |
-| Vitals strip with status word, source and freshness; simulated values tagged | ✅ | `TransferDetail.tsx` |
-| Handoff tab: SBAR + "Given" list + provenance line | ✅ | `components/(transfer)/SbarDocument.tsx` |
-| Trend tab (Tiger Data aggregate in Postgres; raw readings in memory mode) | ✅ memory · ⚠️ Timescale | `TrendChart.tsx`, `db.py` |
-| Ask the crew (free text + suggestions), Q&A thread | ✅ | `TransferDetail.tsx` |
-| Accept: clinician, what's being prepared, message to the crew | ✅ | `hospital/AcceptModal.tsx` |
-| Transport tab: map (Esri light grey, English labels) + facts | ✅ | `TransferMap.tsx` |
+| Incoming rail; only handed-off transfers appear | ✅ | `hospital/HospitalClient.tsx`, `services/transfers.py` |
+| Hero: working impression with its source and the crew's words; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
+| Container-query layout (rail-aware); sticky decision bar on phones | ✅ | `hospital/Hospital.module.scss` |
+| Vitals strip with status word, source and freshness; simulated muted | ✅ | `TransferDetail.tsx` |
+| Handoff: SBAR (Gemini or template, labelled) + "Given" list | ✅ | `components/(transfer)/SbarDocument.tsx` |
+| Trend from `vitals_1m`, with source and query time shown | ✅ | `TrendChart.tsx`, `db.py` |
+| Ask the crew; accept with preparation + message | ✅ | `TransferDetail.tsx`, `AcceptModal.tsx` |
+| Dead links explain themselves (crew offers "Start a demo case") | ✅ | `CrewClient.tsx`, `TransferDetail.tsx` |
+
+## Network insights — `/insights` (Tiger Data)
+
+| Feature | Status | Files |
+|---|---|---|
+| KPIs: handoffs, median + p90 time to acceptance, median journey, high-risk count | ✅ | `insights/InsightsClient.tsx`, `services/insights.py` |
+| Transfers / alerts / questions per day (small multiples, table view) | ✅ | `InsightsClient.tsx` |
+| Slowest-accepting hospitals first | ✅ | `db.py` |
+| Storage proof: rows, chunks, compressed chunks, before → after | ✅ | `db.py::insights` |
+| Timed queries + live continuous-aggregate-vs-raw benchmark | ✅ | `db.py::benchmark` |
+| Seed 60 days of simulated history (server-side `generate_series`), flagged and kept out of clinical screens | ✅ | `db.py::seed_history` |
+| Honest "needs Tiger Data" state on the in-memory store | ✅ | `services/insights.py` |
 
 ## Engine
 
 | Feature | Status | Files |
 |---|---|---|
-| Lifecycle `preparing → pending → accepted → arrived → closed`; idempotent handoff; accept requires pending | ✅ | `services/transfers.py`, `routers/transfers.py` |
-| NEWS2 (partial / complete), deterioration forecast (OLS), alerts with hysteresis + re-announce cooldown | ✅ | `core/news2.py`, `core/forecast.py`, `core/alerts.py` |
-| SBAR: Gemini (JSON schema) with template fallback; "(simulated)" labelling; hospital shows where the working impression came from | ✅ template · ⚠️ real Gemini untested | `core/briefing.py`, `adapters/gemini.py` |
-| Intervention / observation extraction (clause-by-clause rules; Gemini when configured) | ✅ rules · ⚠️ Gemini | `core/briefing.py` |
-| Scribe STT, TTS with storage cache | ⚠️ untested without a key | `adapters/elevenlabs.py` |
-| Region packs + prepared demo cases (Maldives × 2, Western Isles × 1) | ✅ | `data/regions/*.json`, `core/regions.py` |
-| Sim clock, SimLoop (progress, ETA, simulated vitals when not live, auto-arrive) | ✅ | `core/clock.py`, `sim/loop.py` |
-| Postgres / TimescaleDB repo + migrations | ⚠️ never run (no Docker on the build machine) | `db.py`, `migrations/001_init.sql` |
+| Lifecycle `preparing → pending → accepted → arrived → closed` | ✅ | `services/transfers.py` |
+| NEWS2, forecast, alerts with hysteresis — measured readings only | ✅ | `core/`, `services/transfers.py` |
+| SBAR: Gemini with template fallback; "(simulated)" labelling | ✅ | `core/briefing.py`, `adapters/gemini.py` |
+| Gemini fallback model; extraction tries the fast model first under a 5 s deadline | ✅ | `adapters/gemini.py`, `tests/test_gemini.py` |
+| Extraction rules: clause-by-clause, spoken units, dose before drug | ✅ | `core/briefing.py` |
+| Scribe STT, TTS with storage cache | ✅ local · ⚠️ S3 | `adapters/elevenlabs.py` |
+| Prepared cases start empty; suggested vitals for the presenter | ✅ | `services/transfers.py`, `PresenterTools.tsx` |
+| TimescaleDB: hypertables, 3 continuous aggregates, compression, one-day chunks | ✅ local TimescaleDB · ⚠️ Tiger Cloud | `migrations/001_init.sql`, `migrations/002_tiger.sql` |
+| Infra facts in `/api/meta` (database + version, Vultr region from metadata) | ✅ local · ⚠️ on Vultr | `core/infra.py` |
+
+## Deploy (Vultr)
+
+| Feature | Status | Files |
+|---|---|---|
+| Production images (engine, web) | ✅ built + smoke-tested | `engine/Dockerfile`, `web/Dockerfile` |
+| Compose + Caddy HTTPS (sslip.io) | ⚠️ not yet on a Vultr instance | `docker-compose.prod.yml`, `Caddyfile` |
+| Deploy script (git archive over SSH; rsync / git modes) + runbook | ⚠️ not yet run against an instance | `scripts/deploy_vultr.sh`, `docs/DEPLOY_VULTR.md` |
 
 ## Presage bridge — `presage-bridge/`
 
 | Feature | Status |
 |---|---|
-| WebSocket frame protocol (RGBA, 16-byte header), `useCustomInput` + `sendFrame` into the official SDK | ⚠️ SDK loads on Windows x64; auth-failure path verified with a dummy key; no live measurement yet |
-| Metrics, validation hints and status back to the browser; stable vitals posted to the engine every 5 s | ⚠️ as above |
-| Heartbeat to the engine (`/api/presage/heartbeat`) and `no_api_key` / offline states in the UI | ✅ |
-
-## Presenter tools (not part of either screen)
-
-| Feature | Status | Files |
-|---|---|---|
-| Presenter panel (Ctrl / ⌘ + .), `/demo`: prepared cases with suggested line, region, speed, services, reset | ✅ | `components/(shell)/PresenterPanel.tsx`, `PresenterTools.tsx` |
+| Frame protocol (tested on the browser side), `useCustomInput` + `sendFrame` into the official SDK | ⚠️ SDK ready with a real key; live measurement not yet observed |
+| Metrics, hints, status to the browser; stable vitals to the engine every 5 s; heartbeat | ⚠️ as above |

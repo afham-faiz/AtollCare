@@ -36,6 +36,7 @@ from app.models import (
     NoteRequest,
     Patient,
     Region,
+    RemoveInterventionRequest,
     SimProfile,
     Transfer,
     TransferListItem,
@@ -218,13 +219,16 @@ class TransferService:
 
     async def _reassess(self, t: Transfer) -> None:
         now = self.now()
-        readings = await self.repo.get_vitals(t.id, 240)
+        # Clinical scoring sees only what was measured (Presage, crew). Simulated readings keep the demo moving on
+        # screen, labelled, but never raise an alert, move NEWS2 or feed the forecast.
+        readings = [r for r in await self.repo.get_vitals(t.id, 240) if r.source != VitalsSource.simulated]
+        measured_latest = {k: v for k, v in t.latest.items() if v.source != VitalsSource.simulated}
         before_total = t.news2.total if t.news2 else None
         t.news2 = compute_news2(readings, now, NEWS2_LOOKBACK_MIN)
         trend = await self._trend_buckets(t, 60, readings)
         fc = forecast(trend, now, t.eta)
         before = t.alerts
-        t.alerts = alerts_mod.evaluate(t.news2, t.latest, fc, before, now)
+        t.alerts = alerts_mod.evaluate(t.news2, measured_latest, fc, before, now)
         announce = alerts_mod.new_alerts(before, t.alerts, t.alerts_announced, now)
         for a in announce:
             t.alerts_announced[a.code] = now
@@ -246,9 +250,12 @@ class TransferService:
 
     async def trend(self, transfer_id: UUID, window_min: int) -> TrendResponse:
         t = await self._load(transfer_id)
-        buckets, source = await self.repo.vitals_trend(t.id, self.now() - timedelta(minutes=window_min))
+        started = _time.perf_counter()
+        _, source = await self.repo.vitals_trend(t.id, self.now() - timedelta(minutes=window_min))
+        query_ms = round((_time.perf_counter() - started) * 1000, 1)
         filled = await self._trend_buckets(t, window_min)
-        return TrendResponse(buckets=filled, source=source, forecast=forecast(filled, self.now(), t.eta))  # type: ignore[arg-type]
+        return TrendResponse(buckets=filled, source=source, query_ms=query_ms,  # type: ignore[arg-type]
+                             forecast=forecast(filled, self.now(), t.eta))
 
     async def set_monitoring(self, transfer_id: UUID, source: MonitoringSource) -> Transfer:
         async with self.locks[transfer_id]:
@@ -308,7 +315,7 @@ class TransferService:
                     self.svc.caches[f"briefing_err:{transfer_id}"] = True
                     await self._note(t, Author.system, NoteKind.event, f"{err} — showing template briefing")
                 await self._save(t)
-        except Exception:  # noqa: BLE001
+        except Exception:
             log.exception("briefing refresh failed")
 
     # ---------------------------------------------------------------- notes & messages
@@ -316,7 +323,10 @@ class TransferService:
         if self.svc.gemini.status == "real":
             ge, _err = await self.svc.gemini.extract(text)
             if ge is not None:
-                return Extraction(observations=ge.observations[:6], interventions=ge.interventions[:4]), "gemini"
+                def cap(items: list[str], n: int) -> list[str]:  # same casing as the rule-based chips
+                    return [i.strip()[:1].upper() + i.strip()[1:] for i in items if i.strip()][:n]
+
+                return Extraction(observations=cap(ge.observations, 6), interventions=cap(ge.interventions, 4)), "gemini"
         return briefing_mod.extract(text), "rules"
 
     async def add_note(self, transfer_id: UUID, req: NoteRequest, at: datetime | None = None) -> Transfer:
@@ -335,11 +345,24 @@ class TransferService:
         self._schedule_briefing(transfer_id, force=True)
         return await self.get(transfer_id)
 
+    async def remove_intervention(self, transfer_id: UUID, req: RemoveInterventionRequest) -> Transfer:
+        async with self.locks[transfer_id]:
+            t = await self._load(transfer_id)
+            keep = [i for i in t.interventions if not (i.note_id == req.note_id and i.text == req.text)]
+            if len(keep) == len(t.interventions):
+                raise AppError("unknown_intervention", "That item is no longer in the handoff", 404)
+            t.interventions = keep
+            await self._note(t, Author.crew, NoteKind.event, f"Removed from handoff: {req.text}")
+            await self._template_briefing(t)
+            await self._save(t)
+        self._schedule_briefing(transfer_id, force=True)
+        return await self.get(transfer_id)
+
     async def voice_note(self, transfer_id: UUID, audio: bytes, filename: str, content_type: str,
                          reply_to: UUID | None) -> Transfer:
         try:
             result = await self.svc.elevenlabs.transcribe(audio, filename, content_type, None)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise AppError("stt_failed", f"Transcription failed ({type(exc).__name__}) — try again or type", 502) from exc
         if result is None:
             raise AppError("stt_unavailable", "Server speech-to-text is not configured — use browser dictation", 501)
@@ -433,8 +456,8 @@ class TransferService:
             if t.alerts:
                 level = "critical" if any(a.level.value == "critical" for a in t.alerts) else "warning"
 
-            def num(field: str) -> float | None:
-                lv = t.latest.get(field)
+            def num(field: str, latest=t.latest) -> float | None:
+                lv = latest.get(field)
                 return float(lv.value) if lv is not None and isinstance(lv.value, (int, float)) and not isinstance(lv.value, bool) else None
 
             items.append(TransferListItem(
@@ -478,11 +501,18 @@ class TransferService:
 
     # ---------------------------------------------------------------- prepared demo cases
     def demo_cases(self) -> list[DemoCase]:
-        return [DemoCase(**{k: v for k, v in c.items() if k in DemoCase.model_fields}) for c in regions.cases()]
+        out = []
+        for c in regions.cases():
+            base = c.get("baseline_vitals")
+            suggested = describe(VitalsReading(id=uuid4(), transfer_id=uuid4(), recorded_at=self.now(), source=VitalsSource.manual,
+                                               **base)) if base else None
+            out.append(DemoCase(**{k: v for k, v in c.items() if k in DemoCase.model_fields}, suggested_vitals=suggested))
+        return out
 
-    async def start_case(self, case_id: str | None = None, history_min: int = 8) -> Transfer:
-        """Start a prepared case in its region: patient, complaint and route filled in, crew-entered baseline vitals,
-        and `history_min` minutes of earlier contactless readings (labelled simulated) so trends are populated."""
+    async def start_case(self, case_id: str | None = None) -> Transfer:
+        """Start a prepared case in its region with patient, complaint and route filled in — and nothing else. Vitals
+        come from the camera or from the presenter typing the case's suggested values; nothing is pre-entered as if
+        the crew had measured it."""
         if case_id is None:
             region_id = self.svc.clock.state.region_id
             c = next((x for x in regions.cases() if x["region_id"] == region_id), None)
@@ -492,28 +522,12 @@ class TransferService:
             raise AppError("no_case", "No prepared case found", 404)
         self.svc.clock.state.region_id = c["region_id"]
         await self.repo.set_demo_state(self.svc.clock.state)
-        now = self.now()
-        start = now - timedelta(minutes=history_min)
         t = await self.create(
             CreateTransferRequest(patient=Patient(**c["patient"]), complaint=c["complaint"], origin_id=c["origin_id"],
                                   destination_id=c["destination_id"], mode=c["mode"]),
-            at=start,
         )
-        profile = SimProfile(**c.get("profile", {}))
         async with self.locks[t.id]:
             cur = await self._load(t.id)
-            cur.sim_profile = profile
-            for i in range(0, history_min * 60, 30):
-                at = start + timedelta(seconds=i)
-                values = simulated_values(profile, start, at, zlib.crc32(cur.code.encode()))
-                reading = VitalsReading(id=uuid4(), transfer_id=cur.id, recorded_at=at, source=VitalsSource.simulated,
-                                        confidence=0.9, **values)
-                await self.repo.add_vitals(reading)
-                cur.latest = update_latest(cur.latest, reading)
-            cur.monitoring.last_reading_at = now
-            base = c.get("baseline_vitals")
-            if base:
-                await self._ingest(cur, VitalsRequest(source="manual", recorded_at=start + timedelta(minutes=2), **base))
-            await self._reassess(cur)
+            cur.sim_profile = SimProfile(**c.get("profile", {}))
             await self._save(cur)
         return await self.get(t.id)

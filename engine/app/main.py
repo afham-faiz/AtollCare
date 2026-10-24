@@ -13,8 +13,10 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import ENGINE_VERSION, get_settings
+from app.core.infra import detect_host
 from app.logging_setup import case_id_var, setup_logging
-from app.routers import system, transfers
+from app.models import InfraStatus
+from app.routers import insights, system, transfers
 from app.services.context import AppError
 from app.services.hub import build_hub
 
@@ -30,13 +32,18 @@ async def lifespan(app: FastAPI):
         try:
             await hub.svc.repo.init()
             break
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             if attempt == 29:
                 raise
             log.warning("database not ready (%s) — retrying", exc)
             await asyncio.sleep(2)
     await hub.demo.load_state()
-    log.info("engine started: db=%s adapters=%s", hub.svc.repo.kind, hub.svc.adapter_status().model_dump())
+    database, version = await hub.svc.repo.database_info()
+    host, host_region, host_plan = await detect_host(settings.host_label, settings.host_region)
+    hub.svc.infra = InfraStatus(host=host, host_region=host_region, host_plan=host_plan, database=database,
+                                database_version=version)
+    log.info("engine started: db=%s adapters=%s infra=%s", hub.svc.repo.kind, hub.svc.adapter_status().model_dump(),
+             hub.svc.infra.model_dump())
     if not settings.disable_background_tasks:
         hub.loop.start()
     yield
@@ -84,7 +91,7 @@ def create_app() -> FastAPI:
         log.exception("unhandled error")
         return err(500, "internal_error", f"{type(exc).__name__}: {exc}")
 
-    for r in (system, transfers):
+    for r in (system, transfers, insights):
         app.include_router(r.router)
     return app
 

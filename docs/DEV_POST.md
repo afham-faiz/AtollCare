@@ -48,16 +48,23 @@ designed around it:
   types.
 - **Gemini** writes the SBAR with a JSON response schema and only from recorded facts. A deterministic template takes
   over if it fails, and the UI says which one wrote it.
-- **Tiger Data:** vitals and notes are hypertables. A one-minute continuous aggregate with real-time aggregation feeds
-  the trend chart and forecast.
-- **Vultr:** engine + web on Cloud Compute behind Caddy (automatic HTTPS). The bridge in the vehicle posts to it.
+- **Tiger Data:** vitals and notes are hypertables with daily chunks. A real-time 1-minute continuous aggregate of
+  *measured* readings feeds each patient's trend chart and forecast (the chart says which aggregate answered, and in
+  how many ms). Two more aggregates power a Network insights page for operations leads: time to acceptance, the
+  slowest hospitals, alerts and questions per day. Columnar compression after a week took 60 days of seeded history
+  from 71 MB to 12 MB, and the page runs a live benchmark: 2.6 ms from the aggregate vs 22.8 ms scanning 189k rows.
+- **Vultr:** engine + web on Cloud Compute behind Caddy (automatic HTTPS via sslip.io), deployed with one script; the
+  engine reads Vultr's instance metadata so the presenter panel shows the region it's really running in. The bridge
+  in the vehicle posts to it.
 - **Web (Next.js 16):** a light, quiet clinical interface. The crew screen fits a 1024×768 tablet without scrolling,
   and the hospital detail pane lays out by its own width with container queries.
 
 ## What was hard
 
-- **Being honest about data provenance.** Every value carries `presage`, `manual` or `simulated` and a timestamp.
-  We render it next to the number, not in a legend.
+- **Being honest about data provenance.** Every value carries `presage`, `manual` or `simulated` and a timestamp,
+  rendered next to the number. Testers still read our "demo signal" as real, so simulated values became muted, lost
+  their status word, and stopped counting: NEWS2, alerts and the forecast use measured readings only. Prepared demo
+  cases now pre-fill nothing.
 - **Designing for a moving vehicle.** One primary action at a time, status in words as well as colour, a hospital
   question that lands *on* the mic button, and everything spoken aloud once.
 - **A demo that survives stage conditions.** Prepared cases, a presenter panel behind a shortcut, a sim clock for the

@@ -21,6 +21,19 @@ const FRAME_WIDTH = 640;
 const FPS = 20;
 const MAX_BUFFERED = 4 * 1024 * 1024;
 
+/** Wire format to the bridge: 16-byte big-endian header (u32 magic "ACPF", u16 width, u16 height, f64 capture ms),
+ *  then width × height × 4 RGBA bytes. presage-bridge/src/index.js `handleFrame` decodes exactly this. */
+export function encodeFrame(pixels: Uint8ClampedArray | Uint8Array, width: number, height: number, ms: number): ArrayBuffer {
+  const buf = new ArrayBuffer(16 + pixels.byteLength);
+  const view = new DataView(buf);
+  view.setUint32(0, FRAME_MAGIC);
+  view.setUint16(4, width);
+  view.setUint16(6, height);
+  view.setFloat64(8, ms);
+  new Uint8Array(buf, 16).set(pixels);
+  return buf;
+}
+
 // denied: the user or browser refused; busy: another app holds the camera (common on Windows); unavailable: none found
 export type CameraState = "off" | "starting" | "on" | "denied" | "busy" | "unavailable";
 
@@ -101,15 +114,7 @@ export function usePresage(transferId: string | undefined, video: HTMLVideoEleme
         canvas.height = h;
       }
       ctx.drawImage(el, 0, 0, w, h);
-      const pixels = ctx.getImageData(0, 0, w, h).data;
-      const buf = new ArrayBuffer(16 + pixels.byteLength);
-      const view = new DataView(buf);
-      view.setUint32(0, FRAME_MAGIC);
-      view.setUint16(4, w);
-      view.setUint16(6, h);
-      view.setFloat64(8, performance.now());
-      new Uint8Array(buf, 16).set(pixels);
-      ws.send(buf);
+      ws.send(encodeFrame(ctx.getImageData(0, 0, w, h).data, w, h, performance.now()));
     }, 1000 / FPS);
     return () => window.clearInterval(timer);
   }, []);

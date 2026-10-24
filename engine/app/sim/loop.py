@@ -32,6 +32,6 @@ class SimLoop:
         while True:
             try:
                 await self.transfers.tick()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 log.exception("sim tick failed")
             await asyncio.sleep(self.tick_s)

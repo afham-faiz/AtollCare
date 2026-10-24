@@ -794,6 +794,59 @@
         }
       }
     },
+    "/api/transfers/{transfer_id}/interventions/remove": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Remove Intervention",
+        "operationId": "remove_intervention_api_transfers__transfer_id__interventions_remove_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveInterventionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transfers/{transfer_id}/handoff": {
       "post": {
         "tags": [
@@ -975,6 +1028,153 @@
           }
         }
       }
+    },
+    "/api/insights": {
+      "get": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "Insights",
+        "operationId": "insights_api_insights_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 120,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/insights/benchmark": {
+      "get": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "Benchmark",
+        "operationId": "benchmark_api_insights_benchmark_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 120,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenchmarkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/history": {
+      "post": {
+        "tags": [
+          "insights"
+        ],
+        "summary": "Seed History",
+        "operationId": "seed_history_api_demo_history_post",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 120,
+              "minimum": 7,
+              "default": 60,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "per_day",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 40,
+              "minimum": 1,
+              "default": 8,
+              "title": "Per Day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeedHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1139,6 +1339,49 @@
           "system"
         ],
         "title": "Author"
+      },
+      "BenchmarkResponse": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "aggregate_source": {
+            "type": "string",
+            "title": "Aggregate Source"
+          },
+          "aggregate_ms": {
+            "type": "number",
+            "title": "Aggregate Ms"
+          },
+          "raw_ms": {
+            "type": "number",
+            "title": "Raw Ms"
+          },
+          "rows_scanned": {
+            "type": "integer",
+            "title": "Rows Scanned"
+          },
+          "speedup": {
+            "type": "number",
+            "title": "Speedup"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "days",
+          "aggregate_source",
+          "aggregate_ms",
+          "raw_ms",
+          "rows_scanned",
+          "speedup"
+        ],
+        "title": "BenchmarkResponse"
       },
       "Body_voice_note_api_transfers__transfer_id__notes_voice_post": {
         "properties": {
@@ -1414,6 +1657,17 @@
               }
             ],
             "title": "Suggested Note"
+          },
+          "suggested_vitals": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Vitals"
           }
         },
         "type": "object",
@@ -1714,6 +1968,296 @@
         ],
         "title": "HealthResponse"
       },
+      "InfraStatus": {
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "host_region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Region"
+          },
+          "host_plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Plan"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "database_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "host",
+          "database"
+        ],
+        "title": "InfraStatus",
+        "description": "Where this engine is running and what it stores data in — read from the environment, never assumed."
+      },
+      "InsightsDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Day"
+          },
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers",
+            "default": 0
+          },
+          "alerts": {
+            "type": "integer",
+            "title": "Alerts",
+            "default": 0
+          },
+          "questions": {
+            "type": "integer",
+            "title": "Questions",
+            "default": 0
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "day"
+        ],
+        "title": "InsightsDay"
+      },
+      "InsightsDestination": {
+        "properties": {
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "median_min_to_accept": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Min To Accept"
+          }
+        },
+        "type": "object",
+        "required": [
+          "destination_id",
+          "name",
+          "transfers",
+          "median_min_to_accept"
+        ],
+        "title": "InsightsDestination"
+      },
+      "InsightsKpis": {
+        "properties": {
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "handed_off": {
+            "type": "integer",
+            "title": "Handed Off"
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted"
+          },
+          "median_min_to_accept": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Min To Accept"
+          },
+          "p90_min_to_accept": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P90 Min To Accept"
+          },
+          "median_journey_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Journey Min"
+          },
+          "high_risk": {
+            "type": "integer",
+            "title": "High Risk"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transfers",
+          "handed_off",
+          "accepted",
+          "median_min_to_accept",
+          "p90_min_to_accept",
+          "median_journey_min",
+          "high_risk"
+        ],
+        "title": "InsightsKpis"
+      },
+      "InsightsResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "database_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Version"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "seeded_transfers": {
+            "type": "integer",
+            "title": "Seeded Transfers",
+            "default": 0
+          },
+          "live_transfers": {
+            "type": "integer",
+            "title": "Live Transfers",
+            "default": 0
+          },
+          "kpis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InsightsKpis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsDay"
+            },
+            "type": "array",
+            "title": "Daily",
+            "default": []
+          },
+          "destinations": {
+            "items": {
+              "$ref": "#/components/schemas/InsightsDestination"
+            },
+            "type": "array",
+            "title": "Destinations",
+            "default": []
+          },
+          "storage": {
+            "items": {
+              "$ref": "#/components/schemas/StorageTable"
+            },
+            "type": "array",
+            "title": "Storage",
+            "default": []
+          },
+          "aggregates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Aggregates",
+            "default": []
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/TimedQuery"
+            },
+            "type": "array",
+            "title": "Queries",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "database",
+          "days"
+        ],
+        "title": "InsightsResponse"
+      },
       "Intervention": {
         "properties": {
           "at": {
@@ -1857,6 +2401,9 @@
             },
             "type": "array",
             "title": "Prepare Options"
+          },
+          "infra": {
+            "$ref": "#/components/schemas/InfraStatus"
           }
         },
         "type": "object",
@@ -1868,7 +2415,8 @@
           "bridge",
           "demo_state",
           "now",
-          "prepare_options"
+          "prepare_options",
+          "infra"
         ],
         "title": "MetaResponse"
       },
@@ -2253,6 +2801,59 @@
         ],
         "title": "Region"
       },
+      "RemoveInterventionRequest": {
+        "properties": {
+          "note_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Note Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note_id",
+          "text"
+        ],
+        "title": "RemoveInterventionRequest",
+        "description": "The crew strike an item the extraction got wrong; their original words stay in the timeline."
+      },
+      "SeedHistoryResponse": {
+        "properties": {
+          "transfers": {
+            "type": "integer",
+            "title": "Transfers"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "notes": {
+            "type": "integer",
+            "title": "Notes"
+          },
+          "compressed_chunks": {
+            "type": "integer",
+            "title": "Compressed Chunks"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transfers",
+          "readings",
+          "notes",
+          "compressed_chunks",
+          "seconds"
+        ],
+        "title": "SeedHistoryResponse"
+      },
       "SimProfile": {
         "properties": {
           "heart_rate": {
@@ -2336,6 +2937,86 @@
           "source"
         ],
         "title": "SpeakResponse"
+      },
+      "StorageTable": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          },
+          "chunks": {
+            "type": "integer",
+            "title": "Chunks"
+          },
+          "compressed_chunks": {
+            "type": "integer",
+            "title": "Compressed Chunks"
+          },
+          "bytes_before_compression": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes Before Compression"
+          },
+          "bytes_after_compression": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes After Compression"
+          },
+          "total_bytes": {
+            "type": "integer",
+            "title": "Total Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "rows",
+          "chunks",
+          "compressed_chunks",
+          "bytes_before_compression",
+          "bytes_after_compression",
+          "total_bytes"
+        ],
+        "title": "StorageTable"
+      },
+      "TimedQuery": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "ms": {
+            "type": "number",
+            "title": "Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "ms"
+        ],
+        "title": "TimedQuery"
       },
       "Transfer": {
         "properties": {
@@ -2859,6 +3540,17 @@
               "memory"
             ],
             "title": "Source"
+          },
+          "query_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Ms"
           },
           "forecast": {
             "anyOf": [

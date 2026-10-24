@@ -63,7 +63,9 @@ class GeminiAdapter:
             self._client = genai.Client(api_key=self.settings.gemini_api_key)
         return self._client
 
-    async def _generate(self, system: str, prompt: str, schema: type[BaseModel]) -> tuple[BaseModel | None, str | None]:
+    async def _generate(
+        self, system: str, prompt: str, schema: type[BaseModel], timeout_s: float, fast_first: bool = False
+    ) -> tuple[BaseModel | None, str | None]:
         if self.mode != "real":
             return None, "Gemini in mock mode"
         from google.genai import types
@@ -74,30 +76,42 @@ class GeminiAdapter:
             response_schema=schema,
             temperature=0.2,
         )
+        order = (self.settings.gemini_model, self.settings.gemini_fallback_model)
+        models = list(dict.fromkeys(m for m in (order[::-1] if fast_first else order) if m))
         last_error = "unknown error"
-        for attempt in range(2):  # validate, retry once
-            try:
-                resp = await asyncio.wait_for(
-                    self._get_client().aio.models.generate_content(
-                        model=self.settings.gemini_model, contents=prompt, config=config
-                    ),
-                    timeout=self.settings.gemini_timeout_s,
-                )
-                return schema.model_validate_json(resp.text or ""), None
-            except asyncio.TimeoutError:
-                last_error = f"Gemini timed out after {self.settings.gemini_timeout_s:g} s"
+        for model in models:
+            for attempt in range(2):  # invalid JSON → retry the same model once
+                try:
+                    resp = await asyncio.wait_for(
+                        self._get_client().aio.models.generate_content(model=model, contents=prompt, config=config),
+                        timeout=timeout_s,
+                    )
+                    return schema.model_validate_json(resp.text or ""), None
+                except TimeoutError:
+                    last_error = f"Gemini ({model}) timed out after {timeout_s:g} s"
+                except ValidationError as exc:
+                    last_error = f"Gemini ({model}) returned invalid JSON ({exc.error_count()} errors)"
+                    log.warning("gemini attempt %s failed: %s", attempt + 1, last_error)
+                    continue
+                except Exception as exc:  # noqa: BLE001 — overloaded, unavailable, quota: try the fallback model
+                    last_error = f"Gemini ({model}) error: {type(exc).__name__}: {str(exc)[:160]}"
+                log.warning("gemini %s failed: %s", model, last_error)
                 break
-            except ValidationError as exc:
-                last_error = f"Gemini returned invalid JSON ({exc.error_count()} errors)"
-            except Exception as exc:  # noqa: BLE001
-                last_error = f"Gemini error: {type(exc).__name__}: {str(exc)[:160]}"
-            log.warning("gemini attempt %s failed: %s", attempt + 1, last_error)
         return None, last_error
 
     async def briefing(self, data: dict[str, Any]) -> tuple[GeminiBriefing | None, str | None]:
-        result, err = await self._generate(BRIEFING_SYSTEM, json.dumps(data, default=str, ensure_ascii=False), GeminiBriefing)
+        result, err = await self._generate(
+            BRIEFING_SYSTEM, json.dumps(data, default=str, ensure_ascii=False), GeminiBriefing, self.settings.gemini_timeout_s
+        )
         return result, err  # type: ignore[return-value]
 
     async def extract(self, text: str) -> tuple[GeminiExtraction | None, str | None]:
-        result, err = await self._generate(EXTRACT_SYSTEM, text, GeminiExtraction)
+        """The crew is watching a spinner: lighter model first, one overall deadline, then the caller's rules."""
+        budget = self.settings.gemini_extract_timeout_s
+        try:
+            result, err = await asyncio.wait_for(
+                self._generate(EXTRACT_SYSTEM, text, GeminiExtraction, budget, fast_first=True), timeout=budget
+            )
+        except TimeoutError:
+            return None, f"Gemini extraction took longer than {budget:g} s"
         return result, err  # type: ignore[return-value]

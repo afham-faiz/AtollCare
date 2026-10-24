@@ -21,6 +21,10 @@ export type MonitoringSource = S["MonitoringSource"];
 export type TransferStatus = S["TransferStatus"];
 export type DemoCase = S["DemoCase"];
 export type Intervention = S["Intervention"];
+export type InfraStatus = S["InfraStatus"];
+export type InsightsResponse = S["InsightsResponse"];
+export type BenchmarkResponse = S["BenchmarkResponse"];
+export type SeedHistoryResponse = S["SeedHistoryResponse"];
 
 export class ApiError extends Error {
   constructor(

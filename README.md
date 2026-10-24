@@ -39,6 +39,9 @@ hospital browser ── /hospital ── polls /api every 2 s (SWR)
   `arrived` → `closed`.
 - **Honest provenance:** every vital carries its source (`presage`, `manual` or `simulated`) and a timestamp. Simulated
   values are labelled *Simulated* on both screens and "(simulated)" in the SBAR, and get no clinical status word.
+- **Only measured values score.** NEWS2, alerts and the deterioration forecast use Presage and crew readings only;
+  simulated readings are display-only. Prepared demo cases pre-fill nothing: the presenter types the suggested vitals.
+- **Extraction is a suggestion.** Items pulled from a voice note ("Aspirin 300 mg") can be struck by the crew.
 
 ## Run locally (no Docker)
 
@@ -63,20 +66,27 @@ Then open the crew screen in Chrome or Edge and allow the camera. Camera and mic
 (`localhost` or HTTPS). Embedded preview panes, such as an editor's built-in browser, usually block capture. Details:
 [`presage-bridge/README.md`](presage-bridge/README.md).
 
-### Docker (TimescaleDB, as in production)
+### With Tiger Data locally (TimescaleDB in Docker)
 
 ```bash
-cp .env.example .env && docker compose up
+docker run -d --name atollcare-tsdb -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=atollcare -p 5433:5432 timescale/timescaledb:latest-pg17
 ```
+
+Then set `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/atollcare` (or a Tiger Cloud URL) and start the
+engine. Or run everything in containers: `cp .env.example .env && docker compose up`.
 
 ### Checks
 
 ```bash
-cd engine && uv run pytest
+cd engine && uv run pytest && uv run ruff check app tests ../scripts
 ```
 
 ```bash
-cd web && bun run typecheck && bun run lint && bun run build
+cd engine && TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/atollcare_test uv run pytest
+```
+
+```bash
+cd web && bun run test && bun run typecheck && bun run lint && bun run build
 ```
 
 ```bash
@@ -89,8 +99,13 @@ hospital can't see the transfer before it) → question and answer → accept �
 ## Demo
 
 Press **Ctrl + .** (⌘ + . on a Mac) anywhere, or use the sliders icon in the top bar, to open the presenter panel:
-prepared cases (each with a line to say), region, journey speed (1× / 10× / 30× / 60×), service status, reset. The
+prepared cases (each with a line to say and the vitals to type), region, journey speed (1× / 10× / 30× / 60×), service
+status (including which database and host are live), network insights with *Seed 60 days of history*, and reset. The
 same tools live at `/demo`. The 3-minute script is in [`docs/PITCH.md`](docs/PITCH.md).
+
+**Network insights** (`/insights`, for operations leads, not a clinical screen): handoffs, median and 90th-percentile
+time to acceptance, journey times, alerts and hospital questions per day, slowest-accepting hospitals. Answered from
+Tiger Data continuous aggregates, with the storage, compression and a live aggregate-vs-raw benchmark beside them.
 
 ## Environment
 
@@ -99,28 +114,38 @@ See [`.env.example`](.env.example). Each adapter has a `mock` mode, and a missin
 | Variable | Read by | Meaning |
 |---|---|---|
 | `DATABASE_URL` | engine | Postgres / TimescaleDB / Tiger Cloud. Empty → in-memory store |
-| `GEMINI_MODE`, `GEMINI_API_KEY`, `GEMINI_MODEL` | engine | `real` → Gemini writes the SBAR and extracts interventions; otherwise template + rules |
+| `GEMINI_MODE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | engine | `real` → Gemini writes the SBAR and extracts interventions (fallback model when the primary is overloaded); otherwise template + rules |
 | `ELEVENLABS_MODE`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_CREW`, `ELEVENLABS_VOICE_HOSPITAL` | engine | `real` → Scribe transcribes voice notes; hospital messages are spoken with ElevenLabs TTS. Otherwise the browser's own speech recognition and synthesis |
 | `STORAGE_MODE` (`local`/`s3`), `S3_*` | engine | Where TTS audio is cached |
 | `DEFAULT_REGION`, `DEFAULT_SPEED_MULTIPLIER` | engine | Demo defaults |
+| `HOST_LABEL`, `HOST_REGION` | engine | Only if Vultr's metadata service isn't reachable from the container |
 | `NEXT_PUBLIC_ENGINE_URL`, `ENGINE_INTERNAL_URL` | web | API base for the browser / for the Next.js proxy |
 | `NEXT_PUBLIC_PRESAGE_BRIDGE_URL` | web | Default `ws://localhost:8787/ws` |
-| `PRESAGE_API_KEY`, `ENGINE_URL`, `PORT` | presage-bridge | Set in the bridge's own shell; it does not read `.env` |
+| `PRESAGE_API_KEY`, `ENGINE_URL`, `PORT` | presage-bridge | `node --env-file=../.env src/index.js`, or set in its shell |
 
-## Tiger Cloud (Tiger Data)
+## Tiger Data
 
-Put the service URL in `DATABASE_URL` (keep `?sslmode=require`) and start the engine. `engine/app/migrations/`
-runs idempotently and creates hypertables `vitals_readings` and `transfer_notes`, plus the `vitals_1m` continuous
-aggregate (real-time aggregation on) that feeds the trend chart and the deterioration forecast.
+Put a Tiger Cloud service URL in `DATABASE_URL` (keep `?sslmode=require`) and start the engine. Migrations in
+`engine/app/migrations/` run idempotently:
+
+| Object | What it does |
+|---|---|
+| `vitals_readings`, `transfer_notes` | Hypertables with one-day chunks: every reading and every timeline entry |
+| `vitals_1m` | Continuous aggregate (real-time) of **measured** readings → the hospital's trend chart and the deterioration forecast. The chart shows which aggregate answered and how many ms it took |
+| `network_vitals_1h`, `network_events_1d` | Continuous aggregates behind Network insights (reading volume, alerts, questions) |
+| Compression | Columnar compression after 7 days, segmented by transfer: 71 MB → 12 MB (83%) on 60 days of seeded history |
+| `transfers` | Relational document per transfer in the same database (outcomes, time to acceptance via `percentile_cont`) |
+
+Measured on a laptop with 60 days of seeded history (351k readings): every insights query 1–5 ms; readings per hour
+over 30 days from `network_vitals_1h` in 2.6 ms vs 22.8 ms scanning 189k raw rows (8.8×). Seeding takes 10–20 s.
 
 ## Deploy to Vultr
 
-1. Ubuntu Cloud Compute instance; open ports 80 and 443.
-2. Real keys in `.env`; `PUBLIC_HOST=<ip>.sslip.io` (instant HTTPS) or your domain.
-3. `VULTR_HOST=<ip> ./scripts/deploy_vultr.sh` installs Docker if needed, syncs the repo, and runs
-   `docker compose -f docker-compose.prod.yml up -d --build`.
-
-The bridge stays in the vehicle. Point its `ENGINE_URL` at the public HTTPS URL.
+Step-by-step runbook: [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md). In short: a 2 vCPU / 4 GB Ubuntu instance, ports
+80/443 open, real keys in `.env`, then `VULTR_HOST=<ip> ./scripts/deploy_vultr.sh`. Caddy gets a certificate for
+`<ip>.sslip.io` automatically; the engine reads Vultr's instance metadata and the presenter panel shows the region it
+is running in. Both production images are built and smoke-tested (web → engine → TimescaleDB). The bridge stays in the
+vehicle and points its `ENGINE_URL` at the public HTTPS URL.
 
 ## Sponsor tracks
 
@@ -129,12 +154,13 @@ The bridge stays in the vehicle. Point its `ENGINE_URL` at the public HTTPS URL.
 | **Presage** (main) | Live HR, RR, HRV, breathing waveform and framing hints from a mounted camera | `presage-bridge/`, `web/src/lib/presage.ts`, `crew/[transferId]/CameraInstrument.tsx` |
 | ElevenLabs | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
 | Gemini | Live SBAR from vitals + notes; interventions extracted from speech | `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
-| Tiger Data | Vitals hypertable + 1-minute continuous aggregate → trend + forecast | `engine/app/migrations/001_init.sql`, `engine/app/db.py` |
-| Vultr | Compute + Caddy HTTPS + Object Storage | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh` |
+| Tiger Data | Hypertables, measured-only `vitals_1m` → trend + forecast, network aggregates, columnar compression, Network insights with a live benchmark | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |
+| Vultr | Compute + Caddy HTTPS, region shown from instance metadata, optional Object Storage | `docker-compose.prod.yml`, `Caddyfile`, `scripts/deploy_vultr.sh`, `docs/DEPLOY_VULTR.md` |
 
 ## Docs
 
-[`docs/BRIEF.md`](docs/BRIEF.md) product brief · [`docs/FEATURES.md`](docs/FEATURES.md) what's built and how it was
+[`docs/BRIEF.md`](docs/BRIEF.md) product brief · [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md) deploy runbook ·
+[`docs/FEATURES.md`](docs/FEATURES.md) what's built and how it was
 verified · [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) what isn't verified · [`docs/PITCH.md`](docs/PITCH.md) demo
 script · [`docs/DEV_POST.md`](docs/DEV_POST.md) write-up draft · [`docs/CONCEPT.md`](docs/CONCEPT.md) and
 [`docs/PRD.md`](docs/PRD.md) the original v1 concept and PRD (historical).

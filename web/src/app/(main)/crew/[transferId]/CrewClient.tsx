@@ -269,6 +269,7 @@ export default function ({ transferId }: { transferId: string }) {
         open={sheet === "handoff"}
         readOnly={t.status !== "preparing"}
         onClose={() => setSheet(null)}
+        onChanged={(next) => refresh(next)}
         onSent={(next) => {
           setSheet(null);
           refresh(next);

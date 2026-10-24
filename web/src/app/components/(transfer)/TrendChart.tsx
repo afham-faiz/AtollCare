@@ -39,7 +39,7 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
         ))}
       </div>
       {data.length < 2 ? (
-        <p className="py-[2rem] text-center text-ink-3">Trend appears after a few minutes of readings.</p>
+        <p className="py-[2rem] text-center text-ink-3">The trend appears after a few minutes of measured readings (Presage or crew).</p>
       ) : (
         <div className="h-[12rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -56,6 +56,16 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
             </LineChart>
           </ResponsiveContainer>
         </div>
+      )}
+      {trend && (
+        <p className="mt-[.5rem] text-[0.8125rem] text-ink-3">
+          Measured readings only ·{" "}
+          {trend.source === "vitals_1m"
+            ? `Tiger Data continuous aggregate vitals_1m${trend.query_ms != null ? `, ${trend.query_ms} ms` : ""}`
+            : trend.source === "raw"
+              ? "raw readings (TimescaleDB not available)"
+              : "in-memory demo store"}
+        </p>
       )}
       {fc && (
         <p className="mt-[.75rem] text-[0.875rem] text-ink-2">

@@ -32,7 +32,7 @@ def test_journey_eta_scales_with_mode():
     o = regions.facility("maldives", "dhiffushi_hc")
     d = regions.facility("maldives", "igmh")
     km_boat, eta_boat = regions.journey(o, d, TransportMode.boat, NOW)
-    km_heli, eta_heli = regions.journey(o, d, TransportMode.helicopter, NOW)
+    _km_heli, eta_heli = regions.journey(o, d, TransportMode.helicopter, NOW)
     assert 40 < km_boat < 55  # ~37 km straight line × 1.25 sea detour
     assert eta_heli < eta_boat
     assert timedelta(minutes=60) < eta_boat - NOW < timedelta(minutes=90)

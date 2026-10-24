@@ -3,7 +3,7 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 services:
   db:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg17
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres

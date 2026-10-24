@@ -20,8 +20,11 @@ class Settings(BaseSettings):
     # Adapters
     gemini_mode: str = "mock"  # real | mock
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-flash-latest"
-    gemini_timeout_s: float = 12.0
+    gemini_model: str = "gemini-3.5-flash"
+    # tried once when the primary model is overloaded or times out (seen live: flash-latest 503s under load)
+    gemini_fallback_model: str = "gemini-flash-lite-latest"
+    gemini_timeout_s: float = 12.0  # background SBAR refresh
+    gemini_extract_timeout_s: float = 5.0  # the crew is waiting on this one; rules take over after it
 
     elevenlabs_mode: str = "mock"  # real | mock
     elevenlabs_api_key: str = ""
@@ -37,6 +40,10 @@ class Settings(BaseSettings):
     s3_access_key: str = ""
     s3_secret_key: str = ""
     s3_region: str = "us-east-1"
+
+    # Hosting label when the Vultr metadata service isn't reachable from inside a container (set by the operator)
+    host_label: str = ""  # e.g. "Vultr"
+    host_region: str = ""  # e.g. "lhr"
 
     # Demo
     default_speed_multiplier: float = 1.0

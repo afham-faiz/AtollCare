@@ -2,48 +2,58 @@
 
 What hasn't been verified, and what's deliberately simple. Log triage progress in `FEEDBACK.md`.
 
-## Not verified
+## Verified so far
 
-- **Live Presage measurement.** The official `@smartspectra/node-sdk` loads on Windows x64, and a dummy key
-  exercised the auth-failure path. No real key was available, so HR / RR / HRV from a real face has not been seen
-  end to end. First thing to do with a key: run the bridge, open `/crew/<id>` in Chrome or Edge, sit still 50–80 cm
-  from the camera with face and upper chest in the guide, and check "Presage · live" values against a pulse oximeter.
-- **Camera and microphone in a real browser.** All UI passes ran in a browser pane that blocks capture, so the live
-  instrument (acquiring → measuring), the mic level meter and live dictation weren't seen working. The blocked,
-  busy and no-camera states and the typed-note path were verified.
-- **Browser speech recognition** (the fallback when ElevenLabs isn't configured) sends audio to the browser vendor's
-  service in Chrome and Edge. Fine for a demo; use Scribe (`ELEVENLABS_MODE=real`) for anything else.
-- **Real adapters** (no keys): Gemini SBAR + extraction, ElevenLabs Scribe + TTS, S3 storage. The mock and fallback
-  paths are tested.
-- **Docker / TimescaleDB.** Docker Desktop's engine wasn't available on the build machine, so `docker compose up`,
-  both Dockerfiles and `PgRepo` (asyncpg, migrations, the `vitals_1m` continuous aggregate) have not run. Everything
-  ran against the in-memory store, which implements the same `Repo` interface. To check:
-  `docker compose up`, then `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/atollcare uv run pytest`.
+- **Real adapters:** Gemini writes the SBAR (`gemini-3.5-flash`, with `gemini-flash-lite-latest` as fallback — the
+  default `gemini-flash-latest` was returning 503 under load). ElevenLabs text-to-speech and Scribe speech-to-text
+  round-trip correctly ("Gave aspirin 300 milligrams…" → "Aspirin 300 mg", "GTN spray").
+- **Camera and microphone in Chrome:** a teammate saw the camera feed and dictated a note in Chrome on Windows.
+- **TimescaleDB:** the full engine suite (88 tests) passes against TimescaleDB 2.31 / Postgres 17 as well as the
+  in-memory store; migrations, continuous aggregates, compression, insights and the benchmark all run.
+- **Production images:** `docker compose -f docker-compose.prod.yml build` succeeds; the web and engine containers
+  serve every page and proxy `/api` to the engine, which migrates and talks to TimescaleDB.
+
+## Not verified yet
+
+- **Live Presage measurement.** The bridge reports the SDK `ready` with a real key, but nobody has yet watched HR / RR
+  go to *Presage · live* on a real face. Check: run the bridge, open `/crew/<id>` in Chrome, sit still 50–80 cm from
+  the camera with face and upper chest in the guide, compare against a pulse oximeter.
+- **Tiger Cloud specifically.** Everything Tiger-related ran against self-hosted TimescaleDB 2.31; the same SQL should
+  run on Tiger Cloud, but it hasn't been pointed at a Tiger Cloud service yet.
+- **Vultr deployment.** The runbook (`DEPLOY_VULTR.md`), deploy script and images are ready; the instance hasn't been
+  created. The Vultr metadata lookup that shows the region is untested on a real instance (`HOST_LABEL` is the
+  fallback).
+- **Vultr Object Storage** for cached TTS audio (`STORAGE_MODE=s3`).
+
+## Honest limits to say out loud
+
+- **Privacy:** video never leaves the device, but voice audio goes to ElevenLabs (or, without a key, to the browser
+  vendor's speech service in Chrome / Edge), and note text goes to Google for Gemini.
+- **Working impression without Gemini is a keyword match** on the crew's words ("face drooping" → *Suspected
+  stroke*). It's not a diagnosis; the hospital screen says where it came from and quotes the words.
+- **Presage needs stillness.** In a moving vehicle readings will be noisier; the camera shows Presage's own framing
+  and movement hints, and readings above 110 BPM are flagged *confirm with a monitor*.
 
 ## Simplifications
 
-- **No authentication.** Anyone with the URL can act as crew or hospital. Presenter tools are hidden behind a shortcut,
-  not protected.
-- **Polling, not push.** Both screens poll every 2 s (SWR). Hospital → crew questions can take up to ~2 s to appear.
-- **One shared hospital view.** The rail lists every handed-off transfer, whatever its destination. There's no
-  per-hospital inbox.
-- **Rule-based extraction** (when Gemini is off) understands common drugs, doses, routes and a few procedures. It
-  splits on clause boundaries, so "aspirin and GTN, oxygen 4 litres" gives three items, but unusual phrasing can be
-  missed. The crew's own words are always kept beside the chips.
-- **Working impression without Gemini is a keyword match** on the crew's words ("face drooping" → *Suspected
-  stroke*, "chest pain" → *Suspected STEMI*). It's not a diagnosis. The hospital screen says where it came from and
-  quotes the crew's words under it.
-- **NEWS2 from contactless vitals is partial** until the crew adds SpO₂, BP, temperature and ACVPU. The UI says so and
-  prompts "Complete NEWS2".
-- **Simulated vitals** follow a profile picked from the complaint (for example, chest pain → HR rising
-  over the journey), so trends and alerts have something to show. They're labelled everywhere and never posted as
-  `presage`.
-- **Sim clock.** Journeys run on an accelerated clock (presenter speed 1–60×). Times written to the database can be
-  "in the future" relative to wall-clock time during a demo. The continuous aggregate has real-time aggregation on.
-- **Map tiles** come from Esri's public World Light Gray service (English labels, no key). Fine for a demo.
+- **No authentication.** Anyone with the URL can act as crew or hospital. Presenter tools are behind a shortcut, not
+  protected.
+- **Polling, not push.** Screens poll every 2 s (insights every 30 s).
+- **One shared hospital view.** The rail lists every handed-off transfer, whatever its destination.
+- **Simulated vitals** keep the demo moving without a Presage key. They're labelled everywhere, rendered muted, never
+  scored: NEWS2, alerts, the trend chart and the forecast use measured (Presage, crew) readings only.
+- **Seeded network history** (`Seed 60 days of history`) is simulated data for the insights page, flagged `seeded`,
+  hidden from both clinical screens and kept by *Clear live transfers*. The insights page says when it's included.
+- **Rule-based extraction** (without Gemini) knows common drugs, doses, routes and a few procedures, and reads
+  spoken units ("300 milligrams"). Unusual phrasing can be missed; the crew can strike anything wrong.
+- **NEWS2 is partial** until the crew add SpO₂, BP, temperature and ACVPU.
+- **Sim clock:** journeys run on an accelerated clock (1–60×).
+- **Map tiles:** Esri's public World Light Gray service (English labels, no key).
 
 ## Rough edges
 
-- The trend window is 60 sim-minutes. After a long fast-forward the oldest readings drop out of the chart.
-- Closing the transfer is crew-side only; the hospital sees `arrived` until then.
-- `docs/PRD.md` and `docs/CONCEPT.md` describe v1 (route optimiser, island reporter app) and are kept for history.
+- The clinical trend window is 60 sim-minutes; after a long fast-forward the oldest readings drop off the chart.
+- Closing a transfer is crew-side only.
+- Python files aren't `ruff format`-ed (lint is clean); a repo-wide reformat was skipped to avoid merge conflicts
+  while the team works in parallel.
+- `docs/PRD.md` and `docs/CONCEPT.md` describe v1 and are kept for history.

@@ -10,7 +10,7 @@ import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
 import Sheet from "@/app/components/(modals)/Sheet";
 import SbarDocument from "@/app/components/(transfer)/SbarDocument";
 import UrgencyBadge from "@/app/components/(transfer)/UrgencyBadge";
-import { post, type Region, type Transfer } from "@/lib/api";
+import { post, type Intervention, type Region, type Transfer } from "@/lib/api";
 import { numeric, SOURCE_LABEL, type Source } from "@/lib/clinical";
 import { place } from "@/lib/format";
 import { toastError } from "@/lib/toast";
@@ -47,6 +47,7 @@ export default function ({
   readOnly,
   onClose,
   onSent,
+  onChanged,
 }: {
   t: Transfer;
   region?: Region;
@@ -55,9 +56,18 @@ export default function ({
   readOnly: boolean;
   onClose: () => void;
   onSent: (t: Transfer) => void;
+  onChanged: (t: Transfer) => void;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
+  const done = t.status === "arrived" || t.status === "closed";
+  const remove = async (i: Intervention) => {
+    try {
+      onChanged(await post<Transfer>(`/transfers/${t.id}/interventions/remove`, { note_id: i.note_id, text: i.text }));
+    } catch (err) {
+      toastError(err);
+    }
+  };
   const dest = place(region, t.destination_id);
   const simulated = KEY_VITALS.filter(([k]) => t.latest[k]?.source === "simulated").map(([, label]) => label);
 
@@ -123,7 +133,14 @@ export default function ({
         )}
 
         <div className="border-t-[1px] border-line pt-[1.25rem]">
-          <SbarDocument briefing={t.briefing} interventions={t.interventions} now={now} tz={region?.timezone} compact />
+          <SbarDocument
+            briefing={t.briefing}
+            interventions={t.interventions}
+            now={now}
+            tz={region?.timezone}
+            compact
+            onRemove={done ? undefined : remove}
+          />
         </div>
       </div>
     </Sheet>

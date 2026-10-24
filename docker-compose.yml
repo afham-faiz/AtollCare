@@ -2,7 +2,7 @@
 #   cp .env.example .env && docker compose up
 services:
   db:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg17
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

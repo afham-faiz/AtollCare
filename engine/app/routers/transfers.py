@@ -9,6 +9,7 @@ from app.models import (
     MessageRequest,
     MonitoringRequest,
     NoteRequest,
+    RemoveInterventionRequest,
     Transfer,
     TransferListItem,
     TrendResponse,
@@ -74,6 +75,11 @@ async def voice_note(
 @router.post("/{transfer_id}/messages", response_model=Transfer)
 async def message(transfer_id: UUID, body: MessageRequest, h: Hub = Depends(hub)):
     return await h.transfers.message(transfer_id, body)
+
+
+@router.post("/{transfer_id}/interventions/remove", response_model=Transfer)
+async def remove_intervention(transfer_id: UUID, body: RemoveInterventionRequest, h: Hub = Depends(hub)):
+    return await h.transfers.remove_intervention(transfer_id, body)
 
 
 @router.post("/{transfer_id}/handoff", response_model=Transfer)

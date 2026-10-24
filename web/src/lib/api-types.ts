@@ -315,6 +315,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/transfers/{transfer_id}/interventions/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Remove Intervention */
+        post: operations["remove_intervention_api_transfers__transfer_id__interventions_remove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transfers/{transfer_id}/handoff": {
         parameters: {
             query?: never;
@@ -377,6 +394,57 @@ export interface paths {
         put?: never;
         /** Close */
         post: operations["close_api_transfers__transfer_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Insights */
+        get: operations["insights_api_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/insights/benchmark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Benchmark */
+        get: operations["benchmark_api_insights_benchmark_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/demo/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Seed History */
+        post: operations["seed_history_api_demo_history_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -462,6 +530,23 @@ export interface components {
          * @enum {string}
          */
         Author: "crew" | "hospital" | "system";
+        /** BenchmarkResponse */
+        BenchmarkResponse: {
+            /** Question */
+            question: string;
+            /** Days */
+            days: number;
+            /** Aggregate Source */
+            aggregate_source: string;
+            /** Aggregate Ms */
+            aggregate_ms: number;
+            /** Raw Ms */
+            raw_ms: number;
+            /** Rows Scanned */
+            rows_scanned: number;
+            /** Speedup */
+            speedup: number;
+        };
         /** Body_voice_note_api_transfers__transfer_id__notes_voice_post */
         Body_voice_note_api_transfers__transfer_id__notes_voice_post: {
             /** Audio */
@@ -562,6 +647,8 @@ export interface components {
             mode: components["schemas"]["TransportMode"];
             /** Suggested Note */
             suggested_note?: string | null;
+            /** Suggested Vitals */
+            suggested_vitals?: string | null;
         };
         /** DemoState */
         DemoState: {
@@ -670,6 +757,127 @@ export interface components {
             db: string;
             adapters: components["schemas"]["AdapterStatus"];
         };
+        /**
+         * InfraStatus
+         * @description Where this engine is running and what it stores data in — read from the environment, never assumed.
+         */
+        InfraStatus: {
+            /** Host */
+            host: string;
+            /** Host Region */
+            host_region?: string | null;
+            /** Host Plan */
+            host_plan?: string | null;
+            /** Database */
+            database: string;
+            /** Database Version */
+            database_version?: string | null;
+        };
+        /** InsightsDay */
+        InsightsDay: {
+            /**
+             * Day
+             * Format: date-time
+             */
+            day: string;
+            /**
+             * Transfers
+             * @default 0
+             */
+            transfers: number;
+            /**
+             * Alerts
+             * @default 0
+             */
+            alerts: number;
+            /**
+             * Questions
+             * @default 0
+             */
+            questions: number;
+            /**
+             * Readings
+             * @default 0
+             */
+            readings: number;
+        };
+        /** InsightsDestination */
+        InsightsDestination: {
+            /** Destination Id */
+            destination_id: string;
+            /** Name */
+            name: string;
+            /** Transfers */
+            transfers: number;
+            /** Median Min To Accept */
+            median_min_to_accept: number | null;
+        };
+        /** InsightsKpis */
+        InsightsKpis: {
+            /** Transfers */
+            transfers: number;
+            /** Handed Off */
+            handed_off: number;
+            /** Accepted */
+            accepted: number;
+            /** Median Min To Accept */
+            median_min_to_accept: number | null;
+            /** P90 Min To Accept */
+            p90_min_to_accept: number | null;
+            /** Median Journey Min */
+            median_journey_min: number | null;
+            /** High Risk */
+            high_risk: number;
+        };
+        /** InsightsResponse */
+        InsightsResponse: {
+            /** Available */
+            available: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Database */
+            database: string;
+            /** Database Version */
+            database_version?: string | null;
+            /** Days */
+            days: number;
+            /**
+             * Seeded Transfers
+             * @default 0
+             */
+            seeded_transfers: number;
+            /**
+             * Live Transfers
+             * @default 0
+             */
+            live_transfers: number;
+            kpis?: components["schemas"]["InsightsKpis"] | null;
+            /**
+             * Daily
+             * @default []
+             */
+            daily: components["schemas"]["InsightsDay"][];
+            /**
+             * Destinations
+             * @default []
+             */
+            destinations: components["schemas"]["InsightsDestination"][];
+            /**
+             * Storage
+             * @default []
+             */
+            storage: components["schemas"]["StorageTable"][];
+            /**
+             * Aggregates
+             * @default []
+             */
+            aggregates: string[];
+            /**
+             * Queries
+             * @default []
+             */
+            queries: components["schemas"]["TimedQuery"][];
+        };
         /** Intervention */
         Intervention: {
             /**
@@ -728,6 +936,7 @@ export interface components {
             now: string;
             /** Prepare Options */
             prepare_options: string[];
+            infra: components["schemas"]["InfraStatus"];
         };
         /** Monitoring */
         Monitoring: {
@@ -855,6 +1064,32 @@ export interface components {
             /** Facilities */
             facilities: components["schemas"]["Facility"][];
         };
+        /**
+         * RemoveInterventionRequest
+         * @description The crew strike an item the extraction got wrong; their original words stay in the timeline.
+         */
+        RemoveInterventionRequest: {
+            /**
+             * Note Id
+             * Format: uuid
+             */
+            note_id: string;
+            /** Text */
+            text: string;
+        };
+        /** SeedHistoryResponse */
+        SeedHistoryResponse: {
+            /** Transfers */
+            transfers: number;
+            /** Readings */
+            readings: number;
+            /** Notes */
+            notes: number;
+            /** Compressed Chunks */
+            compressed_chunks: number;
+            /** Seconds */
+            seconds: number;
+        };
         /** SimProfile */
         SimProfile: {
             /**
@@ -903,6 +1138,32 @@ export interface components {
              * @enum {string}
              */
             source: "elevenlabs" | "browser";
+        };
+        /** StorageTable */
+        StorageTable: {
+            /** Name */
+            name: string;
+            /** Rows */
+            rows: number;
+            /** Chunks */
+            chunks: number;
+            /** Compressed Chunks */
+            compressed_chunks: number;
+            /** Bytes Before Compression */
+            bytes_before_compression: number | null;
+            /** Bytes After Compression */
+            bytes_after_compression: number | null;
+            /** Total Bytes */
+            total_bytes: number;
+        };
+        /** TimedQuery */
+        TimedQuery: {
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+            /** Ms */
+            ms: number;
         };
         /** Transfer */
         Transfer: {
@@ -1110,6 +1371,8 @@ export interface components {
              * @enum {string}
              */
             source: "vitals_1m" | "raw" | "memory";
+            /** Query Ms */
+            query_ms?: number | null;
             forecast?: components["schemas"]["DeteriorationForecast"] | null;
         };
         /** ValidationError */
@@ -1797,6 +2060,41 @@ export interface operations {
             };
         };
     };
+    remove_intervention_api_transfers__transfer_id__interventions_remove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveInterventionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     handoff_api_transfers__transfer_id__handoff_post: {
         parameters: {
             query?: never;
@@ -1912,6 +2210,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    insights_api_insights_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    benchmark_api_insights_benchmark_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchmarkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    seed_history_api_demo_history_post: {
+        parameters: {
+            query?: {
+                days?: number;
+                per_day?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeedHistoryResponse"];
                 };
             };
             /** @description Validation Error */

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "gen:api": "cd ../engine && uv run python -m app.openapi_dump ../web/openapi.json && cd ../web && openapi-typescript openapi.json -o src/lib/api-types.ts"
+    "gen:api": "cd ../engine && uv run python -m app.openapi_dump ../web/openapi.json && cd ../web && openapi-typescript openapi.json -o src/lib/api-types.ts",
+    "test": "bun test src"
   },
   "dependencies": {
     "leaflet": "1.9.4",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/bun": "^1.4.4",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^20",
     "@types/react": "^19",

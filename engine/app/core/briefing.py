@@ -93,7 +93,7 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
         assessment += " Alerts: " + "; ".join(a.text for a in t.alerts) + "."
     rec = []
     if t.interventions:
-        given = [re.sub(r"^(gave|given|administered)\s+", "", i.text, flags=re.I) for i in t.interventions[-3:]]
+        given = [re.sub(r"^(gave|given|administered)\s+", "", i.text, flags=re.IGNORECASE) for i in t.interventions[-3:]]
         rec.append("Already given: " + "; ".join(given) + ".")
     if suspected and "STEMI" in suspected:
         rec.append("Consider cath lab activation on arrival.")
@@ -110,24 +110,24 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
 
 # ---------------------------------------------------------------- note extraction (fallback when Gemini is off)
 # Works clause by clause so "gave aspirin 300 mg and GTN spray, oxygen 4 litres" yields three items, not one.
-CLAUSE = re.compile(r"\.(?!\d)|[;,]|\band\b|\bthen\b|\bplus\b", re.I)  # keeps "0.5 mg" whole
+CLAUSE = re.compile(r"\.(?!\d)|[;,]|\band\b|\bthen\b|\bplus\b", re.IGNORECASE)  # keeps "0.5 mg" whole
 GIVEN = re.compile(r"\b(gave|give|given|giving|administer(?:ed|ing)?|started|applied|inserted|put on|commenced|"
-                   r"nebuli[sz]ed|splinted)\b\s*", re.I)
+                   r"nebuli[sz]ed|splinted)\b\s*", re.IGNORECASE)
 # speech-to-text spells units out ("300 milligrams"); write them the way a clinician would
-SPOKEN_UNITS = [(re.compile(r"\bmilligrams?\b", re.I), "mg"), (re.compile(r"\bmicrograms?\b", re.I), "mcg"),
-                (re.compile(r"\bmillilit(?:re|er)s?\b", re.I), "ml")]
-NUMERIC_DOSE = re.compile(r"\d+(\.\d+)?\s*(mg|mcg|g|ml|l|litres?|liters?|units?)\b", re.I)
+SPOKEN_UNITS = [(re.compile(r"\bmilligrams?\b", re.IGNORECASE), "mg"), (re.compile(r"\bmicrograms?\b", re.IGNORECASE), "mcg"),
+                (re.compile(r"\bmillilit(?:re|er)s?\b", re.IGNORECASE), "ml")]
+NUMERIC_DOSE = re.compile(r"\d+(\.\d+)?\s*(mg|mcg|g|ml|l|litres?|liters?|units?)\b", re.IGNORECASE)
 DRUG = re.compile(r"\b(aspirin|gtn|glyceryl trinitrate|nitro\w*|morphine|fentanyl|ketamine|methoxyflurane|penthrox|oxygen|o2|"
                   r"adrenaline|epinephrine|salbutamol|ipratropium|txa|tranexamic acid|iv fluids?|fluids?|saline|"
                   r"hartmann'?s|paracetamol|ondansetron|heparin|clopidogrel|ticagrelor|glucagon|glucose|naloxone|"
-                  r"midazolam|amiodarone)\b", re.I)
+                  r"midazolam|amiodarone)\b", re.IGNORECASE)
 PROCEDURE = re.compile(r"\b(iv access|cannula\w*|splint\w*|tourniquet|c-?collar|pelvic binder|traction|intubat\w*|"
-                       r"defibrillat\w*|cpr|12-lead)\b", re.I)
+                       r"defibrillat\w*|cpr|12-lead)\b", re.IGNORECASE)
 DOSE = re.compile(r"\d+(\.\d+)?\s*(mg|mcg|micrograms?|g|ml|l|litres?|liters?|units?)\b|"
-                  r"\b(spray|puffs?|nebuli[sz]er|neb|iv|im|io|sublingual|bolus|infusion)\b", re.I)
-NOT_GIVEN = re.compile(r"\b(no|not|without|declined|refused|allergic|takes|taking|regular|usual|history)\b", re.I)
+                  r"\b(spray|puffs?|nebuli[sz]er|neb|iv|im|io|sublingual|bolus|infusion)\b", re.IGNORECASE)
+NOT_GIVEN = re.compile(r"\b(no|not|without|declined|refused|allergic|takes|taking|regular|usual|history)\b", re.IGNORECASE)
 OBSERVATION = re.compile(r"\b(pain [^.;,]*|sweat\w*|vomit\w*|pale|clammy|drowsy|confused|unresponsive|"
-                         r"st elevation[^.;,]*|facial droop[^.;,]*|blood glucose [^.;,]*)", re.I)
+                         r"st elevation[^.;,]*|facial droop[^.;,]*|blood glucose [^.;,]*)", re.IGNORECASE)
 
 
 def _cap(s: str) -> str:

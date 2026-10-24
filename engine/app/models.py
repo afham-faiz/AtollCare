@@ -176,6 +176,13 @@ class Intervention(BaseModel):
     note_id: UUID
 
 
+class RemoveInterventionRequest(BaseModel):
+    """The crew strike an item the extraction got wrong; their original words stay in the timeline."""
+
+    note_id: UUID
+    text: str
+
+
 class Briefing(BaseModel):
     situation: str
     background: str
@@ -344,6 +351,8 @@ class DemoCase(BaseModel):
     destination_id: str
     mode: TransportMode
     suggested_note: str | None = None
+    # what the presenter types into "Complete NEWS2" — never pre-entered as if the crew had measured it
+    suggested_vitals: str | None = None
 
 
 class BridgeHeartbeat(BaseModel):
@@ -376,6 +385,16 @@ class BridgeStatus(BaseModel):
     last_seen: datetime | None = None
 
 
+class InfraStatus(BaseModel):
+    """Where this engine is running and what it stores data in — read from the environment, never assumed."""
+
+    host: str  # "Vultr" (from the instance metadata service) or "Local"
+    host_region: str | None = None  # e.g. "lhr"
+    host_plan: str | None = None  # e.g. "vc2-2c-4gb"
+    database: str  # "Tiger Cloud", "TimescaleDB", "PostgreSQL" or "In-memory"
+    database_version: str | None = None
+
+
 class MetaResponse(BaseModel):
     region: Region  # active region for new transfers
     regions: list[Region]  # every installed pack (existing transfers may belong to another)
@@ -385,6 +404,83 @@ class MetaResponse(BaseModel):
     demo_state: DemoState
     now: datetime
     prepare_options: list[str]
+    infra: InfraStatus
+
+
+# ---------------------------------------------------------------- network insights (Tiger Data)
+class InsightsKpis(BaseModel):
+    transfers: int
+    handed_off: int
+    accepted: int
+    median_min_to_accept: float | None
+    p90_min_to_accept: float | None
+    median_journey_min: float | None
+    high_risk: int  # NEWS2 ≥ 7 at the latest score
+
+
+class InsightsDay(BaseModel):
+    day: datetime
+    transfers: int = 0
+    alerts: int = 0
+    questions: int = 0
+    readings: int = 0
+
+
+class InsightsDestination(BaseModel):
+    destination_id: str
+    name: str
+    transfers: int
+    median_min_to_accept: float | None
+
+
+class StorageTable(BaseModel):
+    name: str
+    rows: int
+    chunks: int
+    compressed_chunks: int
+    bytes_before_compression: int | None
+    bytes_after_compression: int | None
+    total_bytes: int
+
+
+class TimedQuery(BaseModel):
+    name: str
+    source: str  # the table or continuous aggregate that answered it
+    ms: float
+
+
+class InsightsResponse(BaseModel):
+    available: bool
+    reason: str | None = None
+    database: str
+    database_version: str | None = None
+    days: int
+    seeded_transfers: int = 0
+    live_transfers: int = 0
+    kpis: InsightsKpis | None = None
+    daily: list[InsightsDay] = []
+    destinations: list[InsightsDestination] = []
+    storage: list[StorageTable] = []
+    aggregates: list[str] = []
+    queries: list[TimedQuery] = []
+
+
+class BenchmarkResponse(BaseModel):
+    question: str
+    days: int
+    aggregate_source: str
+    aggregate_ms: float
+    raw_ms: float
+    rows_scanned: int
+    speedup: float
+
+
+class SeedHistoryResponse(BaseModel):
+    transfers: int
+    readings: int
+    notes: int
+    compressed_chunks: int
+    seconds: float
 
 
 class HealthResponse(BaseModel):
@@ -415,8 +511,9 @@ class TrendBucket(BaseModel):
 
 
 class TrendResponse(BaseModel):
-    buckets: list[TrendBucket]
+    buckets: list[TrendBucket]  # measured readings only (Presage, crew)
     source: Literal["vitals_1m", "raw", "memory"]
+    query_ms: float | None = None  # how long the database took to answer
     forecast: DeteriorationForecast | None = None
 
 

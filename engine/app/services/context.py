@@ -10,7 +10,7 @@ from app.adapters.storage import StorageAdapter
 from app.config import Settings
 from app.core.clock import Clock, clock, real_now
 from app.db import Repo, make_repo
-from app.models import AdapterStatus, BridgeHeartbeat, BridgeStatus
+from app.models import AdapterStatus, BridgeHeartbeat, BridgeStatus, InfraStatus
 
 BRIDGE_TIMEOUT = timedelta(seconds=15)
 
@@ -33,6 +33,7 @@ class Services:
     gemini: GeminiAdapter
     elevenlabs: ElevenLabsAdapter
     clock: Clock
+    infra: InfraStatus = field(default_factory=lambda: InfraStatus(host="Local", database="In-memory"))
     bridge: BridgeHeartbeat | None = None
     bridge_seen: datetime | None = None
     caches: dict[str, object] = field(default_factory=dict)

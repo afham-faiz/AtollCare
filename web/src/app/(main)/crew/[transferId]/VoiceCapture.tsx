@@ -1,8 +1,8 @@
 // One control: tap, speak, tap. Real microphone level, live transcript, then the note returns structured.
 "use client";
 
-import { Check, HelpCircle, Keyboard, Loader2, Mic, Send, Square } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, HelpCircle, Keyboard, Loader2, Mic, Send, Square, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 import { api, post, type Note, type Transfer } from "@/lib/api";
@@ -31,6 +31,7 @@ export default function ({
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState("");
   const [result, setResult] = useState<Note | null>(null);
+  const [struck, setStruck] = useState<string[]>([]);
   const [seconds, setSeconds] = useState(0);
 
   // typed notes are stored as "text" and dictated ones as "voice", so the record shows how each note was captured
@@ -49,6 +50,7 @@ export default function ({
         }
         const mine = [...t.notes].reverse().find((n) => n.author === "crew" && n.kind !== "event");
         setResult(mine ?? null);
+        setStruck([]);
         onSaved(t);
       } catch (err) {
         toastError(err);
@@ -73,13 +75,26 @@ export default function ({
     };
   }, [listening]);
 
+  // the result stays up a little longer after each correction, so the crew can see it took
   useEffect(() => {
     if (!result) return;
-    const t = window.setTimeout(() => setResult(null), 9000);
+    const t = window.setTimeout(() => setResult(null), 10000);
     return () => window.clearTimeout(t);
-  }, [result]);
+  }, [result, struck]);
 
-  const chips = useMemo(() => [...(result?.extraction?.interventions ?? []), ...(result?.extraction?.observations ?? [])], [result]);
+  // extraction is a suggestion: the crew can strike anything it got wrong before the hospital relies on it
+  const strike = async (text: string) => {
+    if (!result) return;
+    try {
+      onSaved(await post<Transfer>(`/transfers/${transferId}/interventions/remove`, { note_id: result.id, text }));
+      setStruck((s) => [...s, text]);
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
+  const given = result?.extraction?.interventions ?? [];
+  const observed = result?.extraction?.observations ?? [];
   const replying = !!question;
   const canVoice = dictation.supported && !typing;
 
@@ -148,10 +163,23 @@ export default function ({
             <p className={styles.primaryLine}>
               <Check size={16} strokeWidth={2.6} className="text-teal" /> {result.kind === "answer" ? "Answer sent" : "Added to handoff"}
             </p>
-            {chips.length > 0 ? (
+            {given.length + observed.length > 0 ? (
               <div className={styles.chips}>
-                {chips.slice(0, 5).map((c, i) => (
-                  <span key={c} className={styles.chip} style={{ animationDelay: `${i * 60}ms` }}>
+                {given.map((c, i) => {
+                  const gone = struck.includes(c);
+                  return (
+                    <span key={`g-${c}`} className={twMerge(styles.chip, gone && styles.struck)} style={{ animationDelay: `${i * 60}ms` }}>
+                      {c}
+                      {!gone && (
+                        <button type="button" className={styles.chipRemove} onClick={() => strike(c)} aria-label={`Remove ${c} from the handoff`}>
+                          <X size={12} strokeWidth={2.6} />
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+                {observed.map((c, i) => (
+                  <span key={`o-${c}`} className={twMerge(styles.chip, styles.observed)} style={{ animationDelay: `${(given.length + i) * 60}ms` }}>
                     {c}
                   </span>
                 ))}

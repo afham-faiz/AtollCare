@@ -54,7 +54,7 @@ class ElevenLabsAdapter:
             resp.raise_for_status()
             body = resp.json()
             return body.get("text", "").strip(), body.get("language_code") or language or "en"
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.warning("ElevenLabs STT failed: %s", exc)
             raise
 

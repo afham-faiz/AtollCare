@@ -1,5 +1,5 @@
 // The handoff as a document: SBAR, typeset for reading under pressure. AI-drafted content is labelled as such.
-import { Sparkles } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 
 import type { Briefing, Intervention } from "@/lib/api";
@@ -13,6 +13,7 @@ export default function ({
   tz,
   compact = false,
   className,
+  onRemove,
 }: {
   briefing?: Briefing | null;
   interventions?: Intervention[];
@@ -20,6 +21,8 @@ export default function ({
   tz?: string;
   compact?: boolean;
   className?: string;
+  /** crew only: strike an item the extraction got wrong */
+  onRemove?: (i: Intervention) => void;
 }) {
   if (!briefing) return null;
   const rows: [string, string][] = [
@@ -46,6 +49,17 @@ export default function ({
                   <li key={`${i.note_id}-${i.text}`} className="flex items-baseline gap-[.75rem]">
                     <span className="tnum w-[3rem] shrink-0 text-[0.875rem] text-ink-3">{fmtTime(i.at, tz)}</span>
                     <span className="font-[550]">{i.text}</span>
+                    {onRemove && (
+                      <button
+                        type="button"
+                        onClick={() => onRemove(i)}
+                        aria-label={`Remove ${i.text} from the handoff`}
+                        title="Remove from the handoff"
+                        className="ml-auto inline-flex size-[1.75rem] shrink-0 items-center justify-center self-center rounded-[.5rem] text-ink-3 hover:bg-well hover:text-critical"
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

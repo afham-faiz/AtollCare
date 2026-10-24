@@ -2,12 +2,14 @@
 # in-process, used by tests and when DATABASE_URL is empty (no-docker dev). The engine owns the database.
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -64,7 +66,8 @@ class Repo(ABC):
     async def get_vitals(self, transfer_id: UUID, limit: int = 120) -> list[VitalsReading]: ...
 
     @abstractmethod
-    async def vitals_trend(self, transfer_id: UUID, since: datetime) -> tuple[list[TrendBucket], str]: ...
+    async def vitals_trend(self, transfer_id: UUID, since: datetime) -> tuple[list[TrendBucket], str]:
+        """1-minute buckets of measured readings only (Presage, crew); simulated and low-confidence rows excluded."""
 
     @abstractmethod
     async def add_note(self, note: Note) -> None: ...
@@ -80,6 +83,20 @@ class Repo(ABC):
 
     @abstractmethod
     async def reset(self) -> None: ...
+
+    # ---- network analytics (Tiger Data only; the in-memory store has no history to analyse)
+    async def database_info(self) -> tuple[str, str | None]:
+        return "In-memory", None
+
+    async def insights(self, days: int) -> dict[str, Any] | None:
+        return None
+
+    async def benchmark(self, days: int) -> dict[str, Any] | None:
+        return None
+
+    async def seed_history(self, days: int, per_day: int, region_id: str, origins: list[str], destinations: list[str],
+                           modes: list[str]) -> dict[str, Any] | None:
+        return None
 
 
 # ---------------------------------------------------------------- in-memory
@@ -117,7 +134,7 @@ class MemoryRepo(Repo):
     async def vitals_trend(self, transfer_id: UUID, since: datetime) -> tuple[list[TrendBucket], str]:
         groups: dict[datetime, list[VitalsReading]] = defaultdict(list)
         for r in self.vitals.get(transfer_id, []):
-            if r.recorded_at >= since and not r.low_quality:
+            if r.recorded_at >= since and not r.low_quality and r.source != "simulated":
                 groups[r.recorded_at.replace(second=0, microsecond=0)].append(r)
         buckets = [
             TrendBucket(t=t, hr=_avg(rs, "heart_rate"), rr=_avg(rs, "resp_rate"), hrv=_avg(rs, "hrv_rmssd"),
@@ -151,7 +168,10 @@ def split_sql(sql: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-TIMESCALE_ONLY = re.compile(r"timescaledb|create_hypertable|add_continuous_aggregate_policy", re.I)
+TIMESCALE_ONLY = re.compile(
+    r"timescaledb|create_hypertable|add_continuous_aggregate_policy|add_compression_policy|set_chunk_time_interval",
+    re.IGNORECASE,
+)
 
 
 class PgRepo(Repo):
@@ -232,7 +252,7 @@ class PgRepo(Repo):
 
     async def list_transfers(self) -> list[Transfer]:
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch("SELECT doc FROM transfers ORDER BY updated_at DESC LIMIT 200")
+            rows = await conn.fetch("SELECT doc FROM transfers WHERE NOT seeded ORDER BY updated_at DESC LIMIT 200")
         return [Transfer.model_validate(r["doc"]) for r in rows]
 
     async def add_vitals(self, reading: VitalsReading) -> None:
@@ -265,7 +285,7 @@ class PgRepo(Repo):
                 """SELECT date_trunc('minute', recorded_at) AS t, avg(heart_rate) AS hr, avg(resp_rate) AS rr,
                           avg(hrv_rmssd) AS hrv, avg(spo2) AS spo2, avg(systolic_bp) AS sbp, avg(temperature_c) AS temp
                    FROM vitals_readings WHERE transfer_id=$1 AND recorded_at >= $2
-                     AND (confidence IS NULL OR confidence >= $3)
+                     AND (confidence IS NULL OR confidence >= $3) AND source <> 'simulated'
                    GROUP BY 1 ORDER BY 1""",
                 transfer_id, since, LOW_CONFIDENCE,
             )
@@ -302,10 +322,188 @@ class PgRepo(Repo):
             )
 
     async def reset(self) -> None:
-        # rows only — never drop tables
+        # live demo rows only — seeded network history stays; their readings and notes go with them (ON DELETE CASCADE)
         async with self.pool.acquire() as conn:
-            for table in ("vitals_readings", "transfer_notes", "transfers"):
-                await conn.execute(f"DELETE FROM {table}")
+            await conn.execute("DELETE FROM transfers WHERE NOT seeded")
+
+
+    # ---------------------------------------------------------------- network analytics
+    async def database_info(self) -> tuple[str, str | None]:
+        async with self.pool.acquire() as conn:
+            version = await conn.fetchval("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")
+        if version is None:
+            return "PostgreSQL", None
+        # Tiger Cloud service hosts end in tsdb.cloud.timescale.com
+        return ("Tiger Cloud" if "timescale.com" in self.dsn else "TimescaleDB"), version
+
+    async def insights(self, days: int) -> dict[str, Any] | None:
+        if not self.timescale:
+            return None
+        timed: list[dict[str, Any]] = []
+
+        async def q(conn: Any, name: str, source: str, sql: str, *args: Any) -> list[Any]:
+            t0 = time.perf_counter()
+            rows = await conn.fetch(sql, *args)
+            timed.append({"name": name, "source": source, "ms": round((time.perf_counter() - t0) * 1000, 1)})
+            return rows
+
+        window = timedelta(days=days)
+        async with self.pool.acquire() as conn:
+            kpis = (await q(conn, "Transfer outcomes", "transfers (relational)", """
+                WITH t AS (
+                  SELECT seeded, (doc->>'handoff_at')::timestamptz AS handoff, (doc->'acceptance'->>'at')::timestamptz AS accepted,
+                         (doc->>'departed_at')::timestamptz AS departed, (doc->>'arrived_at')::timestamptz AS arrived,
+                         (doc->'news2'->>'total')::int AS news2
+                  FROM transfers WHERE created_at >= now() - $1::interval)
+                SELECT count(*) AS transfers, count(handoff) AS handed_off, count(accepted) AS accepted,
+                       percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM accepted - handoff) / 60) AS median_accept,
+                       percentile_cont(0.9) WITHIN GROUP (ORDER BY extract(epoch FROM accepted - handoff) / 60) AS p90_accept,
+                       percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM arrived - departed) / 60) AS median_journey,
+                       count(*) FILTER (WHERE news2 >= 7) AS high_risk,
+                       count(*) FILTER (WHERE seeded) AS seeded, count(*) FILTER (WHERE NOT seeded) AS live
+                FROM t""", window))[0]
+            per_day = await q(conn, "Transfers per day", "transfers (relational)", """
+                SELECT time_bucket('1 day', created_at) AS day, count(*) AS n
+                FROM transfers WHERE created_at >= now() - $1::interval GROUP BY 1""", window)
+            events = await q(conn, "Alerts and questions per day", "network_events_1d (continuous aggregate)", """
+                SELECT bucket AS day, kind, n FROM network_events_1d
+                WHERE bucket >= now() - $1::interval AND kind IN ('alert', 'question')""", window)
+            readings = await q(conn, "Vitals readings per day", "network_vitals_1h (continuous aggregate)", """
+                SELECT time_bucket('1 day', bucket) AS day, sum(readings)::bigint AS n FROM network_vitals_1h
+                WHERE bucket >= now() - $1::interval GROUP BY 1""", window)
+            destinations = await q(conn, "Time to acceptance by hospital", "transfers (relational)", """
+                SELECT doc->>'destination_id' AS destination_id, count(*) AS n,
+                       percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM
+                         (doc->'acceptance'->>'at')::timestamptz - (doc->>'handoff_at')::timestamptz) / 60) AS median_accept
+                FROM transfers WHERE created_at >= now() - $1::interval AND doc->>'handoff_at' IS NOT NULL
+                GROUP BY 1 ORDER BY median_accept DESC NULLS LAST""", window)  # slowest first: where to act
+            storage = []
+            for table in ("vitals_readings", "transfer_notes"):
+                # exact: approximate_row_count can't see inside compressed chunks, and counting columnar batches is cheap
+                rows = await conn.fetchval(f"SELECT count(*) FROM {table}")
+                chunks = await conn.fetchrow(
+                    "SELECT count(*) AS n, count(*) FILTER (WHERE is_compressed) AS compressed "
+                    "FROM timescaledb_information.chunks WHERE hypertable_name = $1", table)
+                comp = await conn.fetchrow(
+                    "SELECT sum(before_compression_total_bytes)::bigint AS before, "
+                    "sum(after_compression_total_bytes)::bigint AS after FROM hypertable_compression_stats($1::regclass)", table)
+                storage.append({
+                    "name": table, "rows": int(rows or 0), "chunks": chunks["n"], "compressed_chunks": chunks["compressed"],
+                    "bytes_before_compression": comp["before"], "bytes_after_compression": comp["after"],
+                    "total_bytes": await conn.fetchval("SELECT hypertable_size($1::regclass)", table),
+                })
+            aggregates = [r["view_name"] for r in await conn.fetch(
+                "SELECT view_name FROM timescaledb_information.continuous_aggregates ORDER BY view_name")]
+        return {"kpis": kpis, "per_day": per_day, "events": events, "readings": readings, "destinations": destinations,
+                "storage": storage, "aggregates": aggregates, "queries": timed}
+
+    async def benchmark(self, days: int) -> dict[str, Any] | None:
+        """The same question asked of the continuous aggregate and of the raw hypertable; median of three runs each."""
+        if not self.timescale:
+            return None
+        window = timedelta(days=days)
+        agg_sql = ("SELECT bucket, sum(readings) AS n FROM network_vitals_1h WHERE bucket >= now() - $1::interval "
+                   "GROUP BY bucket ORDER BY bucket")
+        raw_sql = ("SELECT time_bucket('1 hour', recorded_at) AS bucket, count(*) AS n FROM vitals_readings "
+                   "WHERE recorded_at >= now() - $1::interval GROUP BY 1 ORDER BY 1")
+
+        async def median_ms(conn: Any, sql: str) -> tuple[float, list[Any]]:
+            runs, rows = [], []
+            for _ in range(3):
+                t0 = time.perf_counter()
+                rows = await conn.fetch(sql, window)
+                runs.append((time.perf_counter() - t0) * 1000)
+            return sorted(runs)[1], rows
+
+        async with self.pool.acquire() as conn:
+            raw_ms, raw_rows = await median_ms(conn, raw_sql)
+            agg_ms, _ = await median_ms(conn, agg_sql)
+        return {"aggregate_ms": round(agg_ms, 1), "raw_ms": round(raw_ms, 1), "rows_scanned": sum(r["n"] for r in raw_rows)}
+
+    @staticmethod
+    async def _refresh_aggregate(conn: Any, view: str) -> None:
+        """Materialise a continuous aggregate now. If Tiger's own refresh policy is mid-run, wait briefly and retry —
+        and if it stays busy, carry on: real-time aggregation already includes rows not yet materialised."""
+        import asyncpg
+
+        for attempt in range(6):
+            try:
+                await conn.execute(f"CALL refresh_continuous_aggregate('{view}', NULL, NULL)")
+                return
+            except asyncpg.exceptions.LockNotAvailableError:
+                await asyncio.sleep(0.5 * (attempt + 1))
+        log.info("refresh of %s left to its policy job (still busy)", view)
+
+    async def seed_history(self, days: int, per_day: int, region_id: str, origins: list[str], destinations: list[str],
+                           modes: list[str]) -> dict[str, Any] | None:
+        """Generate `days` of simulated transfer history server-side (generate_series), refresh the network
+        aggregates and compress chunks older than a week. Replaces any previous seeded history; live rows untouched."""
+        if not self.timescale:
+            return None
+        t0 = time.perf_counter()
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM transfers WHERE seeded")
+            await conn.execute("""
+                INSERT INTO transfers (id, code, region_id, status, created_at, updated_at, doc, seeded)
+                SELECT id, code, $3::text, 'closed', departed, arrived,
+                       jsonb_build_object(
+                         'id', id, 'code', code, 'region_id', $3::text, 'status', 'closed', 'seeded', true,
+                         'origin_id', origin, 'destination_id', destination, 'mode', mode,
+                         'departed_at', departed, 'handoff_at', handoff, 'arrived_at', arrived,
+                         'acceptance', jsonb_build_object('by', 'Seeded history', 'at', handoff + accept_after),
+                         'news2', jsonb_build_object('total', news2)),
+                       true
+                FROM (
+                  SELECT gen_random_uuid() AS id, 'HX-' || to_char(n, 'FM00000') AS code,
+                         ($4::text[])[1 + floor(random() * cardinality($4::text[]))::int] AS origin,
+                         ($5::text[])[1 + floor(random() * cardinality($5::text[]))::int] AS destination,
+                         ($6::text[])[1 + floor(random() * cardinality($6::text[]))::int] AS mode,
+                         departed, departed + make_interval(mins => 4 + floor(random() * 20)::int) AS handoff,
+                         departed + make_interval(mins => 45 + floor(random() * 150)::int) AS arrived,
+                         -- most acceptances are quick, a few are slow: a long right tail like real phone chains
+                         make_interval(secs => 60 + floor(random() * random() * 1500)::int) AS accept_after,
+                         floor(random() * random() * 10)::int AS news2
+                  FROM generate_series(1, $1::int * $2::int) AS n,
+                       -- referencing n makes Postgres draw a fresh random() per row instead of once for all
+                       LATERAL (SELECT now() - make_interval(secs => floor(random() * $1::int * 86400 + n * 0)::int) AS departed) d
+                ) s""", days, per_day, region_id, origins, destinations, modes)
+            await conn.execute("""
+                INSERT INTO vitals_readings (transfer_id, recorded_at, id, source, heart_rate, resp_rate, hrv_rmssd, confidence)
+                SELECT t.id, ts, gen_random_uuid(), 'simulated',
+                       round(72 + t.news2 * 6 + (random() - 0.5) * 6), round(14 + t.news2 + (random() - 0.5) * 2),
+                       round((42 - t.news2 * 2 + (random() - 0.5) * 4)::numeric, 1), 0.9
+                FROM (SELECT id, (doc->>'departed_at')::timestamptz AS departed, (doc->>'arrived_at')::timestamptz AS arrived,
+                             (doc->'news2'->>'total')::int AS news2
+                      FROM transfers WHERE seeded) t,
+                     LATERAL generate_series(t.departed, t.arrived, INTERVAL '10 seconds') AS ts""")
+            await conn.execute("""
+                INSERT INTO transfer_notes (transfer_id, at, id, author, kind, text)
+                SELECT t.id, t.departed + (t.arrived - t.departed) * random(), gen_random_uuid(), x.author, x.kind, x.text
+                FROM (SELECT id, (doc->>'departed_at')::timestamptz AS departed, (doc->>'arrived_at')::timestamptz AS arrived,
+                             (doc->'news2'->>'total')::int AS news2
+                      FROM transfers WHERE seeded) t
+                CROSS JOIN LATERAL (  -- every random() mentions t so Postgres draws it per transfer, not once
+                  SELECT 'crew' AS author, 'voice' AS kind, 'Seeded crew note' AS text
+                  FROM generate_series(1, 1 + floor(random() * 3 + t.news2 * 0)::int)
+                  UNION ALL SELECT 'system', 'alert', 'Seeded alert' FROM generate_series(1, floor(random() * (t.news2 / 2.0 + 0.6))::int)
+                  UNION ALL SELECT 'hospital', 'question', 'Seeded question'
+                  FROM generate_series(1, floor(random() * 2.4 + t.news2 * 0)::int)
+                  UNION ALL SELECT 'system', 'event', 'Handoff sent'
+                ) x""")
+            for view in ("network_vitals_1h", "network_events_1d"):
+                await self._refresh_aggregate(conn, view)
+            compressed = 0
+            for table in ("vitals_readings", "transfer_notes"):
+                compressed += await conn.fetchval(
+                    f"SELECT count(compress_chunk(c, if_not_compressed => true)) "
+                    f"FROM show_chunks('{table}', older_than => INTERVAL '7 days') AS c")
+            # reclaim the space of any previous seed and refresh planner statistics, so "on disk" is the honest figure
+            await conn.execute("VACUUM ANALYZE vitals_readings, transfer_notes, transfers")
+            counts = await conn.fetchrow("""
+                SELECT (SELECT count(*) FROM transfers WHERE seeded) AS transfers,
+                       (SELECT count(*) FROM vitals_readings v JOIN transfers t ON t.id = v.transfer_id WHERE t.seeded) AS readings,
+                       (SELECT count(*) FROM transfer_notes n JOIN transfers t ON t.id = n.transfer_id WHERE t.seeded) AS notes""")
+        return {**dict(counts), "compressed_chunks": compressed, "seconds": round(time.perf_counter() - t0, 1)}
 
 
 def make_repo(database_url: str, use_memory: bool) -> Repo:

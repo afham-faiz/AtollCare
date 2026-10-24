@@ -45,8 +45,8 @@ A transfer is **crew-only while it's being prepared**. The hospital sees it the 
 | **Presage** (main) | Live hands-free HR, RR, HRV and breathing waveform from the mounted camera |
 | **ElevenLabs** | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle (TTS) |
 | **Gemini** | Turns vitals + voice notes into a live SBAR briefing; extracts interventions ("aspirin 300 mg, 21:14") |
-| **Tiger Data** | Vitals hypertable + 1-minute continuous aggregate → trend chart and deterioration forecast |
-| **Vultr** | Engine + web on Cloud Compute behind Caddy HTTPS; the bridge posts to it from the vehicle |
+| **Tiger Data** | Hypertables + real-time 1-minute aggregate of measured readings → trend and forecast; network aggregates + compression → Network insights with a live benchmark |
+| **Vultr** | Engine + web on Cloud Compute behind Caddy HTTPS, region read from instance metadata; the bridge posts to it from the vehicle |
 
 ## The demo (3 minutes)
 

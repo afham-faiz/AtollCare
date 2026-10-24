@@ -36,13 +36,13 @@ def evaluate(
         found.append(("rr_extreme", AlertLevel.critical, f"Breathing rate {rr:g}"))
     if forecast and forecast.hr_slope_per_hour is not None and forecast.hr_slope_per_hour >= 15:
         found.append(("hr_rising", AlertLevel.warning, f"Heart rate rising (+{forecast.hr_slope_per_hour:g}/h)"))
-    if forecast and forecast.trend == "worsening" and forecast.minutes_to_news2_7 and forecast.minutes_to_news2_7 > 0:
-        if not news2 or (news2.total or 0) < 7:
-            found.append((
-                "news2_rising",
-                AlertLevel.warning,
-                f"Trend suggests NEWS2 may reach 7 in ~{int(forecast.minutes_to_news2_7)} min",
-            ))
+    worsening = forecast and forecast.trend == "worsening" and (forecast.minutes_to_news2_7 or 0) > 0
+    if worsening and (not news2 or (news2.total or 0) < 7):
+        found.append((
+            "news2_rising",
+            AlertLevel.warning,
+            f"Trend suggests NEWS2 may reach 7 in ~{int(forecast.minutes_to_news2_7)} min",
+        ))
 
     since = {a.code: a.since for a in previous}
     current = [Alert(code=c, level=lvl, text=t, since=since.get(c, now)) for c, lvl, t in found]

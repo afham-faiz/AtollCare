@@ -35,7 +35,7 @@ def test_meta_health_and_regions(client):
     assert ok(client.get("/api/meta"))["region"]["timezone"] == "Europe/London"
     r = client.patch("/api/demo/state", json={"region_id": "atlantis"})
     assert r.status_code == 422 and r.json()["error"]["code"] == "unknown_region"
-    assert ok(client.get("/api/health"))["db"].startswith("memory")
+    assert ok(client.get("/api/health"))["db"] in ("memory:ok", "postgres:ok")
 
 
 def test_create_validates_region_facilities(client):
@@ -97,7 +97,7 @@ def test_full_transfer_lifecycle(client):
     assert "cath lab" in t["notes"][-1]["text"].lower()
 
     trend = ok(client.get(f"/api/transfers/{tid}/vitals/trend?window_min=60"))
-    assert trend["buckets"] and trend["source"] == "memory"
+    assert trend["buckets"] and trend["source"] in ("memory", "vitals_1m")  # Tiger: the continuous aggregate
 
     t = ok(client.post(f"/api/transfers/{tid}/monitoring", json={"source": "simulated"}))
     assert t["monitoring"]["source"] == "simulated"
@@ -137,13 +137,11 @@ def test_prepared_cases(client):
     cases = ok(client.get("/api/demo/cases"))
     assert {c["region_id"] for c in cases} >= {"maldives", "scotland"}
     for c in cases:
+        assert c["suggested_vitals"] and "SpO₂" in c["suggested_vitals"]  # for the presenter to type, not pre-entered
         t = ok(client.post(f"/api/demo/cases/{c['id']}"))
         assert t["region_id"] == c["region_id"] and t["status"] == "preparing"
-        assert len(t["vitals"]) >= 10 and t["news2"]["complete"]
-        assert all(v["source"] in ("simulated", "manual") for v in t["vitals"])
+        assert t["vitals"] == [] and t["news2"] is None  # nothing measured yet, nothing invented
         assert ok(client.get("/api/meta"))["region"]["id"] == c["region_id"]
-        trend = ok(client.get(f"/api/transfers/{t['id']}/vitals/trend"))
-        assert len(trend["buckets"]) >= 5 and trend["forecast"]
     ok(client.patch("/api/demo/state", json={"region_id": "scotland"}))
     assert ok(client.post("/api/demo/example"))["region_id"] == "scotland"
     assert client.post("/api/demo/cases/nope").status_code == 404
@@ -173,3 +171,29 @@ def test_errors_shape(client):
     t = create(client)
     r = client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "manual"})
     assert r.status_code == 422 and r.json()["error"]["code"] == "empty_reading"
+
+
+def test_simulated_readings_never_drive_clinical_scoring(client):
+    t = create(client)
+    # a run of alarming simulated readings: displayed (labelled), but no NEWS2, no alert, no forecast input
+    for hr, rr in [(120, 26), (135, 28), (140, 30)]:
+        ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "simulated", "heart_rate": hr, "resp_rate": rr}))
+    t = ok(client.get(f"/api/transfers/{t['id']}"))
+    assert t["latest"]["heart_rate"]["source"] == "simulated"
+    assert t["news2"] is None and t["alerts"] == []
+    assert ok(client.get(f"/api/transfers/{t['id']}/vitals/trend"))["buckets"] == []
+    # the same values measured by Presage do count
+    ack = ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "presage", "heart_rate": 140, "resp_rate": 30,
+                                                                    "confidence": 0.9}))
+    assert ack["news2"]["total"] >= 6 and any(a["code"] == "hr_extreme" for a in ack["alerts"])
+
+
+def test_crew_can_strike_a_wrong_extraction(client):
+    t = create(client)
+    t = ok(client.post(f"/api/transfers/{t['id']}/notes", json={"text": "Gave aspirin 300 mg and GTN spray", "kind": "voice"}))
+    gtn = next(i for i in t["interventions"] if i["text"] == "GTN spray")
+    t = ok(client.post(f"/api/transfers/{t['id']}/interventions/remove", json={"note_id": gtn["note_id"], "text": "GTN spray"}))
+    assert [i["text"] for i in t["interventions"]] == ["Aspirin 300 mg"]
+    assert any(n["text"] == "Removed from handoff: GTN spray" for n in t["notes"])
+    r = client.post(f"/api/transfers/{t['id']}/interventions/remove", json={"note_id": gtn["note_id"], "text": "GTN spray"})
+    assert r.status_code == 404
