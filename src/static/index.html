@@ -168,6 +168,8 @@
     <div class="sub">Gathers what boxes 1 to 3 found and hands it to the crew app. Every box is optional, and you see exactly what will be sent first.</div>
     <div id="hs-stale" class="err" style="display:none;margin-top:.5rem"></div>
     <div id="hs-ready" class="note"></div>
+    <button id="hs-load" type="button">Use the latest saved results (for example from the phone)</button>
+    <div id="hs-loaded" class="sub"></div>
     <button id="hs-preview" type="button">Preview what will be sent</button>
     <div id="hs-out"></div>
   </section>
@@ -916,6 +918,30 @@ async function sendHandshake() {
     loadHandshakes();
   }
 }
+
+// Fills boxes 1 to 3 from what the server saved last, so results made on the phone can be previewed and sent from here.
+$("hs-load").addEventListener("click", async () => {
+  const note = $("hs-loaded");
+  try {
+    const resp = await fetch("/api/latest-capture");
+    if (!resp.ok) throw new Error(`Server said ${resp.status}`);
+    const c = await resp.json();
+    const when = (iso) => new Date(iso).toLocaleString();
+    const loaded = [];
+    if (c.video) {
+      parts.signs = c.video.signs;
+      parts.vitals = c.video.vitals;
+      setAccount(c.video.account);
+      loaded.push(`video ${c.video.name} (${when(c.video.logged_at)})`);
+    }
+    if (c.id) {
+      parts.demographics = c.id.demographics;
+      loaded.push(`ID ${c.id.filename} (${when(c.id.logged_at)})`);
+    }
+    note.textContent = loaded.length ? "Loaded: " + loaded.join("; ") + ". Check these are the right ones, then preview." : "Nothing saved yet.";
+    renderReadiness();
+  } catch (err) { note.textContent = "Could not load: " + err.message; }
+});
 
 $("hs-preview").addEventListener("click", async () => {
   const btn = $("hs-preview"), out = $("hs-out");

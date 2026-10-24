@@ -1,79 +1,10 @@
-# AtollCare
+# AtollCare: Part 1, pre-arrival
 
-**AI-assisted emergency referral from remote communities to the hospital that can actually treat the patient.**
-
-In many low-income and geographically isolated regions, the nearest health centre is small and under-resourced, and specialist care sits in a distant capital hospital. AtollCare connects these three moments into a single, continuous flow:
-
-1. reaching the local health centre,
-2. agreeing a referral with the capital hospital,
-3. moving the patient there.
-
-Information is captured once, travels with the patient, and is never lost at a hand-off.
-
----
-
-## The problem
-
-When someone falls acutely ill (for example, an elderly person with a stroke), whoever is nearby (family, a neighbour, a bystander) brings them to the local health centre. From there, the usual process is slow and fragile:
-
-- **Information is re-collected at every step.** The person accompanying the patient explains what happened, ER staff check the patient's ID, the triage nurse asks again, and then a referral form asks again.
-- **Finding the right specialist is a phone tree.** The local centre calls the capital hospital's switchboard, waits for a contact, then messages the doctor in charge.
-- **Decisions are invisible.** A referral can be declined (for example, because the patient is elderly) with no recorded reason, no escalation, and no next step.
-- **Paperwork comes last.** Transfer forms are filled in only *after* the patient is accepted, which delays dispatch.
-- **The receiving team is blind.** The capital hospital learns little about the patient until they physically arrive.
-- **Dead ends are common.** If the local centre lacks resources or expertise, the patient may simply be sent home.
-
-In time-critical conditions such as stroke, heart attack or trauma, every one of these delays costs outcomes.
-
----
-
-## How it fits together
-
-AtollCare is split into three parts that share a single **Case Record**, identified by a case ID. Each part *adds* to the record, and no part re-asks for what is already there.
-
-```mermaid
-flowchart LR
-    A[Patient becomes unwell] --> P1
-
-    subgraph P1[Part 1 · Pre-arrival]
-        direction TB
-        P1a[Face scan → vital cues]
-        P1b[Companion voice → instructions]
-        P1c[ID scan → patient details]
-    end
-
-    P1 -->|Pre-arrival packet| P2
-
-    subgraph P2[Part 2 · Health centre ↔ Capital hospital]
-        direction TB
-        P2a[Auto-drafted referral]
-        P2b[Route to right specialist]
-        P2c[Recorded decision]
-    end
-
-    P2 -->|Dispatch request| P3
-
-    subgraph P3[Part 3 · Transport to capital]
-        direction TB
-        P3a[In-transit face scan]
-        P3b[Nurse voice → reasoning summary]
-        P3c[Sensor vitals → interpretation]
-    end
-
-    P3 -->|Live updates| H[Capital hospital ready on arrival]
-
-    CR[(Shared Case Record)]
-    P1 -.-> CR
-    P2 -.-> CR
-    P3 -.-> CR
-    CR -.-> H
-```
+AtollCare is an AI-assisted emergency referral flow from remote communities to the hospital that can treat the patient. It has three parts (pre-arrival, referral, transport). **This branch (`user-branch`) is Part 1 only.** The wider idea, Parts 2 and 3 and the shared Case Record are described on `main`.
 
 ---
 
 ## Part 1: Pre-arrival at the local health centre
-**Owner: Percy**
-
 Goal: by the time the patient reaches the health centre, staff already know who the patient is, what is wrong, and what to prepare.
 
 | Input | Action | Output |
@@ -96,6 +27,7 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 | **Visual signs:** frames of the video are checked for visible signs (Gemini). Every sign in a fixed catalogue is checked and answered separately; a voice account, if there is one, only marks which signs it mentioned (with a quote that must appear in it). Every "seen" cites frames you can look at, and anything the account claims but the video does not show is listed | A clinically validated sign list (the catalogue in `src/data/cue_catalogue.json` is a demo assumption) |
 | Patient video can be **uploaded or recorded with the camera in the browser**. A recording stays in the browser, and nothing goes to Google or Presage until you press Analyse | |
 | **Hand-off to the crew app:** gathers the salient items (an initials label, age, a one-line complaint, Presage readings each with its own confidence, short notes), withholds the name, ID number and date of birth, shows a preview, and creates the transfer in the teammate's engine on an explicit click. Checked against their real engine | The crew app cannot yet label an AI video impression, so consciousness is not sent by default |
+| **Phone as the capture device:** a phone page (`/phone`) records the ID photo, spoken account and face video and sends them to the laptop through a Cloudflare tunnel, protected by a secret key. The laptop does all the analysis | Running the analysis on the phone itself (native app) |
 | A demo web page with four boxes (video, voice, ID, send) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above (urgency level, what to prepare, what to tell the family) |
 
 **What you need**
@@ -107,6 +39,7 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 | A Presage API key | Free, from [physiology.presagetech.com](https://physiology.presagetech.com) |
 | A Gemini API key | An AI Studio key, or a Google Cloud / Agent Platform key. Optional: without one the voice part runs in mock mode |
 | A browser and a microphone | For the demo page |
+| `cloudflared` | Only for using a phone. Install steps are in the phone section below |
 
 Presage's SDK supports Windows x64, Linux x64 and ARM64 (glibc 2.35 or newer) and Apple Silicon Macs.
 
@@ -155,12 +88,14 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 | `HANDSHAKE_SEND_CONSCIOUSNESS`, `HANDSHAKE_CONSCIOUSNESS_MIN_CONFIDENCE` | Whether "alert and responsive" seen on video is sent as consciousness A, and how confident it must be. Off by default: their app would show it as a crew entry |
 | `VQA_MODE` | `one_pass`: a single request with the frames, the voice account and every sign, answered one sign at a time. `two_step`: one request reads only the account and picks signs, a second sees only the frames, so it never sees the account |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
+| `ACCESS_TOKEN` | The secret key a phone needs to use the page through the tunnel. `python run.py --tunnel` creates one for you. Blank means tunnel traffic is refused |
 | `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
 
 **Run**
 
 ```powershell
 python run.py --serve          # demo page at http://127.0.0.1:8000 (on Windows you can double-click start.bat)
+python run.py --tunnel         # the same, plus a public link and QR code for a phone (on Windows, double-click start-phone.bat)
 python run.py clip.mp4         # analyse one video from the command line
 python run.py --mock           # try everything with no keys
 python transcribe_file.py note.m4a   # transcribe an audio file
@@ -171,7 +106,7 @@ python -m pytest               # tests (no keys needed, nothing is sent to Googl
 
 The page only works while that command is running. `run.py` starts the Presage sidecar for you.
 
-**Using the page.** Box 1 takes the patient video, either a file or a camera recording (video only, no sound, stopping by itself after `VIDEO_RECORD_MAX_S`). The browser only allows the camera and microphone on `localhost` or an HTTPS address, so a phone opening the page by the laptop's IP address will not be able to record. Tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
+**Using the page.** Box 1 takes the patient video, either a file or a camera recording (video only, no sound, stopping by itself after `VIDEO_RECORD_MAX_S`). The browser only allows the camera and microphone on `localhost` or an HTTPS address, so a phone cannot use this page through the laptop's IP address; use the tunnel described below instead. Tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
 
 **Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
 
@@ -181,82 +116,82 @@ The page only works while that command is running. `run.py` starts the Presage s
 - **Only real Presage readings are sent as vitals,** each with its own confidence. Mock or unavailable readings are never passed on. Monitoring is set to `presage` (or `off`) so their engine does not invent simulated vitals.
 - **Their engine and this page must run on different ports.** This page uses 8000, so run their engine on 8010 (`ENGINE_URL`). To run it locally, run `python run_crew_engine.py` in a second terminal (run `git fetch origin` first). The first run copies their `engine/` folder from `origin/main`, builds its own environment and takes about a minute; after that it starts in seconds, with mock adapters and nothing saved. If the page says "server out of date", the server behind it was started before the hand-off existed: close it and start it again.
 
+**Capturing on a phone.** See [Using a phone](#using-a-phone-as-the-capture-device) below.
+
 **Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json`, `logs/handshakes.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan, and frames from videos you check for visual cues, are sent to Google's Gemini service using your key.
 
 ---
 
-## Part 2: Coordination between the health centre and the capital hospital
-**Owner: [you]** · *Proposed design, open for team discussion*
+## Using a phone as the capture device
 
-Goal: turn "call around until someone says yes" into a fast, recorded, accountable referral.
+The laptop runs everything (Presage, Gemini, the logs). The phone is only a camera, microphone and screen. A free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/) gives the laptop a temporary public `https://` address, so the phone does not have to be on the same network. This also works on campus Wi-Fi such as eduroam, because only outbound HTTPS from the laptop is needed.
 
-| Input | Action | Output |
-|---|---|---|
-| Pre-arrival packet + local triage notes | AI drafts a structured referral (SBAR: Situation, Background, Assessment, Recommendation) and pre-fills the transfer form | A referral ready to send *before* the capital hospital is contacted, with no late form-filling |
-| Patient condition, urgency, and the capital hospital's on-call roster | Route automatically to the right specialist | The doctor in charge is contacted directly with the full referral attached, with no switchboard phone tree |
-| Doctor's response (accept / decline / need more info / remote advice) | Record the decision and its reason. If declined, trigger escalation or a second opinion instead of taking no action | An auditable decision. On accept, a **dispatch request** goes to transport (Part 3) |
-| The local centre has the facility but lacks the expertise | Open a teleconsult with the capital specialist, sharing the case | Remote advice or guided intervention, logged to the case |
-| The local centre lacks the resources | Suggest the nearest alternative facility, or a teleconsult, before sending the patient home | Fewer patients sent home with no plan |
+```
+phone  --https-->  Cloudflare  <--outbound--  cloudflared (laptop)  -->  this app on 127.0.0.1:8000
+```
 
-**Hands off:** an accepted referral plus a dispatch request (destination, receiving doctor, urgency, transport type) to Part 3.
+Why a tunnel and not just the laptop's IP address: phone browsers only allow the camera and microphone on HTTPS (or `localhost`), and many networks stop devices talking to each other.
+
+### 1. Install cloudflared (once)
+
+On Windows, from PowerShell or Command Prompt:
+
+```powershell
+winget install Cloudflare.cloudflared
+```
+
+Close the terminal and open a new one, then check it worked:
+
+```powershell
+cloudflared --version
+```
+
+On macOS use `brew install cloudflared`. On Linux, see [Cloudflare's download page](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/). `cloudflared` is a program, not a Python package, so it is installed on the computer and not into `.venv`. No Cloudflare account is needed for a quick tunnel.
+
+The Python side (the `segno` package that draws the QR code) is already in `requirements.txt`.
+
+### 2. Start it
+
+Windows: double-click **`start-phone.bat`**. Any system:
+
+```powershell
+python run.py --tunnel
+```
+
+This starts the app, opens the tunnel, and prints a link and a QR code. It also saves the QR code as `inputs/phone-link.png`. The first run creates an `ACCESS_TOKEN` line in `inputs/.env`. The laptop's browser opens at the same public address with the key already in it.
+
+### 3. Open it on the phone
+
+Scan the QR code with the phone camera. The page `/phone` has three steps:
+
+1. **Photo of an ID** (optional).
+2. **Spoken account** (optional). It is turned into text. Correct it if needed.
+3. **Face video.** Prop the phone up, face the light, keep the face and upper chest in view, and stay still. The result (heart rate, breathing rate, signs seen) appears on the phone when the analysis finishes.
+
+Everything is saved on the laptop in `logs/` and `recordings/`.
+
+### 4. Send it to the crew app
+
+On the laptop page, box 4, press **Use the latest saved results (for example from the phone)**. It loads the newest video check, its vitals and the newest ID scan, and says which files it used. Check they are the right ones, then press **Preview what will be sent**, and send as described under *Hand-off to the crew app*.
+
+### Things to know
+
+- **Keep the laptop awake and online** while the phone is in use. If it sleeps or loses the connection, the phone stops working.
+- **The address changes every run.** After a restart, scan the new QR code. Old links and old browser tabs stop working. (A fixed address needs a Cloudflare account with your own domain, or a service such as ngrok.)
+- **The link is a password.** It contains the secret key. Anyone who has it can use the page and download `recordings/` (faces, voices, ID photos). Do not post it, and stop the app when you are done. Requests through the tunnel are refused without the key. The laptop's own `127.0.0.1` address needs no key.
+- **Long analyses are fine.** A tunnel cuts any single request off after about 100 seconds, so the phone starts the analysis as a background job and checks back every few seconds. Jobs are kept in memory, so restarting the app during an analysis loses it.
+- **A phone is shakier than a laptop webcam,** so Presage readings are often poor at first. Prop it on a stand.
+- **Camera or microphone blocked on the phone:** the page must be opened from the `https://` link, and Chrome on Android must be allowed to use them.
+- **"cloudflared is not installed"** or `cloudflared did not give a public address`: check step 1, and that the network allows outbound HTTPS.
+- **404 on "Use the latest saved results":** the app was started before that feature existed. Close it and start it again.
 
 ---
 
-## Part 3: Transport to the capital hospital
-**Owner: Ray**
+## Status
 
-Goal: the receiving doctor reads the patient's story and live condition *before* the vehicle (ambulance, boat or aircraft) arrives. Think of delivery tracking, but for hospitals.
-
-| Input | Action | Output |
-|---|---|---|
-| Camera footage inside the ambulance | Scan the face | Vital cues and supplementary observations |
-| Nurse's actions | (i) The nurse speaks to the AI; (ii) the AI detects and logs actions | A summary of the nurse's reasoning for the doctor |
-| Sensor vitals | (i) Summarise (e.g. heart rate, heart-rate variability); (ii) interpret them as health signals | A briefing the doctor reads before the ambulance arrives |
-
-**Hands off:** live case updates and an arrival briefing for the capital hospital team.
-
----
-
-## Hand-off contract: the shared Case Record
-
-| Field | Written by | Read by |
-|---|---|---|
-| Case ID, patient identity (from ID scan) | Part 1 | Parts 2, 3, capital hospital |
-| Early vital cues and observations | Part 1 | Parts 2, 3 |
-| Companion's account | Part 1 | Part 2 |
-| Local triage notes | Part 2 (health centre) | Part 2 (capital), Part 3 |
-| Structured referral (SBAR) and transfer form | Part 2 | Capital hospital, Part 3 |
-| Referral decision and reason | Part 2 | Health centre, audit |
-| Dispatch request | Part 2 | Part 3 |
-| In-transit vitals and interpretation | Part 3 | Capital hospital |
-| Nurse reasoning summary | Part 3 | Capital hospital |
-
----
-
-## End-to-end example
-
-> An elderly woman in a remote village shows signs of a stroke. Her neighbour helps her to the local health centre.
->
-> 1. **Part 1:** On the way, the neighbour films her face and describes what happened. AtollCare flags facial asymmetry, coaches the neighbour on what to do, and scans her ID. The health centre receives a pre-arrival packet and prepares for a suspected stroke.
-> 2. **Part 2:** Triage confirms the centre has no stroke specialist. AtollCare drafts an SBAR referral, routes it straight to the on-call neurologist at the capital hospital, and records the acceptance. The transfer form is already complete, and a dispatch request goes out immediately.
-> 3. **Part 3:** In the ambulance, the camera and sensors stream vitals, and the nurse narrates interventions. The neurologist reads a live briefing and has the stroke team ready when she arrives.
-
----
-
-## Team
-
-| Part | Scope | Owner |
-|---|---|---|
-| 1 | Pre-arrival at the local health centre | Percy |
-| 2 | Health centre ↔ capital hospital coordination | [you] |
-| 3 | Transport to the capital hospital | Ray |
-
-## Status and next steps
-
-- [ ] Agree on the Case Record schema (the hand-off contract above)
-- [x] Part 1 prototype: face scan (Presage heart and breathing rate, upload or camera), voice account (record or file), ID scan, visual signs checked by Gemini
-- [ ] Part 1: the pre-arrival summary that turns those four outputs into an urgency level and an action list
-- [ ] Part 1: speech slurring (needs the audio itself), signs that depend on movement, a clinically validated sign list
-- [ ] Part 2 prototype: referral drafting, specialist routing, decision log
-- [ ] Part 3 prototype: in-transit vitals, nurse voice summary
-- [ ] Join the three parts into one end-to-end demo
+- [x] Face scan: Presage heart and breathing rate (upload, laptop camera or phone)
+- [x] Voice account (record or file), ID scan, visual signs checked by Gemini
+- [x] Phone capture over a Cloudflare tunnel with a secret key
+- [x] Hand-off packet to the crew app, with a preview
+- [ ] The pre-arrival summary that turns those outputs into an urgency level and an action list
+- [ ] Speech slurring (needs the audio itself), signs that depend on movement, a clinically validated sign list

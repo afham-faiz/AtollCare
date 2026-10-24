@@ -21,10 +21,84 @@ def newest_video() -> Path | None:
     return videos[0] if videos else None
 
 
+def ensure_access_token() -> str:
+    """The shared secret for the phone link. Created once and saved to inputs/.env."""
+    import os
+    import secrets
+
+    from src import config
+
+    if config.ACCESS_TOKEN:
+        return config.ACCESS_TOKEN
+    token = secrets.token_urlsafe(24)
+    config.ENV_FILE.parent.mkdir(exist_ok=True)
+    with config.ENV_FILE.open("a", encoding="utf-8") as f:
+        f.write(f"\nACCESS_TOKEN={token}\n")
+    os.environ["ACCESS_TOKEN"] = token
+    print(f"Created a new ACCESS_TOKEN in {config.ENV_FILE}")
+    return token
+
+
+def start_tunnel(port: int):
+    """Start a Cloudflare quick tunnel to the local server. Returns (process, public https URL)."""
+    import queue
+    import re
+    import shutil
+    import subprocess
+    import threading
+
+    exe = shutil.which("cloudflared")
+    if not exe:
+        raise SystemExit("cloudflared is not installed. Install it with:  winget install Cloudflare.cloudflared\n"
+                         "then open a new terminal and run this again.")
+    proc = subprocess.Popen([exe, "tunnel", "--no-autoupdate", "--url", f"http://127.0.0.1:{port}"],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+    lines: queue.Queue[str | None] = queue.Queue()
+
+    def pump() -> None:
+        for line in proc.stdout:
+            lines.put(line)
+        lines.put(None)
+
+    threading.Thread(target=pump, daemon=True).start()
+    deadline = time.time() + 40
+    while time.time() < deadline:
+        try:
+            line = lines.get(timeout=1)
+        except queue.Empty:
+            continue
+        if line is None:
+            break
+        found = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+        if found:
+            return proc, found.group(0)
+    proc.terminate()
+    raise SystemExit("cloudflared did not give a public address within 40 s. Check this network allows outbound HTTPS.")
+
+
+def show_phone_link(url: str, token: str) -> None:
+    link = f"{url}/phone?key={token}"
+    print("\nOn the phone, scan this code or open this link (it contains the secret key; do not share it):")
+    print(f"  {link}\n")
+    try:
+        import segno
+
+        qr = segno.make(link, error="m")
+        qr.save(INPUTS / "phone-link.png", scale=8, border=4)
+        qr.terminal(compact=True)
+        print(f"(Same code saved as {INPUTS / 'phone-link.png'})\n")
+    except ImportError:
+        print("(pip install segno to also get a QR code)\n")
+    except UnicodeEncodeError:
+        print(f"(Terminal cannot draw the QR code; open {INPUTS / 'phone-link.png'} instead)\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("video", nargs="?", type=Path, help="video file (default: newest .mp4 in inputs/)")
     parser.add_argument("--serve", action="store_true", help="start the demo web page")
+    parser.add_argument("--tunnel", action="store_true",
+                        help="with --serve, also open a Cloudflare tunnel so a phone can use /phone (needs cloudflared)")
     parser.add_argument("--mock", action="store_true", help="mock Presage (fake vitals)")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--no-browser", action="store_true", help="with --serve, do not open the browser")
@@ -36,7 +110,10 @@ def main() -> int:
     from src.services.sidecar_manager import ensure_sidecar, sidecar_mode
     from src.services.video_prep import downsample_video
 
+    if args.tunnel:
+        args.serve = True
     proc = ensure_sidecar(mock=args.mock)
+    tunnel = None
     print(f"Presage sidecar: {sidecar_mode()} mode" + (" (started by run.py)" if proc else " (already running)"))
     try:
         if args.serve:
@@ -46,9 +123,16 @@ def main() -> int:
             import uvicorn
 
             url = f"http://127.0.0.1:{args.port}"
+            open_url = url
+            if args.tunnel:
+                token = ensure_access_token()
+                # The tunnel can connect before the server is up; requests only start once the phone opens the link.
+                tunnel, public_url = start_tunnel(args.port)
+                show_phone_link(public_url, token)
+                open_url = f"{public_url}/?key={token}"   # the laptop uses the same public address, key included
             print(f"Demo page: {url}   (Ctrl+C to stop; the page only works while this is running)")
             if not args.no_browser:
-                threading.Timer(1.5, webbrowser.open, args=[url]).start()
+                threading.Timer(1.5, webbrowser.open, args=[open_url]).start()
             uvicorn.run("src.app:app", host="127.0.0.1", port=args.port, log_level="warning")
             return 0
 
@@ -77,6 +161,8 @@ def main() -> int:
         print(f"Logged to {log_path}")
         return 0
     finally:
+        if tunnel:
+            tunnel.terminate()
         if proc:
             proc.terminate()
 

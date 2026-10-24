@@ -60,6 +60,7 @@ def __getattr__(name: str):
         "GEMINI_API_KEY": lambda: _text("GEMINI_API_KEY"),
         "GEMINI_STT_FALLBACK_MODEL": lambda: _text("GEMINI_STT_FALLBACK_MODEL"),   # blank = no backup
         "TRANSCRIBE_LANGUAGE": lambda: _text("TRANSCRIBE_LANGUAGE"),               # blank = auto-detect
+        "ACCESS_TOKEN": lambda: _text("ACCESS_TOKEN"),                             # blank = refuse all tunnel traffic
         "SAVE_RECORDINGS": lambda: _text("SAVE_RECORDINGS").lower() in ("1", "true", "yes", "on"),
     }
     required = {

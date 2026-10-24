@@ -34,6 +34,7 @@ def isolated_config(monkeypatch, tmp_path):
         "STT_FLASH_PAUSE_S": 0.8,
         "STT_FLASH_MAX_SEGMENT_S": 8.0,
         "SAVE_RECORDINGS": False,
+        "ACCESS_TOKEN": "test-token-123",
     }
     for name, value in values.items():
         monkeypatch.setattr(config, name, value, raising=False)

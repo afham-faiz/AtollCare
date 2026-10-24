@@ -12,7 +12,8 @@ from src import config
 from pydantic import BaseModel
 
 from src.models.schemas import Demographics, PreArrivalPacket, RppgEstimates, VisualCueReport
-from src.services import engine_client
+from src.auth import AccessGate
+from src.services import engine_client, jobs
 from src.services.account_digest import digest_account
 from src.services.cue_log import log_visual_cues, read_visual_cues
 from src.services.handshake_log import log_handshake, read_handshakes
@@ -33,6 +34,7 @@ STATIC = Path(__file__).parent / "static"
 RECORDINGS_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(title="AtollCare Part 1 demo")
+app.add_middleware(AccessGate)  # requests through the tunnel need ACCESS_TOKEN; the laptop itself does not
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 app.mount("/recordings", StaticFiles(directory=RECORDINGS_DIR), name="recordings")
 
@@ -40,6 +42,12 @@ app.mount("/recordings", StaticFiles(directory=RECORDINGS_DIR), name="recordings
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
+
+
+@app.get("/phone")
+def phone() -> FileResponse:
+    """The capture page for a phone: ID photo, spoken account, face video."""
+    return FileResponse(STATIC / "phone.html", headers={"Cache-Control": "no-store"})
 
 
 def video_record_settings() -> dict:
@@ -75,6 +83,24 @@ def vitals(video: UploadFile = File(...)) -> dict:
     log_result(video.filename or "upload", sizes, seconds, estimates, saved_file=video_file)
     return {"result": estimates.model_dump(), "sidecar_mode": sidecar_mode(), "sizes_mb": sizes, "seconds": seconds,
             "video_file": video_file}
+
+
+@app.get("/api/latest-capture")
+def latest_capture() -> dict:
+    """The newest video check, with the vitals logged for the same video, the account it was analysed with, and
+    the newest ID scan. Lets the hand-off use what the phone (or an earlier run) already produced. Each part may be null."""
+    cues = (read_visual_cues(1) or [None])[0]
+    vitals = None
+    if cues:
+        vitals = next((r for r in read_history(50) if r.get("video") == cues["video"]), None)
+    scan = (read_id_scans(1) or [None])[0]
+    return {
+        "video": {"name": cues["video"], "logged_at": cues["logged_at"], "signs": cues["report"],
+                  "account": cues.get("transcript", ""),
+                  "vitals": {**vitals["result"], "diagnostics": {}} if vitals else None} if cues else None,
+        "id": {"filename": scan["filename"], "logged_at": scan["logged_at"],
+               "demographics": {**scan["result"], "diagnostics": {}}} if scan else None,
+    }
 
 
 @app.get("/api/history")
@@ -118,8 +144,30 @@ def analyse(video: UploadFile = File(...), transcript: str = Form(""), age: str 
     raw = video.file.read()
     if not raw:
         raise HTTPException(400, "Empty upload")
-    use_presage = presage.strip().lower() in ("1", "true", "yes", "on")
+    return _analyse(raw, video.filename or "upload", transcript, age, presage)
+
+
+@app.post("/api/analyse-video/start")
+def analyse_start(video: UploadFile = File(...), transcript: str = Form(""), age: str = Form(""),
+                  presage: str = Form("true")) -> dict:
+    """Same as /api/analyse-video but returns at once with a job id (poll /api/jobs/{id}): for the phone, via the tunnel."""
+    raw = video.file.read()
+    if not raw:
+        raise HTTPException(400, "Empty upload")
     name = video.filename or "upload"
+    return {"job": jobs.start(lambda: _analyse(raw, name, transcript, age, presage))}
+
+
+@app.get("/api/jobs/{job_id}")
+def job_status(job_id: str) -> dict:
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(404, "Unknown job (the server may have restarted)")
+    return job
+
+
+def _analyse(raw: bytes, name: str, transcript: str, age: str, presage: str) -> dict:
+    use_presage = presage.strip().lower() in ("1", "true", "yes", "on")
     try:
         result = analyse_video(raw, transcript, int(age) if age.strip().isdigit() else None, use_presage)
     except config.ConfigError as exc:  # e.g. VQA_MODE missing from inputs/.env

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<title>AtollCare capture</title>
+<style>
+  :root { --bg:#f4f6f7; --card:#fff; --ink:#14232b; --sub:#5b6b73; --line:#d9e0e3; --accent:#0f766e; --bad:#b42318; --good:#067647; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e1518; --card:#172127; --ink:#e8eef0; --sub:#9aabb3; --line:#2a3940; --accent:#2dd4bf; --bad:#f97066; --good:#4ade80; } }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui, sans-serif; max-width:560px; margin-inline:auto; }
+  h1 { font-size:1.25rem; margin:0 0 4px; }
+  h2 { font-size:1rem; margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:12px 0; }
+  .sub { color:var(--sub); font-size:.9rem; }
+  button, .btn { display:block; width:100%; min-height:48px; padding:12px; border:0; border-radius:10px; background:var(--accent); color:#fff;
+    font:inherit; font-weight:600; text-align:center; margin-top:8px; }
+  @media (prefers-color-scheme: dark) { button, .btn { color:#06201c; } }
+  button.alt, .btn.alt { background:transparent; color:var(--accent); border:1.5px solid var(--accent); }
+  button.live { background:var(--bad); color:#fff; }
+  button:disabled { opacity:.45; }
+  input[type=file] { display:none; }
+  textarea, input[type=number] { width:100%; font:inherit; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); }
+  video { width:100%; border-radius:10px; background:#000; margin-top:8px; display:none; max-height:55vh; }
+  .warn { border-color:var(--bad); color:var(--bad); }
+  .ok { color:var(--good); }
+  .err { color:var(--bad); }
+  .row { display:flex; gap:8px; align-items:baseline; justify-content:space-between; }
+  .big { font-size:1.6rem; font-weight:700; }
+  ul { padding-left:18px; margin:6px 0; }
+  .tag { font-size:.75rem; padding:2px 8px; border-radius:99px; border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<h1>AtollCare capture</h1>
+<p class="sub">Three steps. Everything goes to the laptop for analysis.</p>
+<div id="secure" class="card warn" hidden>This page is not on HTTPS, so the camera and microphone will be blocked. Open the https:// link from the laptop.</div>
+
+<section class="card">
+  <h2>1. Photo of an ID <span class="tag">optional</span></h2>
+  <label class="btn alt" for="id-photo">Take or choose a photo</label>
+  <input id="id-photo" type="file" accept="image/*" capture="environment">
+  <div id="id-out" class="sub"></div>
+</section>
+
+<section class="card">
+  <h2>2. Spoken account <span class="tag">optional</span></h2>
+  <p class="sub">Someone says what happened and what they have noticed.</p>
+  <button id="aud-rec" type="button">Record account</button>
+  <div id="aud-status" class="sub"></div>
+  <textarea id="transcript" rows="4" placeholder="The words will appear here. You can correct them." hidden></textarea>
+</section>
+
+<section class="card">
+  <h2>3. Face video</h2>
+  <p class="sub">Prop the phone up. Face the light. Keep the face and upper chest in view and stay still.</p>
+  <video id="preview" playsinline muted></video>
+  <button id="vid-rec" type="button">Record video</button>
+  <div class="row"><span id="vid-status" class="sub"></span><span id="vid-timer" class="sub"></span></div>
+  <button id="vid-go" type="button" disabled>Analyse video</button>
+  <div id="vid-out"></div>
+</section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+function el(tag, props = {}, ...kids) { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; }
+const state = { age: "", videoFile: null, maxS: null };
+if (!window.isSecureContext) $("secure").hidden = false;
+
+async function api(path, options) {
+  const r = await fetch(path, options);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || `Server said ${r.status}`);
+  return body;
+}
+const stamp = () => new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function pickType(options) { return options.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || ""; }
+
+// Keep the screen on while recording: a locked screen pauses the camera.
+let wake = null;
+async function keepAwake(on) {
+  try { if (on) wake = await navigator.wakeLock.request("screen"); else if (wake) { await wake.release(); wake = null; } } catch (e) {}
+}
+
+api("/api/health").then((h) => { state.maxS = h.video_record.max_s; if (h.video_record.error) $("vid-status").textContent = h.video_record.error; })
+  .catch((e) => { $("vid-status").textContent = "Cannot reach the laptop: " + e.message; });
+
+/* ---------------------------------------------------------------- 1. ID */
+$("id-photo").addEventListener("change", async (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  $("id-out").textContent = "Reading the ID…";
+  const form = new FormData(); form.append("image", f, f.name);
+  try {
+    const { result } = await api("/api/scan-id", { method: "POST", body: form });
+    state.age = result.age != null ? String(result.age) : "";
+    const out = $("id-out"); out.replaceChildren();
+    out.append(el("div", { className: "big", textContent: result.full_name || "Name not read" }),
+      `Age: ${result.age ?? "not read"}`, el("br"),
+      el("span", { className: result.needs_review ? "err" : "ok", textContent: result.needs_review ? "Please check this on the laptop." : "Read clearly." }));
+    if (result.issues.length) out.append(el("ul", {}, ...result.issues.map((i) => el("li", { textContent: i }))));
+  } catch (e) { $("id-out").replaceChildren(el("span", { className: "err", textContent: e.message })); }
+});
+
+/* ---------------------------------------------------------------- 2. account */
+const aud = { rec: null, stream: null, chunks: [], on: false };
+$("aud-rec").addEventListener("click", async () => {
+  if (aud.on) { aud.on = false; aud.rec.stop(); return; }
+  try { aud.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false }); }
+  catch (e) { $("aud-status").textContent = "Microphone unavailable: " + e.message; return; }
+  const type = pickType(["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]);
+  aud.chunks = [];
+  aud.rec = new MediaRecorder(aud.stream, type ? { mimeType: type } : {});
+  aud.rec.ondataavailable = (e) => e.data.size && aud.chunks.push(e.data);
+  aud.rec.onstop = async () => {
+    aud.stream.getTracks().forEach((t) => t.stop());
+    $("aud-rec").textContent = "Record account again"; $("aud-rec").classList.remove("live");
+    const t = aud.rec.mimeType || "audio/webm";
+    const blob = new Blob(aud.chunks, { type: t });
+    if (!blob.size) { $("aud-status").textContent = "Nothing was recorded."; return; }
+    $("aud-status").textContent = "Turning speech into text…";
+    const form = new FormData(); form.append("audio", blob, `phone-${stamp()}.${t.includes("mp4") ? "m4a" : "webm"}`);
+    try {
+      const r = await api("/api/transcribe-file", { method: "POST", body: form });
+      $("transcript").hidden = false; $("transcript").value = r.transcript || "";
+      $("aud-status").textContent = r.transcript ? "Done. Correct it below if needed." : "No speech was heard. Try again.";
+    } catch (e) { $("aud-status").replaceChildren(el("span", { className: "err", textContent: e.message })); }
+  };
+  aud.rec.start(); aud.on = true;
+  $("aud-rec").textContent = "Stop"; $("aud-rec").classList.add("live"); $("aud-status").textContent = "Recording…";
+});
+
+/* ---------------------------------------------------------------- 3. video */
+const cam = { rec: null, stream: null, chunks: [], on: false, t0: 0, timer: null };
+function setVideo(file) { state.videoFile = file; $("vid-go").disabled = !file; }
+
+$("vid-rec").addEventListener("click", async () => {
+  if (cam.on) { stopVideo(); return; }
+  if (state.maxS == null) { $("vid-status").textContent = "The recording length is not set on the laptop (VIDEO_RECORD_MAX_S)."; return; }
+  try {
+    cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+      video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } });
+  } catch (e) { $("vid-status").textContent = "Camera unavailable: " + e.message; return; }
+  const v = $("preview");
+  if (v.src) { URL.revokeObjectURL(v.src); v.removeAttribute("src"); }
+  v.srcObject = cam.stream; v.muted = true; v.controls = false; v.style.display = "block"; v.play().catch(() => {});
+  setVideo(null); $("vid-out").replaceChildren();
+  const type = pickType(["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"]);
+  cam.chunks = [];
+  cam.rec = new MediaRecorder(cam.stream, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 2_500_000 });
+  cam.rec.ondataavailable = (e) => e.data.size && cam.chunks.push(e.data);
+  cam.rec.onstop = finishVideo;
+  cam.rec.start(1000); cam.on = true; cam.t0 = Date.now(); keepAwake(true);
+  $("vid-rec").textContent = "Stop"; $("vid-rec").classList.add("live");
+  $("vid-status").textContent = "Recording. Stay still.";
+  cam.timer = setInterval(() => {
+    const s = (Date.now() - cam.t0) / 1000;
+    $("vid-timer").textContent = `${mmss(s)} / ${mmss(state.maxS)}`;
+    if (s >= state.maxS) stopVideo();
+  }, 250);
+});
+
+function stopVideo() { if (!cam.on) return; cam.on = false; clearInterval(cam.timer); if (cam.rec.state !== "inactive") cam.rec.stop(); }
+
+function finishVideo() {
+  keepAwake(false);
+  cam.stream.getTracks().forEach((t) => t.stop());
+  const type = cam.rec.mimeType || "video/webm";
+  const seconds = (Date.now() - cam.t0) / 1000;
+  const file = new File(cam.chunks, `phone-${stamp()}.${type.includes("mp4") ? "mp4" : "webm"}`, { type });
+  $("vid-rec").textContent = "Record again"; $("vid-rec").classList.remove("live"); $("vid-timer").textContent = "";
+  if (!file.size) { $("vid-status").textContent = "Nothing was recorded. Try again."; return; }
+  setVideo(file);
+  const v = $("preview"); v.srcObject = null; v.src = URL.createObjectURL(file); v.muted = false; v.controls = true;
+  $("vid-status").textContent = `Recorded ${mmss(seconds)}.` + (seconds < 30 ? " Short clips give unreliable heart and breathing rates." : "");
+}
+
+$("vid-go").addEventListener("click", async () => {
+  const out = $("vid-out"); $("vid-go").disabled = true; $("vid-rec").disabled = true;
+  out.replaceChildren(el("div", { className: "sub", textContent: "Sending the video…" }));
+  const form = new FormData();
+  form.append("video", state.videoFile, state.videoFile.name);
+  form.append("transcript", $("transcript").value); form.append("age", state.age); form.append("presage", "true");
+  try {
+    const { job } = await api("/api/analyse-video/start", { method: "POST", body: form });
+    const t0 = Date.now();
+    for (;;) {   // the analysis can take longer than the tunnel allows one request to last, so ask again and again
+      out.replaceChildren(el("div", { className: "sub", textContent: `Analysing… ${Math.round((Date.now() - t0) / 1000)} s (about as long as the video)` }));
+      await new Promise((r) => setTimeout(r, 3000));
+      const j = await api(`/api/jobs/${job}`);
+      if (j.state === "done") { showResult(j.result); break; }
+      if (j.state === "error") throw new Error(j.detail);
+    }
+  } catch (e) { out.replaceChildren(el("span", { className: "err", textContent: e.message })); }
+  $("vid-go").disabled = false; $("vid-rec").disabled = false;
+});
+
+function showResult(r) {
+  const out = $("vid-out"); out.replaceChildren();
+  const v = r.vitals;
+  if (v) {
+    out.append(el("h2", { textContent: "Vitals" }),
+      el("div", { className: "big", textContent: `${v.heart_rate_bpm ?? "–"} bpm · ${v.respiration_rate_bpm ?? "–"} breaths/min` }),
+      el("div", { className: "sub", textContent: `Signal quality ${Math.round(v.signal_quality_score * 100)}%` + (v.uncalibrated ? " (too low to trust)" : "") }));
+    if (v.issues.length) out.append(el("div", { className: "err", textContent: v.issues.join(", ") }));
+  } else if (r.vitals_note) out.append(el("div", { className: "sub", textContent: r.vitals_note }));
+  const rep = r.signs.report;
+  out.append(el("h2", { textContent: "Signs seen in the video" }));
+  if (!rep.findings.length) out.append(el("div", { className: "sub", textContent: "Nothing could be assessed." }));
+  out.append(el("ul", {}, ...rep.findings.map((f) =>
+    el("li", {}, el("strong", { textContent: `${f.label}: ${f.finding.replace("_", " ")}` }), ` (${Math.round(f.confidence * 100)}%) `, f.reason))));
+  if (rep.issues.length) out.append(el("div", { className: "sub", textContent: rep.issues.join(" ") }));
+  out.append(el("div", { className: "sub", textContent: "Saved on the laptop. Send it on to the crew from there." }));
+}
+</script>
+</body>
+</html>
