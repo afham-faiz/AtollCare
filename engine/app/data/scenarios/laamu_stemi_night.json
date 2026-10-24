@@ -1,0 +1,26 @@
+{
+  "id": "laamu_stemi_night",
+  "hero": true,
+  "title": "Night-time heart attack, Laamu",
+  "story": "21:00, Isdhoo (Laamu). 58-year-old fisherman with crushing chest pain for 40 minutes, sweating, pain going to the left arm.",
+  "proves": "Seaplane infeasible at night; sea ambulance to Malé breaches the 120-min PCI window, so the engine recommends speedboat to Gan Regional for fibrinolysis + fixed-wing Kadhdhoo → Hulhulé → IGMH for PCI.",
+  "clock": "21:00",
+  "weather": {"sea_state": 2, "wind_kt": 10, "visibility_km": 10},
+  "origin_facility_id": "isdhoo_hc",
+  "patient": {"name": "Ahmed (demo)", "age": 58, "sex": "M", "known_conditions": ["hypertension"], "medications": ["amlodipine"], "allergies": []},
+  "intake_text": "My father has crushing chest pain for 40 minutes, he is sweating a lot and the pain is going to his left arm. He is 58, a fisherman.",
+  "presage_mock": {"heart_rate": 112, "resp_rate": 24},
+  "steps": [
+    {"at_min": -8, "action": "intake"},
+    {"at_min": -8, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 108, "resp_rate": 22, "confidence": 0.91}},
+    {"at_min": -6, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 110, "resp_rate": 23, "confidence": 0.9}},
+    {"at_min": -4, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 112, "resp_rate": 24, "confidence": 0.92}},
+    {"at_min": -2, "action": "vitals", "vitals": {"source": "manual", "heart_rate": 114, "resp_rate": 24, "spo2": 95, "on_oxygen": false, "systolic_bp": 104, "temperature_c": 36.8, "consciousness": "A"}},
+    {"at_min": 0, "action": "submit"},
+    {"at_min": 2, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 118, "resp_rate": 25, "confidence": 0.88}},
+    {"at_min": 3, "action": "refer", "autoplay": true},
+    {"at_min": 5, "action": "respond", "autoplay": true, "response": "accepted", "responder_name": "Dr. Shareef (IGMH Cardiology)", "note": "Accept for primary PCI. Fibrinolysis at Gan agreed."},
+    {"at_min": 6, "action": "dispatch", "autoplay": true}
+  ],
+  "presenter_notes": "Open /report on the phone, then /hospital and /transport. Press Day 14:00 in /demo to show the seaplane becoming feasible."
+}

@@ -1,0 +1,9 @@
+# DEMO ASSUMPTION — durations of the sequential phone chain (F-M2.9). Not measured data.
+steps:
+  - {id: reach_health_centre, label: "Patient reaches health centre", min: 0}
+  - {id: call_regional, label: "Health centre calls atoll/regional hospital", min: 20}
+  - {id: call_specialist, label: "Regional calls specialist in Malé", min: 40}
+  - {id: approval, label: "Evacuation approval & funding confirmation", min: 60}
+  - {id: arrange_transport, label: "Transport operator found & arranged", min: 45}
+  - {id: transport, label: "Transport (same route as recommended, no parallelism)", min: "route.total_min"}
+ours_parallel_overhead_min: 10   # referral + acceptance in our system (measured from events when available)

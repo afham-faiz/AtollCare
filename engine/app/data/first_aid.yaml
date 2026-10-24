@@ -1,0 +1,88 @@
+# F-M5.3 Vetted guidance library. DEMO ASSUMPTION — content must be reviewed by a clinician before real use.
+# The LLM may only SELECT and ORDER step ids from this file. It never writes medical instructions.
+disclaimer: "Guidance support only — follow your clinician's instructions."
+
+common:
+  reporter:
+    - {id: call_hc, text: "Stay with the person and keep the phone line to the health centre open."}
+    - {id: no_food, text: "Do not give food or drink unless a clinician tells you to."}
+    - {id: unresponsive_cpr, text: "If they become unresponsive and are not breathing normally, start chest compressions and shout for help."}
+  clinician:
+    - {id: abc, text: "Assess airway, breathing and circulation; repeat observations every 15 minutes."}
+    - {id: iv_access, text: "Establish IV access if trained and equipment is available."}
+
+conditions:
+  stemi:
+    reporter:
+      - {id: stemi_sit, text: "Keep them seated and calm; do not let them walk."}
+      - {id: stemi_loosen, text: "Loosen tight clothing around the neck and chest."}
+      - {id: stemi_meds, text: "Tell the health centre about any heart medicines or allergies they have."}
+      - {id: unresponsive_cpr, text: "If they become unresponsive and are not breathing normally, start chest compressions and shout for help."}
+    clinician:
+      - {id: stemi_ecg, text: "Record a 12-lead ECG now and send it with the referral if possible."}
+      - {id: stemi_aspirin, text: "Give aspirin 300 mg chewed if no allergy or contraindication (per protocol)."}
+      - {id: stemi_monitor, text: "Continuous monitoring; defibrillator within reach."}
+      - {id: stemi_lysis_check, text: "Complete the fibrinolysis contraindication checklist in case it is given en route."}
+  stroke:
+    reporter:
+      - {id: stroke_time, text: "Note the exact time the symptoms started or when they were last seen well."}
+      - {id: stroke_position, text: "Keep them lying with head and shoulders slightly raised."}
+      - {id: no_food, text: "Do not give food, drink or tablets — swallowing may be unsafe."}
+      - {id: unresponsive_cpr, text: "If they become unresponsive and are not breathing normally, start chest compressions and shout for help."}
+    clinician:
+      - {id: stroke_glucose, text: "Check blood glucose to exclude hypoglycaemia."}
+      - {id: stroke_fast, text: "Document FAST findings and last-known-well time for the referral."}
+      - {id: stroke_npo, text: "Nil by mouth until swallow is assessed."}
+  major_trauma:
+    reporter:
+      - {id: trauma_pressure, text: "Press firmly on any heavily bleeding wound with a clean cloth and keep pressing."}
+      - {id: trauma_still, text: "Do not move them unless they are in danger; keep the injured limb still."}
+      - {id: trauma_warm, text: "Keep them warm with a blanket or dry clothes."}
+      - {id: unresponsive_cpr, text: "If they become unresponsive and are not breathing normally, start chest compressions and shout for help."}
+    clinician:
+      - {id: trauma_haem, text: "Control external haemorrhage; apply a tourniquet for uncontrolled limb bleeding (per protocol)."}
+      - {id: trauma_splint, text: "Splint fractures and cover open wounds with sterile dressings."}
+      - {id: iv_access, text: "Establish IV access if trained and equipment is available."}
+      - {id: trauma_txa, text: "Consider tranexamic acid within 3 hours of injury (per protocol)."}
+  pph:
+    reporter:
+      - {id: pph_lie, text: "Help her lie down flat with her legs raised."}
+      - {id: pph_rub, text: "If a midwife has shown you how, rub the lower belly firmly to help the womb contract."}
+      - {id: pph_warm, text: "Keep her warm and do not leave her alone."}
+    clinician:
+      - {id: pph_uterotonic, text: "Give uterotonic and start uterine massage (per obstetric protocol)."}
+      - {id: iv_access, text: "Establish IV access if trained and equipment is available."}
+      - {id: pph_measure, text: "Estimate and record blood loss; send with referral."}
+  sepsis:
+    reporter:
+      - {id: sepsis_fluids, text: "Tell the health centre about the fever, confusion and how long it has lasted."}
+      - {id: sepsis_cool, text: "Keep them comfortable; remove heavy blankets if they are very hot."}
+      - {id: no_food, text: "Do not give food or drink unless a clinician tells you to."}
+    clinician:
+      - {id: sepsis_abx, text: "Start IV antibiotics now — do not wait for transfer (per sepsis protocol)."}
+      - {id: sepsis_cultures, text: "Take blood cultures first only if it will not delay antibiotics."}
+      - {id: sepsis_fluid, text: "Give IV fluid bolus if hypotensive (per protocol) and reassess."}
+  respiratory_failure:
+    reporter:
+      - {id: resp_sit, text: "Help them sit upright, leaning slightly forward."}
+      - {id: resp_inhaler, text: "If they have their own inhaler, help them use it."}
+      - {id: resp_calm, text: "Keep them calm and loosen tight clothing."}
+    clinician:
+      - {id: resp_oxygen, text: "Give oxygen to target saturations (per protocol)."}
+      - {id: resp_neb, text: "Give nebulised bronchodilator if wheeze is present (per protocol)."}
+      - {id: abc, text: "Assess airway, breathing and circulation; repeat observations every 15 minutes."}
+  appendicitis:
+    reporter:
+      - {id: no_food, text: "Do not give food or drink unless a clinician tells you to."}
+      - {id: app_rest, text: "Let them rest in the most comfortable position."}
+    clinician:
+      - {id: app_nbm, text: "Nil by mouth; analgesia per protocol."}
+      - {id: iv_access, text: "Establish IV access if trained and equipment is available."}
+  other:
+    reporter:
+      - {id: call_hc, text: "Stay with the person and keep the phone line to the health centre open."}
+      - {id: other_note, text: "Note when the symptoms started and anything that made them better or worse."}
+      - {id: unresponsive_cpr, text: "If they become unresponsive and are not breathing normally, start chest compressions and shout for help."}
+    clinician:
+      - {id: abc, text: "Assess airway, breathing and circulation; repeat observations every 15 minutes."}
+      - {id: other_obs, text: "Complete a full set of observations so NEWS2 is complete."}

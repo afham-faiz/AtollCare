@@ -1,0 +1,21 @@
+{
+  "id": "pph_weather",
+  "title": "Postpartum haemorrhage in bad weather, Vaadhoo",
+  "story": "17:30, Vaadhoo. Postpartum bleeding. Presenter sets sea state 6.",
+  "proves": "Sea modes disabled and the seaplane is past its sunset cutoff, so the engine shows its constraint reasoning (enable the helicopter in /demo to see the alternative).",
+  "clock": "17:30",
+  "weather": {"sea_state": 3, "wind_kt": 18, "visibility_km": 8},
+  "origin_facility_id": "vaadhoo_hc",
+  "patient": {"name": "Mariyam (demo)", "age": 27, "sex": "F", "pregnant": false, "known_conditions": ["delivered at home 1 h ago"]},
+  "intake_text": "She gave birth at home an hour ago and is now bleeding heavily, soaked several towels in the last 15 minutes, she feels dizzy and weak.",
+  "presage_mock": {"heart_rate": 124, "resp_rate": 22},
+  "steps": [
+    {"at_min": -4, "action": "intake"},
+    {"at_min": -4, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 120, "resp_rate": 21, "confidence": 0.9}},
+    {"at_min": -1, "action": "vitals", "vitals": {"source": "manual", "heart_rate": 124, "resp_rate": 22, "spo2": 97, "on_oxygen": false, "systolic_bp": 92, "temperature_c": 36.6, "consciousness": "A"}},
+    {"at_min": 0, "action": "submit"},
+    {"at_min": 2, "action": "refer", "autoplay": true},
+    {"at_min": 4, "action": "respond", "autoplay": true, "response": "accepted", "responder_name": "Dr. Fathimath (Obstetrics)"}
+  ],
+  "presenter_notes": "In /demo set Sea state 6. Speedboat and sea ambulance become infeasible and the seaplane is past the 17:15 last-landing cutoff. Toggle Helicopter on to show the only feasible option."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "daytime_trauma",
+  "title": "Daytime major trauma, Dhangethi",
+  "story": "11:00, Dhangethi. Fall from a coconut tree, open leg fracture, heavy bleeding.",
+  "proves": "Seaplane direct to IGMH wins; NEWS2 high; sea-ambulance alternative shown.",
+  "clock": "11:00",
+  "weather": {"sea_state": 2, "wind_kt": 10, "visibility_km": 10},
+  "origin_facility_id": "dhangethi_hc",
+  "patient": {"name": "Ibrahim (demo)", "age": 34, "sex": "M"},
+  "intake_text": "He fell from a coconut tree about 20 minutes ago. Open fracture of the left leg, bleeding heavily, he is pale and sweaty.",
+  "presage_mock": {"heart_rate": 128, "resp_rate": 26},
+  "steps": [
+    {"at_min": -6, "action": "intake"},
+    {"at_min": -6, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 122, "resp_rate": 24, "confidence": 0.9}},
+    {"at_min": -4, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 125, "resp_rate": 25, "confidence": 0.9}},
+    {"at_min": -2, "action": "vitals", "vitals": {"source": "manual", "heart_rate": 128, "resp_rate": 26, "spo2": 94, "on_oxygen": false, "systolic_bp": 88, "temperature_c": 36.4, "consciousness": "A"}},
+    {"at_min": 0, "action": "submit"},
+    {"at_min": 2, "action": "refer", "autoplay": true},
+    {"at_min": 4, "action": "respond", "autoplay": true, "response": "accepted", "responder_name": "Dr. Nashwa (IGMH Surgery)"},
+    {"at_min": 5, "action": "dispatch", "autoplay": true}
+  ],
+  "presenter_notes": "Compare the seaplane option against the sea ambulance in the alternatives list."
+}

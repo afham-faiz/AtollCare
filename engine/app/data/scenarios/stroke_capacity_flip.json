@@ -1,0 +1,22 @@
+{
+  "id": "stroke_capacity_flip",
+  "title": "Stroke with a capacity change, Baa",
+  "story": "15:00, Kendhoo (Baa). 70-year-old woman, sudden right-sided weakness and slurred speech, onset 50 minutes ago.",
+  "proves": "Starts routed to IGMH; presenter toggles IGMH CT off and the engine re-plans to Kulhudhuffushi RH live.",
+  "clock": "15:00",
+  "weather": {"sea_state": 2, "wind_kt": 10, "visibility_km": 10},
+  "origin_facility_id": "kendhoo_hc",
+  "patient": {"name": "Aminath (demo)", "age": 70, "sex": "F", "known_conditions": ["atrial fibrillation"], "medications": [], "allergies": []},
+  "intake_text": "My mother suddenly has weakness in her right arm and leg and slurred speech, it started about 50 minutes ago. Her face is drooping on the right side.",
+  "presage_mock": {"heart_rate": 92, "resp_rate": 18},
+  "steps": [
+    {"at_min": -5, "action": "intake"},
+    {"at_min": -5, "action": "vitals", "vitals": {"source": "presage", "heart_rate": 90, "resp_rate": 18, "confidence": 0.9}},
+    {"at_min": -2, "action": "vitals", "vitals": {"source": "manual", "heart_rate": 92, "resp_rate": 18, "spo2": 96, "on_oxygen": false, "systolic_bp": 178, "temperature_c": 36.9, "consciousness": "A"}},
+    {"at_min": 0, "action": "submit"},
+    {"at_min": 2, "action": "refer", "autoplay": true},
+    {"at_min": 4, "action": "respond", "autoplay": true, "response": "accepted", "responder_name": "Dr. Hassan (Stroke team)"},
+    {"at_min": 5, "action": "dispatch", "autoplay": true}
+  ],
+  "presenter_notes": "In /hospital open Capacity and switch IGMH CT off. Within one poll the recommendation flips to Kulhudhuffushi RH."
+}
