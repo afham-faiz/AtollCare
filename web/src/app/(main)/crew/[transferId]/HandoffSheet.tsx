@@ -118,7 +118,7 @@ export default function ({
         </dl>
         {simulated.length > 0 && (
           <p className="rounded-[.75rem] border-[1px] border-dashed border-line-strong px-[.875rem] py-[.625rem] text-[0.875rem] text-ink-2">
-            {simulated.join(" and ")} {simulated.length > 1 ? "are" : "is"} from the demo signal, not a measurement. The hospital sees the same label.
+            {simulated.join(" and ")} {simulated.length > 1 ? "are" : "is"} simulated, not measured. The hospital sees the same label.
           </p>
         )}
 

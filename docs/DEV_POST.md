@@ -37,8 +37,8 @@ designed around it:
   upper chest").
 - **Video never leaves the vehicle.** Every 5 s the bridge posts only *stable* numbers to the engine.
 - **The UI tells the truth.** Readings show *Presage · acquiring* until they're stable. Pulse above the validated
-  110 BPM is flagged *confirm with a monitor*. Without a key the screen switches to a **Demo signal**, labelled on both
-  screens and in the SBAR as "(demo signal)".
+  110 BPM is flagged *confirm with a monitor*. Without a key the vitals are **Simulated**: muted, with no clinical status word,
+  and labelled on both screens and in the SBAR as "(simulated)".
 
 ## The rest of the stack
 

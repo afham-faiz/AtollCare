@@ -58,7 +58,7 @@ export default function ({ onDone }: { onDone?: () => void }) {
 
   if (!meta) return null;
   const services = [
-    { name: "Presage", live: meta.adapters.presage === "live", text: meta.bridge.connected ? (meta.bridge.sdk === "ready" ? "Bridge connected" : meta.bridge.message ?? "Bridge connected, SDK not ready") : "Bridge not running — demo signal" },
+    { name: "Presage", live: meta.adapters.presage === "live", text: meta.bridge.connected ? (meta.bridge.sdk === "ready" ? "Bridge connected" : meta.bridge.message ?? "Bridge connected, SDK not ready") : "Bridge not running · vitals simulated" },
     { name: "ElevenLabs", live: meta.adapters.elevenlabs === "real", text: meta.adapters.elevenlabs === "real" ? "Scribe + voice" : "Browser speech" },
     { name: "Gemini", live: meta.adapters.gemini === "real", text: meta.adapters.gemini === "real" ? "Live handoff drafting" : "Template drafting" },
   ];

@@ -95,6 +95,13 @@ def test_rule_extraction_splits_each_treatment():
     assert briefing.extract("Takes aspirin daily. No blood thinners").interventions == []
 
 
+def test_rule_extraction_reads_speech_to_text():
+    # as the browser / Scribe transcribed a real crew note: spelled-out units, dose before the drug
+    e = briefing.extract("I can't speak administer 300 milligrams of aspirin to the patient")
+    assert e.interventions == ["Aspirin 300 mg"]
+    assert briefing.extract("Giving morphine 5 milligrams IV").interventions == ["Morphine 5 mg IV"]
+
+
 def test_suspected_condition_keywords():
     assert "STEMI" in briefing.suspected_condition("crushing chest pain going to the left arm")
     assert "stroke" in briefing.suspected_condition("slurred speech and facial droop").lower()

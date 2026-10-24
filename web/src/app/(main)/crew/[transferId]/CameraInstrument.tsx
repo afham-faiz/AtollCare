@@ -25,10 +25,17 @@ const EMPTY: Partial<Record<CameraState, { title: string; text: string }>> = {
   off: { title: "Camera off", text: "" },
 };
 
+// why the camera isn't measuring, in the crew's terms — the video alone is not a measurement
+const NOT_MEASURING: Partial<Record<PresageState, string>> = {
+  no_api_key: "Not measuring · Presage API key missing",
+  offline: "Not measuring · Presage bridge offline",
+  error: "Not measuring · Presage unavailable",
+};
+
 export function instrumentPhase(camera: CameraState, presage: PresageState, metrics: PresageMetrics): Instrument {
   if (camera !== "on") return { phase: "off", label: camera === "starting" ? "Opening camera" : "Camera off" };
   if (presage === "starting") return { phase: "connecting", label: "Connecting to Presage" };
-  if (presage !== "running") return { phase: "demo", label: "Demo signal · Presage not connected" };
+  if (presage !== "running") return { phase: "demo", label: NOT_MEASURING[presage] ?? "Not measuring" };
   if (metrics.hr?.stable || metrics.rr?.stable) return { phase: "measuring", label: "Presage · measuring" };
   return { phase: "acquiring", label: "Presage · acquiring" };
 }
@@ -59,7 +66,7 @@ export default function ({
   }, [settling]);
   const progress = since ? Math.min(0.98, (now - since) / SETTLE_MS) : 0;
   const secondsLeft = since ? Math.max(0, Math.ceil((SETTLE_MS - (now - since)) / 1000)) : 30;
-  const guideTone = hint ? styles.guideHint : instrument.phase === "measuring" ? styles.guideOk : "";
+  const guideTone = instrument.phase === "demo" ? styles.guideIdle : hint ? styles.guideHint : instrument.phase === "measuring" ? styles.guideOk : "";
 
   return (
     <figure className={styles.instrument} aria-label="Contactless vital signs camera">
@@ -85,7 +92,7 @@ export default function ({
           <p className={styles.emptyTitle}>{EMPTY[camera]?.title ?? "Opening camera…"}</p>
           {camera !== "starting" && (
             <>
-              <p className={styles.emptyText}>{EMPTY[camera]?.text} Vitals continue from the demo signal and crew entries.</p>
+              <p className={styles.emptyText}>{EMPTY[camera]?.text} Until then, heart rate and breathing are simulated.</p>
               <button type="button" onClick={onRetry} className={styles.retry}>
                 <RefreshCw size={14} /> Try again
               </button>
@@ -99,6 +106,9 @@ export default function ({
         {instrument.label}
       </figcaption>
 
+      {camera === "on" && instrument.phase === "demo" && (
+        <span className={twMerge(styles.hint, styles.hintCalm)}>Video only · heart rate and breathing are simulated</span>
+      )}
       {camera === "on" && instrument.phase !== "demo" && (
         <span className={twMerge(styles.hint, hint ? styles.hintWarn : styles.hintCalm)} key={hint ?? "calm"}>
           {hint ?? (instrument.phase === "measuring" ? (rrStable ? "Steady signal" : `Breathing settles in ${secondsLeft} s`) : "Face and upper chest in frame · hold still")}

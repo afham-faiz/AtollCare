@@ -36,7 +36,7 @@ function Status({ a }: { a: Assessment | null }) {
 function Source({ kind, at, now }: { kind: "live" | "acquiring" | "presage" | "manual" | "simulated" | "none"; at?: string; now?: string }) {
   if (kind === "live") return <span className={styles.source}><LiveDot tone="live" /> Presage · live</span>;
   if (kind === "acquiring") return <span className={styles.source}><LiveDot tone="accent" /> Presage · acquiring</span>;
-  if (kind === "simulated") return <span className={twMerge(styles.source, styles.demo)}>Demo signal</span>;
+  if (kind === "simulated") return <span className={twMerge(styles.source, styles.demo)}>Simulated</span>;
   if (kind === "none") return <span className={styles.source}>Not recorded</span>;
   return <span className={styles.source}>{kind === "presage" ? "Presage" : "Crew"} · {at ? freshness(at, now) : ""}</span>;
 }
@@ -49,6 +49,7 @@ function Metric({
   source,
   flag,
   aside,
+  simulated,
 }: {
   label: string;
   value: number | null;
@@ -57,13 +58,15 @@ function Metric({
   source: React.ReactNode;
   flag?: string | null;
   aside?: React.ReactNode;
+  simulated?: boolean;
 }) {
   return (
     <div className={styles.metric}>
       <div className={styles.metricHead}>
         <span className="flex min-w-0 items-center gap-[.5rem]">
           <span className={styles.label}>{label}</span>
-          {value !== null && <Status a={assessment} />}
+          {/* no clinical status for a simulated number: "In range" would assert something that wasn't measured */}
+          {value !== null && !simulated && <Status a={assessment} />}
         </span>
         {source}
       </div>
@@ -72,7 +75,7 @@ function Metric({
           {value === null ? (
             <span className={twMerge(styles.value, styles.pending)}>—</span>
           ) : (
-            <span className={twMerge(styles.value, "tnum value-in")} key={Math.round(value)}>
+            <span className={twMerge(styles.value, "tnum value-in", simulated && styles.simulated)} key={Math.round(value)}>
               {Math.round(value)}
             </span>
           )}
@@ -160,6 +163,7 @@ export default function ({
         unit="bpm"
         assessment={hrValue !== null ? assessHr(hrValue) : null}
         source={<Source kind={contact("heart_rate", hr)} at={L.heart_rate?.at} now={now} />}
+        simulated={contact("heart_rate", hr) === "simulated"}
         flag={(live && hrValue !== null && hrValue > PRESAGE_HR_MAX) || L.heart_rate?.flag ? "Above Presage’s validated range — confirm with a monitor" : null}
         aside={<Sparkline points={hrSeries} color="#c8322a" className={styles.spark} />}
       />
@@ -169,6 +173,7 @@ export default function ({
         unit="/min"
         assessment={rrValue !== null ? assessRr(rrValue) : null}
         source={<Source kind={contact("resp_rate", rr)} at={L.resp_rate?.at} now={now} />}
+        simulated={contact("resp_rate", rr) === "simulated"}
         aside={
           live && trace.length > 4 ? (
             <BreathingWave trace={trace} className={styles.spark} />
@@ -202,8 +207,13 @@ export default function ({
       </div>
       <div className={styles.footnote}>
         <p className="min-w-0 truncate">
-          {crewAt ? `Crew-entered ${freshness(crewAt, now)}` : "Entered by the crew"}
-          {hrv !== null && <> · HRV {Math.round(hrv)} ms</>}
+          {[
+            crewAt && `Crew-entered ${freshness(crewAt, now)}`,
+            // HRV only when measured — a simulated HRV adds noise, not information
+            hrv !== null && (live || L.hrv_rmssd?.source !== "simulated") && `HRV ${Math.round(hrv)} ms`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
         <button type="button" onClick={onAddVitals} className={twMerge(styles.add, missing && styles.addDue)}>
           <Plus size={16} /> {missing ? "Complete NEWS2" : "Update"}

@@ -165,6 +165,13 @@
   color: var(--ink-2);
 }
 
+.impression {
+  margin-top: 0.5rem;
+  max-width: 44rem;
+  font-size: 0.9375rem;
+  color: var(--ink-3);
+}
+
 .alertLine {
   margin-top: 0.75rem;
   font-size: 0.9375rem;
@@ -326,6 +333,11 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--caution);
+}
+
+.simulated {
+  color: var(--ink-2);
+  font-weight: 500;
 }
 
 .demoTag {

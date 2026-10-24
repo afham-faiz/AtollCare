@@ -36,7 +36,7 @@ A transfer is **crew-only while it's being prepared**. The hospital sees it the 
 - **Honest limits shown in the UI:** pulse is validated for 40–110 BPM (higher readings are flagged *confirm
   manually*). Breathing takes 30 s to settle. Contactless HR + RR give only a *partial* NEWS2, and the crew adds
   SpO₂ / BP / temperature / ACVPU with a few taps.
-- **No API key? The demo still works:** a clearly labelled *demo signal* takes over, on both screens and in the SBAR.
+- **No API key? The demo still works:** clearly labelled *simulated* values take over, on both screens and in the SBAR.
 
 ## Sponsor tracks
 

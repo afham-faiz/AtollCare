@@ -40,8 +40,8 @@ A region is a JSON file of hospitals, clinics and transport. Next: hospital inbo
 
 ## Backup moves
 
-- **No Presage key, or the camera fails:** the screen says so and the vitals switch to a labelled **Demo signal**. Say
-  it plainly: "That's a demo signal, and we label it everywhere, including in the hospital's briefing."
+- **No Presage key, or the camera fails:** the camera says why it isn't measuring and the vitals show as **Simulated**.
+  Say it plainly: "Those numbers are simulated, and we label them everywhere, including in the hospital's briefing."
 - **Mic fails or the room is loud:** the keyboard icon beside the mic types the same note.
 - **Wi-Fi fails:** run engine + web on the crew laptop (`README → Run locally`). The hospital screen can be a second
   browser window.
@@ -54,7 +54,7 @@ A region is a JSON file of hospitals, clinics and transport. Next: hospital inbo
   / ACVPU with a few taps.
 - **Privacy?** Video never leaves the vehicle. The bridge runs next to the camera, and only numbers go to the cloud.
 - **Can the AI make things up?** The SBAR is built only from recorded vitals and the crew's own words. It says
-  *"Drafted by Gemini"* or *"Drafted from template"*, and simulated values carry *(demo signal)*. If Gemini is down,
+  *"Drafted by Gemini"* or *"Drafted from template"*, and simulated values carry *(simulated)*. If Gemini is down,
   a deterministic template takes over. The crew's original sentence always sits next to the extracted chips.
 - **Safety?** Decision support: a clinician accepts, the crew act. Alerts use NEWS2 bands plus a hedged trend
   forecast, with hysteresis so they don't flap.

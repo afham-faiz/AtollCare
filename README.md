@@ -38,7 +38,7 @@ hospital browser ── /hospital ── polls /api every 2 s (SWR)
 - **Transfer lifecycle:** `preparing` (crew only) → `pending` (handoff sent; the hospital sees it) → `accepted` →
   `arrived` → `closed`.
 - **Honest provenance:** every vital carries its source (`presage`, `manual` or `simulated`) and a timestamp. Simulated
-  values are labelled *Demo signal* on both screens and "(demo signal)" in the SBAR.
+  values are labelled *Simulated* on both screens and "(simulated)" in the SBAR, and get no clinical status word.
 
 ## Run locally (no Docker)
 
@@ -51,7 +51,7 @@ cd web && bun install && bun run dev
 ```
 
 Open http://localhost:3000. It lands on the crew screen. With no keys, everything runs on mock adapters, the
-in-memory store and a labelled demo signal for HR / RR.
+in-memory store and clearly labelled simulated HR / RR.
 
 **Live Presage vitals.** Run the bridge on the machine with the camera (Node 20+):
 

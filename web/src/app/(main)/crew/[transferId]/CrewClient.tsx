@@ -56,7 +56,7 @@ export default function ({ transferId }: { transferId: string }) {
   const instrument = instrumentPhase(cam.camera, presage.state, presage.metrics);
   const live = instrument.phase === "acquiring" || instrument.phase === "measuring";
 
-  // keep the engine's monitoring source honest: Presage when measuring, labelled demo signal otherwise
+  // keep the engine's monitoring source honest: Presage when measuring, labelled simulated otherwise
   const requested = useRef<MonitoringSource | null>(null);
   useEffect(() => {
     if (!t || !active || instrument.phase === "connecting" || cam.camera === "starting") return;

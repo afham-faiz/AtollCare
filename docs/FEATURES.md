@@ -16,7 +16,7 @@ paths therefore show ⚠️ below.
 | Monitor hierarchy: patient + status → camera instrument → vitals → note dock → next action | ✅ | `crew/[transferId]/CrewClient.tsx` |
 | Camera instrument: face + upper-chest guide, acquiring sweep, status capsule, framing hints, 30 s breathing settle | ⚠️ camera blocked in the test browser; empty/blocked/busy/no-camera states verified | `CameraInstrument.tsx`, `lib/presage.ts` |
 | Presage live HR / RR / HRV + breathing waveform; >110 BPM flagged "confirm with a monitor" | ⚠️ needs a real `PRESAGE_API_KEY` and a camera | `VitalsPanel.tsx`, `BreathingWave.tsx` |
-| Labelled demo signal when Presage isn't live (both screens, SBAR) | ✅ | `VitalsPanel.tsx`, `core/briefing.py`, `adapters/gemini.py` |
+| Simulated values when Presage isn't live: labelled, muted, no status word (both screens, SBAR); camera says why it isn't measuring | ✅ | `VitalsPanel.tsx`, `core/briefing.py`, `adapters/gemini.py` |
 | Crew-entered SpO₂ / BP / temp / ACVPU with freshness; "Complete NEWS2" prompt | ✅ | `VitalsSheet.tsx`, `VitalsPanel.tsx` |
 | Alerts (NEWS2 band, HR trend, forecast) with "+N more" | ✅ | `VitalsPanel.tsx`, `core/alerts.py` |
 | Voice note: tap, speak, tap; real mic level meter; live transcript; "Structuring note…" → chips | ⚠️ mic blocked in the test browser; typed path verified | `VoiceCapture.tsx`, `lib/dictation.ts`, `lib/audio.ts` |
@@ -35,7 +35,7 @@ paths therefore show ⚠️ below.
 | Only handed-off transfers appear (not `preparing`) | ✅ (API test + e2e) | `services/transfers.py` |
 | Hero: suspected condition, patient, urgency + status, alerts; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
 | Layout by container width (rail-aware): hero band, 3/6-column vitals, sticky decision bar on phones | ✅ | `hospital/Hospital.module.scss` |
-| Vitals strip with status word, source and freshness; demo signal tagged | ✅ | `TransferDetail.tsx` |
+| Vitals strip with status word, source and freshness; simulated values tagged | ✅ | `TransferDetail.tsx` |
 | Handoff tab: SBAR + "Given" list + provenance line | ✅ | `components/(transfer)/SbarDocument.tsx` |
 | Trend tab (Tiger Data aggregate in Postgres; raw readings in memory mode) | ✅ memory · ⚠️ Timescale | `TrendChart.tsx`, `db.py` |
 | Ask the crew (free text + suggestions), Q&A thread | ✅ | `TransferDetail.tsx` |
@@ -48,7 +48,7 @@ paths therefore show ⚠️ below.
 |---|---|---|
 | Lifecycle `preparing → pending → accepted → arrived → closed`; idempotent handoff; accept requires pending | ✅ | `services/transfers.py`, `routers/transfers.py` |
 | NEWS2 (partial / complete), deterioration forecast (OLS), alerts with hysteresis + re-announce cooldown | ✅ | `core/news2.py`, `core/forecast.py`, `core/alerts.py` |
-| SBAR: Gemini (JSON schema) with template fallback; "(demo signal)" labelling | ✅ template · ⚠️ real Gemini untested | `core/briefing.py`, `adapters/gemini.py` |
+| SBAR: Gemini (JSON schema) with template fallback; "(simulated)" labelling; hospital shows where the working impression came from | ✅ template · ⚠️ real Gemini untested | `core/briefing.py`, `adapters/gemini.py` |
 | Intervention / observation extraction (clause-by-clause rules; Gemini when configured) | ✅ rules · ⚠️ Gemini | `core/briefing.py` |
 | Scribe STT, TTS with storage cache | ⚠️ untested without a key | `adapters/elevenlabs.py` |
 | Region packs + prepared demo cases (Maldives × 2, Western Isles × 1) | ✅ | `data/regions/*.json`, `core/regions.py` |

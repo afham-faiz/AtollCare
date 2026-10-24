@@ -50,21 +50,22 @@ const SUGGESTIONS = ["Any allergies?", "On blood thinners?", "Time of onset?", "
 
 function Vital({ label, unit, lv, assess, now }: { label: string; unit: string; lv?: LatestValue; assess: (v: number) => Assessment; now: string }) {
   const v = numeric(lv);
-  const a = v !== null ? assess(v) : null;
+  const simulated = lv?.source === "simulated";
+  const a = v !== null && !simulated ? assess(v) : null; // no clinical status for a number nobody measured
   return (
     <div className={styles.vital}>
       <span className={styles.vitalHead}>
         <span className={styles.vitalLabel}>{label}</span>
         {a && a.level !== "normal" && <strong className={twMerge(styles.vitalWord, styles[a.level])}>{a.word}</strong>}
       </span>
-      <span className={twMerge("tnum", styles.vitalValue, a && styles[a.level])}>
+      <span className={twMerge("tnum", styles.vitalValue, a && styles[a.level], simulated && styles.simulated)}>
         {v ?? "—"}
         {v !== null && <span className={styles.vitalUnit}>{unit}</span>}
       </span>
       <span className={styles.vitalMeta}>
         {lv ? (
           lv.source === "simulated" ? (
-            <span className={styles.demoTag}>Demo signal</span>
+            <span className={styles.demoTag}>Simulated</span>
           ) : (
             `${SOURCE_LABEL[lv.source as Source]} · ${freshness(lv.at, now)}`
           )
@@ -149,6 +150,13 @@ export default function ({ transferId }: { transferId: string }) {
           </p>
           <h2 className={styles.heroTitle}>{t.briefing?.suspected_condition ?? t.complaint}</h2>
           <p className={styles.heroPatient}>{patientTitle(t.patient)}</p>
+          {t.briefing?.suspected_condition && (
+            // a working impression, not a diagnosis — say where it came from and show the crew's own words
+            <p className={styles.impression}>
+              {t.briefing.generated_by === "gemini" ? "Impression suggested by Gemini from" : "Impression matched from"} the crew’s words:{" "}
+              <q className="text-ink">{t.complaint}</q>
+            </p>
+          )}
           <div className="mt-[.875rem] flex flex-wrap items-center gap-[.5rem]">
             <UrgencyBadge news2={t.news2} size="lg" />
             <StatusChip status={t.status} view="hospital" />

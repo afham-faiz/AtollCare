@@ -71,7 +71,7 @@ export type Source = "presage" | "manual" | "simulated";
 export const SOURCE_LABEL: Record<Source, string> = {
   presage: "Presage",
   manual: "Crew",
-  simulated: "Demo signal",
+  simulated: "Simulated",
 };
 
 export function freshness(at: string, now?: string | null): string {

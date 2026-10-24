@@ -30,9 +30,12 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 - **Rule-based extraction** (when Gemini is off) understands common drugs, doses, routes and a few procedures. It
   splits on clause boundaries, so "aspirin and GTN, oxygen 4 litres" gives three items, but unusual phrasing can be
   missed. The crew's own words are always kept beside the chips.
+- **Working impression without Gemini is a keyword match** on the crew's words ("face drooping" → *Suspected
+  stroke*, "chest pain" → *Suspected STEMI*). It's not a diagnosis. The hospital screen says where it came from and
+  quotes the crew's words under it.
 - **NEWS2 from contactless vitals is partial** until the crew adds SpO₂, BP, temperature and ACVPU. The UI says so and
   prompts "Complete NEWS2".
-- **Simulated vitals** (demo signal) follow a profile picked from the complaint (for example, chest pain → HR rising
+- **Simulated vitals** follow a profile picked from the complaint (for example, chest pain → HR rising
   over the journey), so trends and alerts have something to show. They're labelled everywhere and never posted as
   `presage`.
 - **Sim clock.** Journeys run on an accelerated clock (presenter speed 1–60×). Times written to the database can be

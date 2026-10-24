@@ -82,7 +82,7 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
         n2_txt = f"NEWS2 {n2.total} ({(n2.band or '').replace('_', '-')})" + ("" if n2.complete else f", {partial_label(n2).lower()}")
     def vital(k: str, lbl: str) -> str:
         v = data["latest_vitals"][k]
-        return f"{lbl} {v['value']}" + (" (demo signal)" if v["source"] == "simulated" else "")
+        return f"{lbl} {v['value']}" + (" (simulated)" if v["source"] == "simulated" else "")
 
     vitals = ", ".join(vital(k, lbl) for k, lbl in VITAL_LABELS if k in data["latest_vitals"])
     situation = f"{who} from {data['from']} by {data['transport'].lower()}, ETA {data['eta_local']}. {t.complaint.rstrip('.')}."
@@ -111,7 +111,12 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
 # ---------------------------------------------------------------- note extraction (fallback when Gemini is off)
 # Works clause by clause so "gave aspirin 300 mg and GTN spray, oxygen 4 litres" yields three items, not one.
 CLAUSE = re.compile(r"\.(?!\d)|[;,]|\band\b|\bthen\b|\bplus\b", re.I)  # keeps "0.5 mg" whole
-GIVEN = re.compile(r"\b(gave|given|administered|started|applied|inserted|put on|commenced|nebuli[sz]ed|splinted)\b\s*", re.I)
+GIVEN = re.compile(r"\b(gave|give|given|giving|administer(?:ed|ing)?|started|applied|inserted|put on|commenced|"
+                   r"nebuli[sz]ed|splinted)\b\s*", re.I)
+# speech-to-text spells units out ("300 milligrams"); write them the way a clinician would
+SPOKEN_UNITS = [(re.compile(r"\bmilligrams?\b", re.I), "mg"), (re.compile(r"\bmicrograms?\b", re.I), "mcg"),
+                (re.compile(r"\bmillilit(?:re|er)s?\b", re.I), "ml")]
+NUMERIC_DOSE = re.compile(r"\d+(\.\d+)?\s*(mg|mcg|g|ml|l|litres?|liters?|units?)\b", re.I)
 DRUG = re.compile(r"\b(aspirin|gtn|glyceryl trinitrate|nitro\w*|morphine|fentanyl|ketamine|methoxyflurane|penthrox|oxygen|o2|"
                   r"adrenaline|epinephrine|salbutamol|ipratropium|txa|tranexamic acid|iv fluids?|fluids?|saline|"
                   r"hartmann'?s|paracetamol|ondansetron|heparin|clopidogrel|ticagrelor|glucagon|glucose|naloxone|"
@@ -131,6 +136,8 @@ def _cap(s: str) -> str:
 
 
 def _intervention(clause: str) -> str | None:
+    for spoken, unit in SPOKEN_UNITS:
+        clause = spoken.sub(unit, clause)
     thing = DRUG.search(clause) or PROCEDURE.search(clause)
     if not thing or NOT_GIVEN.search(clause[: thing.start()]):
         return None
@@ -138,6 +145,9 @@ def _intervention(clause: str) -> str | None:
     # a drug named without a verb counts only with a dose or route ("oxygen 4 litres", "GTN spray")
     if not given and not PROCEDURE.search(clause) and not DOSE.search(clause[thing.end():]):
         return None
+    dose = NUMERIC_DOSE.search(clause)
+    if dose and dose.end() <= thing.start():  # "300 mg of aspirin" → "Aspirin 300 mg"
+        return _cap(f"{thing.group(0)} {dose.group(0)}")
     item = clause[given.end():] if given and given.end() <= thing.start() else clause[thing.start():]
     return _cap(item.strip(" -")) or None
 

@@ -11,6 +11,7 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -128,6 +129,12 @@
 
 .pending {
   color: var(--line-strong);
+}
+
+// still readable from across a vehicle, but visibly not a measurement next to live or crew-entered values
+.simulated {
+  color: var(--ink-2);
+  font-weight: 500;
 }
 
 .unit {
