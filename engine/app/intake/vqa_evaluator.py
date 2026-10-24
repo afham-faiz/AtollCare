@@ -93,6 +93,13 @@ class _OnePassInspection(BaseModel):
     findings: list[_OnePassFinding] = []
 
 
+def _thinking():
+    from google.genai import types
+
+    level = config.GEMINI_VQA_THINKING
+    return None if level == "default" else types.ThinkingConfig(thinking_level=level.upper())
+
+
 def evaluate_visual_cues(video_bytes: bytes, plan: CuePlan) -> tuple[VisualCueReport, list[Frame]]:
     """Inspect a video for the planned cues. Returns the report and the sampled frames. Never raises."""
     started = time.time()
@@ -152,7 +159,8 @@ def _inspect_one_pass(frames: list[Frame], transcript: str, age: int | None, cat
     response = client.models.generate_content(
         model=config.GEMINI_VQA_MODEL,
         contents=contents,
-        config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=_OnePassInspection),
+        config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=_OnePassInspection,
+                                           thinking_config=_thinking()),
     )
     return _OnePassInspection.model_validate_json(response.text)
 
@@ -194,7 +202,8 @@ def _inspect(frames: list[Frame], plan: CuePlan) -> _RawInspection:
     response = client.models.generate_content(
         model=config.GEMINI_VQA_MODEL,
         contents=contents,
-        config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=_RawInspection),
+        config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=_RawInspection,
+                                           thinking_config=_thinking()),
     )
     return _RawInspection.model_validate_json(response.text)
 

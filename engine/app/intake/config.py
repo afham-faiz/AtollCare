@@ -30,6 +30,9 @@ DEFAULTS = {
     "VQA_FRAME_INTERVAL_S": "2",
     "VQA_MAX_FRAMES": "24",
     "VQA_MODE": "one_pass",
+    # How hard Gemini thinks before answering the sign checklist. "low" keeps a 60 s clip to well under a minute;
+    # "default" leaves it to the model (slower, sometimes by minutes).
+    "GEMINI_VQA_THINKING": "low",
     "VIDEO_RECORD_MAX_S": "60",
     "TRANSCRIBE_LANGUAGE": "en-US",
     "STT_SILENCE_STOP_S": "2",
@@ -136,6 +139,7 @@ def __getattr__(name: str):
         "VQA_FRAME_INTERVAL_S": lambda: _float("VQA_FRAME_INTERVAL_S"),
         "VQA_MAX_FRAMES": lambda: int(_float("VQA_MAX_FRAMES")),
         "VQA_MODE": lambda: _choice("VQA_MODE", ("one_pass", "two_step")),
+        "GEMINI_VQA_THINKING": lambda: _choice("GEMINI_VQA_THINKING", ("minimal", "low", "medium", "high", "default")),
         "VIDEO_RECORD_MAX_S": lambda: _float("VIDEO_RECORD_MAX_S"),
         "TRANSCRIBE_LANGUAGE": lambda: _setting("TRANSCRIBE_LANGUAGE"),  # blank = auto-detect
         "STT_SILENCE_STOP_S": lambda: _float("STT_SILENCE_STOP_S"),
