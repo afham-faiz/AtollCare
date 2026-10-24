@@ -1,4 +1,4 @@
-# F-M7.1 FastAPI app: routers, CORS, global error handling (F-M7.7), startup (migrations, seed, simulator).
+# FastAPI app: routers, CORS, global error handling, startup (migrations, demo state, simulator loop).
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +14,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import ENGINE_VERSION, get_settings
 from app.logging_setup import case_id_var, setup_logging
-from app.routers import assess, cases, demo, hospitals, meta, transport, vitals, voice
+from app.routers import system, transfers
 from app.services.context import AppError
 from app.services.hub import build_hub
 
 log = logging.getLogger("atollcare")
-CASE_ID_RE = re.compile(r"/cases/([0-9a-f-]{36})")
+CASE_ID_RE = re.compile(r"/transfers/([0-9a-f-]{36})")
 
 
 @asynccontextmanager
@@ -35,12 +35,12 @@ async def lifespan(app: FastAPI):
                 raise
             log.warning("database not ready (%s) — retrying", exc)
             await asyncio.sleep(2)
-    await hub.world.load_state()
+    await hub.demo.load_state()
     log.info("engine started: db=%s adapters=%s", hub.svc.repo.kind, hub.svc.adapter_status().model_dump())
     if not settings.disable_background_tasks:
-        hub.sim.start()
+        hub.loop.start()
     yield
-    await hub.sim.stop()
+    await hub.loop.stop()
     await hub.svc.repo.close()
 
 
@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
         log.exception("unhandled error")
         return err(500, "internal_error", f"{type(exc).__name__}: {exc}")
 
-    for r in (meta, cases, assess, vitals, voice, transport, hospitals, demo):
+    for r in (system, transfers):
         app.include_router(r.router)
     return app
 

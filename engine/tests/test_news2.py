@@ -88,10 +88,10 @@ def test_latest_values_within_30_min_and_quality_gate():
     now = datetime(2026, 1, 1, 12, tzinfo=UTC)
     cid = uuid4()
     readings = [
-        VitalsReading(id=uuid4(), case_id=cid, recorded_at=now - timedelta(minutes=45), source="manual", spo2=88),
-        VitalsReading(id=uuid4(), case_id=cid, recorded_at=now - timedelta(minutes=10), source="presage",
+        VitalsReading(id=uuid4(), transfer_id=cid, recorded_at=now - timedelta(minutes=45), source="manual", spo2=88),
+        VitalsReading(id=uuid4(), transfer_id=cid, recorded_at=now - timedelta(minutes=10), source="presage",
                       heart_rate=150, confidence=0.4, low_quality=True),
-        VitalsReading(id=uuid4(), case_id=cid, recorded_at=now - timedelta(minutes=5), source="presage",
+        VitalsReading(id=uuid4(), transfer_id=cid, recorded_at=now - timedelta(minutes=5), source="presage",
                       heart_rate=95, resp_rate=18, confidence=0.9),
     ]
     values = news2.latest_values(readings, now)

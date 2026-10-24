@@ -1,5 +1,6 @@
-# F-M5.1 Speech-to-text (Scribe) · F-M5.2 Text-to-speech — ElevenLabs REST via httpx. Mock / failure: STT returns
-# scenario text; TTS returns audio_url=None so the browser falls back to window.speechSynthesis.
+# ElevenLabs REST via httpx: Scribe speech-to-text for crew voice notes, TTS for hospital questions and alerts spoken
+# in the vehicle (MP3 cached by content hash). Mock mode: STT is unavailable (the browser uses its own speech
+# recognition) and TTS returns audio_url=None (the browser uses speechSynthesis).
 from __future__ import annotations
 
 import hashlib
@@ -13,7 +14,7 @@ from app.config import Settings
 log = logging.getLogger("atollcare.elevenlabs")
 API = "https://api.elevenlabs.io/v1"
 # Public premade voices used only when the env does not specify one (team: set ELEVENLABS_VOICE_* explicitly).
-DEFAULT_VOICES = {"guide": "21m00Tcm4TlvDq8ikWAM", "status": "JBFqnCBsd6RMkjVDRZzb"}
+DEFAULT_VOICES = {"crew": "21m00Tcm4TlvDq8ikWAM", "hospital": "JBFqnCBsd6RMkjVDRZzb"}
 
 
 class ElevenLabsAdapter:
@@ -30,15 +31,15 @@ class ElevenLabsAdapter:
         return "real" if self.mode == "real" else "mock"
 
     def voice_id(self, voice: str) -> str:
-        configured = self.settings.elevenlabs_voice_guide if voice == "guide" else self.settings.elevenlabs_voice_status
+        configured = self.settings.elevenlabs_voice_crew if voice == "crew" else self.settings.elevenlabs_voice_hospital
         return configured or DEFAULT_VOICES[voice]
 
     async def transcribe(
-        self, audio: bytes, filename: str, content_type: str, language: str | None, mock_text: str
-    ) -> tuple[str, str, float | None, str]:
-        """Returns (text, language, confidence, source)."""
+        self, audio: bytes, filename: str, content_type: str, language: str | None
+    ) -> tuple[str, str] | None:
+        """Returns (text, language), or None when STT is not configured (mock mode)."""
         if self.mode != "real":
-            return mock_text, language or "en", 0.99, "mock"
+            return None
         data = {"model_id": self.settings.elevenlabs_stt_model}
         if language:
             data["language_code"] = language
@@ -52,9 +53,7 @@ class ElevenLabsAdapter:
                 )
             resp.raise_for_status()
             body = resp.json()
-            return body.get("text", "").strip(), body.get("language_code") or language or "en", body.get(
-                "language_probability"
-            ), "elevenlabs"
+            return body.get("text", "").strip(), body.get("language_code") or language or "en"
         except Exception as exc:  # noqa: BLE001
             log.warning("ElevenLabs STT failed: %s", exc)
             raise

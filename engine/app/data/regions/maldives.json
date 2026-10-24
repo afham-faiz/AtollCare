@@ -1,0 +1,143 @@
+{
+  "id": "maldives",
+  "name": "Maldives",
+  "country": "Maldives",
+  "description": "1,000+ islands; specialist care concentrated in Malé. Sea ambulances and seaplanes link the atolls.",
+  "timezone": "Indian/Maldives",
+  "center": {
+    "lat": 3.2,
+    "lng": 73.2
+  },
+  "zoom": 6,
+  "modes": [
+    "boat",
+    "helicopter",
+    "plane"
+  ],
+  "facilities": [
+    {
+      "id": "igmh",
+      "name": "Indira Gandhi Memorial Hospital (Malé)",
+      "short_name": "IGMH (Malé)",
+      "kind": "hospital",
+      "lat": 4.1755,
+      "lng": 73.5093
+    },
+    {
+      "id": "gan_l_rh",
+      "name": "Gan Regional Hospital (Laamu)",
+      "short_name": "Gan Regional",
+      "kind": "hospital",
+      "lat": 1.93,
+      "lng": 73.542
+    },
+    {
+      "id": "hithadhoo_rh",
+      "name": "Hithadhoo Regional Hospital (Addu)",
+      "short_name": "Hithadhoo Regional",
+      "kind": "hospital",
+      "lat": -0.605,
+      "lng": 73.09
+    },
+    {
+      "id": "kulhudhuffushi_rh",
+      "name": "Kulhudhuffushi Regional Hospital",
+      "short_name": "Kulhudhuffushi Regional",
+      "kind": "hospital",
+      "lat": 6.6224,
+      "lng": 73.07
+    },
+    {
+      "id": "eydhafushi_ah",
+      "name": "Baa Atoll Hospital (Eydhafushi)",
+      "short_name": "Eydhafushi Hospital",
+      "kind": "hospital",
+      "lat": 5.1036,
+      "lng": 73.0702
+    },
+    {
+      "id": "muli_ah",
+      "name": "Meemu Atoll Hospital (Muli)",
+      "short_name": "Muli Hospital",
+      "kind": "hospital",
+      "lat": 2.92,
+      "lng": 73.58
+    },
+    {
+      "id": "thinadhoo_rh",
+      "name": "Thinadhoo Regional Hospital (Gaafu Dhaalu)",
+      "short_name": "Thinadhoo Regional",
+      "kind": "hospital",
+      "lat": 0.53,
+      "lng": 72.996
+    },
+    {
+      "id": "isdhoo_hc",
+      "name": "Isdhoo Health Centre (Laamu)",
+      "short_name": "Isdhoo Health Centre",
+      "kind": "clinic",
+      "lat": 2.12,
+      "lng": 73.57
+    },
+    {
+      "id": "dhangethi_hc",
+      "name": "Dhangethi Health Centre (Alif Dhaalu)",
+      "short_name": "Dhangethi Health Centre",
+      "kind": "clinic",
+      "lat": 3.607,
+      "lng": 72.958
+    },
+    {
+      "id": "dhiffushi_hc",
+      "name": "Dhiffushi Health Centre (Kaafu)",
+      "short_name": "Dhiffushi Health Centre",
+      "kind": "clinic",
+      "lat": 4.442,
+      "lng": 73.714
+    },
+    {
+      "id": "vaadhoo_hc",
+      "name": "Vaadhoo Health Centre (Gaafu Dhaalu)",
+      "short_name": "Vaadhoo Health Centre",
+      "kind": "clinic",
+      "lat": 0.23,
+      "lng": 73.28
+    },
+    {
+      "id": "kendhoo_hc",
+      "name": "Kendhoo Health Centre (Baa)",
+      "short_name": "Kendhoo Health Centre",
+      "kind": "clinic",
+      "lat": 5.27,
+      "lng": 73.02
+    }
+  ],
+  "example": {
+    "patient": {
+      "label": "Ahmed (demo)",
+      "age": 58,
+      "sex": "M"
+    },
+    "origin_id": "dhiffushi_hc",
+    "destination_id": "igmh",
+    "mode": "boat",
+    "complaint": "Crushing chest pain for 40 minutes, sweating, pain going to the left arm.",
+    "profile": {
+      "heart_rate": 102,
+      "heart_rate_per_hour": 24,
+      "resp_rate": 20,
+      "resp_rate_per_hour": 8,
+      "hrv_rmssd": 22
+    },
+    "baseline_vitals": {
+      "spo2": 95,
+      "on_oxygen": false,
+      "systolic_bp": 104,
+      "temperature_c": 36.8,
+      "consciousness": "A"
+    },
+    "notes": [
+      "12-lead ECG shows ST elevation in the inferior leads. Gave aspirin 300 mg at departure. Pain 8 out of 10."
+    ]
+  }
+}

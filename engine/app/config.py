@@ -1,4 +1,4 @@
-# F-M7.1 / F-M7.5 Settings — every env var the engine reads lives here.
+# Settings — every env var the engine reads lives here.
 from functools import lru_cache
 from pathlib import Path
 
@@ -27,13 +27,8 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
     elevenlabs_tts_model: str = "eleven_multilingual_v2"
     elevenlabs_stt_model: str = "scribe_v1"
-    elevenlabs_voice_guide: str = ""
-    elevenlabs_voice_status: str = ""
-
-    presage_mode: str = "mock"  # sdk | cloud | mock | manual
-    presage_api_key: str = ""
-    presage_api_url: str = ""
-    presage_sdk_path: str = ""
+    elevenlabs_voice_crew: str = ""
+    elevenlabs_voice_hospital: str = ""
 
     storage_mode: str = "local"  # local | s3
     storage_local_dir: str = str(ENGINE_DIR / "var" / "storage")
@@ -45,8 +40,9 @@ class Settings(BaseSettings):
 
     # Demo
     default_speed_multiplier: float = 1.0
-    timezone: str = "Indian/Maldives"
+    default_region: str = "maldives"
     sim_tick_s: float = 2.0
+    simulated_vitals_interval_s: float = 3.0  # real seconds between simulated readings
     disable_background_tasks: bool = False
 
     @property

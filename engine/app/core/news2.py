@@ -155,10 +155,10 @@ def latest_values(readings: list[VitalsReading], now: datetime, lookback_min: in
     return values
 
 
-def compute(readings: list[VitalsReading], now: datetime) -> News2Result | None:
+def compute(readings: list[VitalsReading], now: datetime, lookback_min: int = LOOKBACK_MIN) -> News2Result | None:
     if not readings:
         return None
-    return score_values(latest_values(readings, now))
+    return score_values(latest_values(readings, now, lookback_min))
 
 
 def partial_label(result: News2Result) -> str:

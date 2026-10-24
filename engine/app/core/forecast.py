@@ -1,5 +1,5 @@
-# F-M2.6 Deterioration forecast — OLS on (minutes, NEWS2) over the last ≤ 60 min of 1-min buckets (Tiger Data
-# continuous aggregate, raw fallback). Copy shown to users is always hedged ("Trend suggests…").
+# Deterioration forecast — OLS on (minutes, NEWS2) over the last ≤ 60 min of 1-min buckets (Tiger Data continuous
+# aggregate, raw fallback). Copy shown to users is always hedged ("Trend suggests…").
 from __future__ import annotations
 
 from datetime import datetime, timedelta

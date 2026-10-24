@@ -1,5 +1,5 @@
-# Shared contract — Pydantic models are THE single source of truth (§6). TS types are generated from these
-# via OpenAPI (`bun run gen:api`). Add fields here, never invent alternative shapes in routers or the web app.
+# Shared contract — Pydantic models are THE single source of truth. TS types are generated from these via OpenAPI
+# (`bun run gen:api`). Add fields here; never invent alternative shapes in routers or the web app.
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,39 +10,31 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------- enums (§6.1)
-class CaseStatus(str, Enum):
-    draft = "draft"
-    submitted = "submitted"
-    assessed = "assessed"
-    referred = "referred"
-    needs_info = "needs_info"
-    accepted = "accepted"
-    declined = "declined"
-    dispatched = "dispatched"
-    in_transit = "in_transit"
-    arrived = "arrived"
+# ---------------------------------------------------------------- enums
+class TransferStatus(str, Enum):
+    pending = "pending"  # en route, awaiting hospital acceptance
+    accepted = "accepted"  # en route, receiving team accepted and is preparing
+    arrived = "arrived"  # handed over at the destination
     closed = "closed"
 
 
-class Severity(str, Enum):
-    low = "low"
-    low_medium = "low_medium"
-    medium = "medium"
-    high = "high"
-    critical = "critical"
-
-
-SEVERITY_ORDER = ["low", "low_medium", "medium", "high", "critical"]
-
-
 class TransportMode(str, Enum):
-    ground = "ground"
-    speedboat = "speedboat"
-    sea_ambulance = "sea_ambulance"
-    seaplane = "seaplane"
-    fixed_wing = "fixed_wing"
+    road = "road"
+    boat = "boat"
     helicopter = "helicopter"
+    plane = "plane"
+
+
+class VitalsSource(str, Enum):
+    presage = "presage"  # contactless, Presage SmartSpectra via presage-bridge
+    manual = "manual"  # entered by the crew
+    simulated = "simulated"  # demo stand-in when no Presage bridge is connected
+
+
+class MonitoringSource(str, Enum):
+    presage = "presage"
+    simulated = "simulated"
+    off = "off"
 
 
 class Consciousness(str, Enum):
@@ -53,34 +45,25 @@ class Consciousness(str, Enum):
     unresponsive = "U"
 
 
-class VitalsSource(str, Enum):
-    presage = "presage"
-    manual = "manual"
-    device = "device"
-    mock = "mock"
+class NoteKind(str, Enum):
+    voice = "voice"  # crew voice note (transcribed)
+    text = "text"  # crew typed note
+    question = "question"  # hospital → crew, spoken in the vehicle
+    message = "message"  # hospital → crew information (e.g. acceptance)
+    answer = "answer"  # crew reply to a question
+    alert = "alert"  # deterioration alert raised by the engine
+    event = "event"  # lifecycle (created, accepted, arrived, …)
 
 
-class EventType(str, Enum):
-    created = "created"
-    submitted = "submitted"
-    vitals_added = "vitals_added"
-    intake_extracted = "intake_extracted"
-    assessed = "assessed"
-    referred = "referred"
-    needs_info = "needs_info"
-    info_provided = "info_provided"
-    accepted = "accepted"
-    declined = "declined"
-    replanned = "replanned"
-    dispatched = "dispatched"
-    departed = "departed"
-    leg_completed = "leg_completed"
-    arrived = "arrived"
-    closed = "closed"
-    note = "note"
+class Author(str, Enum):
+    crew = "crew"
+    hospital = "hospital"
+    system = "system"
 
 
-ActorRole = Literal["reporter", "clinician", "specialist", "transport", "system", "demo"]
+class AlertLevel(str, Enum):
+    warning = "warning"
+    critical = "critical"
 
 
 # ---------------------------------------------------------------- reference data
@@ -92,127 +75,63 @@ class GeoPoint(BaseModel):
 class Facility(BaseModel):
     id: str
     name: str
-    short_name: str = ""
-    type: Literal["tertiary_hospital", "regional_hospital", "atoll_hospital", "health_centre", "airport"]
-    atoll: str
+    short_name: str
+    kind: Literal["hospital", "clinic"]
     lat: float
     lng: float
-    capabilities: list[str] = []
-    has_airport: bool = False
-    nearest_airport_id: str | None = None
-    lagoon_access: bool = False
-    seaplane_base_id: str | None = None  # seaplanes land here instead (e.g. IGMH → Hulhulé), then ground leg
-
-    @property
-    def point(self) -> GeoPoint:
-        return GeoPoint(lat=self.lat, lng=self.lng)
-
-    @property
-    def label(self) -> str:
-        return self.short_name or self.name
 
 
 class TransportModeInfo(BaseModel):
     mode: TransportMode
     label: str
     speed_kmh: float
-    dispatch_min: float
-    handover_min: float
-    medic_onboard: bool = False
-    enabled: bool = True
-    constraints: str = ""
+    detour: float
 
 
-class ConditionInfo(BaseModel):
+class RegionSummary(BaseModel):
     id: str
-    label: str
-    window_min: float | None
-    window_from: str
-    window_label: str = ""
-    time_critical: bool = False
-    required_capabilities: list[str] = []
-    high_severity_capabilities: list[str] = []
-    interim_label: str | None = None
+    name: str
+    country: str
+    description: str
 
 
-class TransportAsset(BaseModel):
-    id: str
-    mode: TransportMode
-    home_facility_id: str
-    status: Literal["available", "busy", "offline"]
-    crew_note: str | None = None
+class Region(RegionSummary):
+    timezone: str
+    center: GeoPoint
+    zoom: int
+    modes: list[TransportMode]
+    facilities: list[Facility]
 
 
-class HospitalCapacity(BaseModel):
-    facility_id: str
-    icu_beds_free: int | None = None
-    cath_lab_available: bool | None = None
-    ct_available: bool | None = None
-    blood_bank_units: int | None = None
-    updated_at: datetime
-
-
-class Weather(BaseModel):
-    sea_state: int = Field(2, ge=0, le=9)
-    wind_kt: float = 10
-    visibility_km: float = 10
-
-
-class DemoState(BaseModel):
-    clock_offset_min: float = 0
-    speed_multiplier: float = 1
-    weather: Weather = Weather()
-    night_override: bool | None = None
-    # Extra fields (contract additions): real-time anchor for the speed multiplier, helicopter toggle, autoplay
-    clock_anchor_real: datetime | None = None
-    helicopter_enabled: bool = False
-
-
-# ---------------------------------------------------------------- case parts (§6.2)
+# ---------------------------------------------------------------- transfer parts
 class Patient(BaseModel):
-    name: str | None = None
+    label: str | None = None  # never a real name in the demo
     age: int | None = None
     sex: Literal["M", "F", "X"] | None = None
-    pregnant: bool | None = None
-    known_conditions: list[str] = []
-    medications: list[str] = []
-    allergies: list[str] = []
 
 
 class VitalsReading(BaseModel):
     id: UUID
-    case_id: UUID
+    transfer_id: UUID
     recorded_at: datetime
     source: VitalsSource
     heart_rate: float | None = None
     resp_rate: float | None = None
+    hrv_rmssd: float | None = None
     spo2: float | None = None
     on_oxygen: bool | None = None
     systolic_bp: float | None = None
     temperature_c: float | None = None
     consciousness: Consciousness | None = None
     confidence: float | None = None
-    media_url: str | None = None
-    low_quality: bool = False  # F-M6.4: confidence < 0.6 → stored but excluded from NEWS2
+    low_quality: bool = False  # confidence < 0.6 → kept but excluded from NEWS2
 
 
-class SuspectedCondition(BaseModel):
-    condition_id: str
-    probability: float = Field(ge=0, le=1)
-    rationale: str = ""
-
-
-class Intake(BaseModel):
-    raw_text: str
-    language: str = "en"
-    chief_complaint: str
-    symptoms: list[str] = []
-    red_flags: list[str] = []
-    onset_time: datetime | None = None
-    onset_confidence: Literal["exact", "approx", "unknown"] = "unknown"
-    suspected_conditions: list[SuspectedCondition] = []
-    missing_info: list[str] = []
-    extracted_by: Literal["gemini", "fallback_rules"]
+class LatestValue(BaseModel):
+    value: float | str | bool
+    at: datetime
+    source: VitalsSource
+    flag: str | None = None  # e.g. "outside Presage validated range — confirm manually"
 
 
 class News2Result(BaseModel):
@@ -225,41 +144,46 @@ class News2Result(BaseModel):
     values_used: dict[str, Any] = {}
 
 
-class RouteLeg(BaseModel):
-    mode: TransportMode
-    from_id: str
-    to_id: str
-    from_point: GeoPoint
-    to_point: GeoPoint
-    distance_km: float
-    dispatch_min: float
-    travel_min: float
-    handover_min: float
-    depart_at: datetime
-    arrive_at: datetime
-    asset_id: str | None = None
-    wait_min: float = 0  # time waiting for the asset to be ready (parallel dispatch)
+class Alert(BaseModel):
+    code: str
+    level: AlertLevel
+    text: str
+    since: datetime
 
 
-class RouteOption(BaseModel):
-    id: str
-    destination_id: str
-    legs: list[RouteLeg]
-    total_min: float
-    arrive_at: datetime
-    feasible: bool
-    infeasible_reasons: list[str] = []
-    within_window: bool | None = None
-    window_margin_min: float | None = None
-    interim_stop_id: str | None = None
-    score: float = 0
-    # contract additions
-    kind: Literal["direct", "interim", "local"] = "direct"
-    label: str = ""
-    medic_onboard: bool = False
-    interim_arrive_min: float | None = None
-    interim_within_window: bool | None = None
-    score_breakdown: dict[str, float] = {}
+class Extraction(BaseModel):
+    observations: list[str] = []
+    interventions: list[str] = []
+
+
+class Note(BaseModel):
+    id: UUID
+    transfer_id: UUID
+    at: datetime
+    author: Author
+    kind: NoteKind
+    text: str
+    reply_to: UUID | None = None
+    extraction: Extraction | None = None
+    extracted_by: Literal["gemini", "rules"] | None = None
+    audio_url: str | None = None
+
+
+class Intervention(BaseModel):
+    at: datetime
+    text: str
+    note_id: UUID
+
+
+class Briefing(BaseModel):
+    situation: str
+    background: str
+    assessment: str
+    recommendation: str
+    suspected_condition: str | None = None
+    generated_by: Literal["gemini", "template"]
+    generated_at: datetime
+    input_hash: str = ""
 
 
 class DeteriorationForecast(BaseModel):
@@ -269,292 +193,182 @@ class DeteriorationForecast(BaseModel):
     trend: Literal["improving", "stable", "worsening"]
     confidence: Literal["low", "medium"]
     points_used: int
-    horizon_min: float | None = None  # how far ahead the projection actually extrapolates (≤ 2× observed span)
+    horizon_min: float | None = None
     r2: float | None = None
     hr_slope_per_hour: float | None = None
     rr_slope_per_hour: float | None = None
 
 
-class BaselineStep(BaseModel):
-    id: str
-    label: str
-    min: float
+class SimProfile(BaseModel):
+    heart_rate: float = 92
+    heart_rate_per_hour: float = 8
+    resp_rate: float = 18
+    resp_rate_per_hour: float = 3
+    hrv_rmssd: float = 28
 
 
-class BaselineComparison(BaseModel):
-    steps: list[BaselineStep]
-    baseline_total_min: float
-    ours_steps: list[BaselineStep]
-    ours_total_min: float
-    saved_vs_baseline_min: float
-    coordination_measured: bool
-    assumptions: dict[str, Any] = {}
+class Monitoring(BaseModel):
+    source: MonitoringSource = MonitoringSource.simulated
+    last_reading_at: datetime | None = None
+    hint: str | None = None  # latest Presage framing hint ("face too far")
 
 
-class Recommendation(BaseModel):
-    severity: Severity
-    primary_condition_id: str | None
-    window_min: float | None
-    time_since_onset_min: float | None
-    destination_id: str
-    required_capabilities: list[str]
-    chosen_route_id: str
-    alternatives: list[RouteOption]
-    actions_now: list[str]
-    explanation: str
-    breach_warning: str | None = None
-    forecast: DeteriorationForecast | None = None
-    baseline: BaselineComparison
-    generated_at: datetime
-    engine_version: str
-    # contract additions
-    warnings: list[str] = []
-    explanation_source: Literal["gemini", "template"] = "template"
-    input_hash: str = ""
-    onset_confidence: Literal["exact", "approx", "unknown"] = "unknown"
-    window_from: Literal["onset", "first_medical_contact"] = "onset"
-    interim_window_min: float | None = None
-    condition_probabilities: list[SuspectedCondition] = []
-    all_routes_count: int = 0
-
-
-class SbarSummary(BaseModel):
-    situation: str
-    background: str
-    assessment: str
-    recommendation: str
-    generated_by: Literal["gemini", "template"]
-    input_hash: str = ""
-
-
-class InfoAnswer(BaseModel):
-    question: str
-    answer: str
+class Acceptance(BaseModel):
+    by: str
     at: datetime
+    prepare: list[str] = []
+    message: str | None = None
 
 
-class Referral(BaseModel):
-    destination_id: str
-    sent_at: datetime | None = None
-    sbar: SbarSummary | None = None
-    response: Literal["pending", "accepted", "declined", "needs_info"] = "pending"
-    responded_at: datetime | None = None
-    responder_name: str | None = None
-    response_note: str | None = None
-    info_requests: list[str] = []
-    # contract additions
-    note: str | None = None
-    route_id: str | None = None
-    info_answers: list[InfoAnswer] = []
-    declined_destination_ids: list[str] = []
-
-
-class TransportState(BaseModel):
-    route_id: str | None = None
-    status: Literal["none", "dispatched", "in_transit", "arrived"] = "none"
-    current_leg_index: int | None = None
-    position: GeoPoint | None = None
-    eta: datetime | None = None
-    asset_ids: list[str] = []
-    # contract additions: frozen route schedule (rebased at dispatch) so the simulator survives restarts
-    route: RouteOption | None = None
-    dispatched_at: datetime | None = None
-    legs_completed: int = 0
-
-
-class CaseEvent(BaseModel):
+class Transfer(BaseModel):
     id: UUID
-    case_id: UUID
-    at: datetime
-    type: EventType
-    actor_role: str
-    summary: str
-    data: dict[str, Any] = {}
-
-
-class CaseHeadline(BaseModel):
-    elapsed_min: float
-    projected_total_min: float | None
-    saved_vs_baseline_min: float | None
-    text: str
-
-
-class CaseMeta(BaseModel):
-    submitted_at: datetime | None = None
-    referred_at: datetime | None = None
-    accepted_at: datetime | None = None
-    dispatched_at: datetime | None = None
-    arrived_at: datetime | None = None
-    closed_at: datetime | None = None
-    outcome_note: str | None = None
-    scenario_id: str | None = None
-    scenario_started_at: datetime | None = None
-    scenario_steps_done: int = 0
-    autoplay: bool = False
-    language: str = "en"
-    last_assessed_at: datetime | None = None
-
-
-class Case(BaseModel):
-    id: UUID
-    short_code: str
+    code: str  # e.g. "AC-4F2K" — short, readable over a radio
+    region_id: str
     created_at: datetime
     updated_at: datetime
-    status: CaseStatus
-    origin_facility_id: str
-    origin_point: GeoPoint
+    status: TransferStatus
     patient: Patient
-    intake: Intake | None = None
-    vitals: list[VitalsReading] = []
+    complaint: str
+    origin_id: str
+    destination_id: str
+    mode: TransportMode
+    departed_at: datetime
+    eta: datetime
+    distance_km: float
+    progress: float = Field(0, ge=0, le=1)
+    position: GeoPoint
+    origin_point: GeoPoint
+    destination_point: GeoPoint
+    monitoring: Monitoring = Monitoring()
+    sim_profile: SimProfile = SimProfile()
+    latest: dict[str, LatestValue] = {}
     news2: News2Result | None = None
-    recommendation: Recommendation | None = None
-    referral: Referral | None = None
-    transport: TransportState = TransportState()
-    timeline: list[CaseEvent] = []
-    headline: CaseHeadline
-    meta: CaseMeta = CaseMeta()
+    alerts: list[Alert] = []
+    briefing: Briefing | None = None
+    acceptance: Acceptance | None = None
+    interventions: list[Intervention] = []
+    notes: list[Note] = []
+    vitals: list[VitalsReading] = []  # most recent 120, oldest first
+    arrived_at: datetime | None = None
 
 
-class CaseListItem(BaseModel):
+class TransferListItem(BaseModel):
     id: UUID
-    short_code: str
-    status: CaseStatus
-    severity: Severity | None
-    origin_facility_id: str
-    destination_id: str | None
-    primary_condition_id: str | None
-    window_min: float | None
-    window_remaining_min: float | None
-    time_since_onset_min: float | None
-    eta: datetime | None
-    headline: CaseHeadline
-    created_at: datetime
+    code: str
+    status: TransferStatus
+    patient: Patient
+    complaint: str
+    suspected_condition: str | None
+    origin_id: str
+    destination_id: str
+    mode: TransportMode
+    eta: datetime
+    progress: float
+    news2_total: int | None
+    news2_band: str | None
+    alert_level: AlertLevel | None
+    heart_rate: float | None
+    resp_rate: float | None
+    monitoring: MonitoringSource
+    unanswered_questions: int
     updated_at: datetime
 
 
-# ---------------------------------------------------------------- request bodies
-class CreateCaseRequest(BaseModel):
-    origin_facility_id: str
-    patient: Patient | None = None
-    raw_text: str | None = None
+# ---------------------------------------------------------------- requests
+class CreateTransferRequest(BaseModel):
+    patient: Patient = Patient()
+    complaint: str = Field(min_length=1)
+    origin_id: str
+    destination_id: str
+    mode: TransportMode
 
 
-class PatchCaseRequest(BaseModel):
-    patient: Patient | None = None
-    origin_facility_id: str | None = None
-
-
-class IntakeRequest(BaseModel):
-    raw_text: str
-    language: str | None = None
-
-
-class ManualVitalsRequest(BaseModel):
-    recorded_at: datetime | None = None
+class VitalsRequest(BaseModel):
     source: VitalsSource = VitalsSource.manual
-    heart_rate: float | None = None
-    resp_rate: float | None = None
-    spo2: float | None = None
+    recorded_at: datetime | None = None
+    heart_rate: float | None = Field(None, ge=10, le=300)
+    resp_rate: float | None = Field(None, ge=1, le=80)
+    hrv_rmssd: float | None = Field(None, ge=0, le=500)
+    spo2: float | None = Field(None, ge=40, le=100)
     on_oxygen: bool | None = None
-    systolic_bp: float | None = None
-    temperature_c: float | None = None
+    systolic_bp: float | None = Field(None, ge=30, le=300)
+    temperature_c: float | None = Field(None, ge=25, le=45)
     consciousness: Consciousness | None = None
-    confidence: float | None = None
-    media_url: str | None = None
-
-
-class ReferRequest(BaseModel):
-    destination_id: str | None = None
-    route_id: str | None = None
-    note: str | None = None
-
-
-class RespondRequest(BaseModel):
-    response: Literal["accepted", "declined", "needs_info"]
-    responder_name: str
-    note: str | None = None
-    info_requests: list[str] = []
-
-
-class InfoAnswersRequest(BaseModel):
-    answers: dict[str, str]
-
-
-class DispatchRequest(BaseModel):
-    route_id: str
-    asset_ids: list[str] | None = None
-
-
-class CloseRequest(BaseModel):
-    outcome_note: str = ""
+    confidence: float | None = Field(None, ge=0, le=1)
+    hint: str | None = None
 
 
 class NoteRequest(BaseModel):
-    text: str
-    actor_role: str = "clinician"
+    text: str = Field(min_length=1, max_length=2000)
+    kind: Literal["voice", "text", "answer"] = "text"
+    reply_to: UUID | None = None
+
+
+class MessageRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=500)
+    kind: Literal["question", "message"] = "question"
+    sender: str | None = None
+
+
+class AcceptRequest(BaseModel):
+    by: str = Field(min_length=1, max_length=120)
+    prepare: list[str] = []
+    message: str | None = None
+
+
+class MonitoringRequest(BaseModel):
+    source: MonitoringSource
 
 
 class SpeakRequest(BaseModel):
-    text: str
-    voice: Literal["guide", "status"] = "guide"
-    language: str | None = None
-
-
-class CapacityPatch(BaseModel):
-    icu_beds_free: int | None = None
-    cath_lab_available: bool | None = None
-    ct_available: bool | None = None
-    blood_bank_units: int | None = None
-
-
-class AssetPatch(BaseModel):
-    status: Literal["available", "busy", "offline"]
-
-
-class WeatherPatch(BaseModel):
-    sea_state: int | None = Field(None, ge=0, le=9)
-    wind_kt: float | None = None
-    visibility_km: float | None = None
+    text: str = Field(min_length=1, max_length=1500)
+    voice: Literal["crew", "hospital"] = "hospital"
 
 
 class DemoStatePatch(BaseModel):
-    set_time_of_day: str | None = None  # "HH:MM" local (sim clock jumps to today at this time)
-    clock_offset_min: float | None = None
-    speed_multiplier: float | None = Field(None, gt=0, le=3600)
-    weather: WeatherPatch | None = None
-    night_override: bool | None = None
-    clear_night_override: bool = False
-    helicopter_enabled: bool | None = None
+    speed_multiplier: float | None = Field(None, gt=0, le=600)
+    region_id: str | None = None
 
 
-# ---------------------------------------------------------------- responses
+class BridgeHeartbeat(BaseModel):
+    sdk: Literal["ready", "no_api_key", "unavailable", "error"]
+    version: str | None = None
+    clients: int = 0
+    message: str | None = None
+
+
+# ---------------------------------------------------------------- state & responses
+class DemoState(BaseModel):
+    speed_multiplier: float = 1
+    clock_offset_min: float = 0
+    clock_anchor_real: datetime | None = None
+    region_id: str = "maldives"
+
+
 class AdapterStatus(BaseModel):
-    presage: str
-    gemini: str
-    elevenlabs: str
-    storage: str
+    presage: Literal["live", "simulated"]
+    gemini: Literal["real", "mock"]
+    elevenlabs: Literal["real", "mock"]
+    storage: Literal["real", "mock"]
 
 
-class ClockInfo(BaseModel):
-    now: datetime
-    local_time: str
-    is_daylight: bool
-    sunrise: str
-    sunset: str
-    seaplane_last_landing: str
-    disabled_modes: dict[str, str]
+class BridgeStatus(BaseModel):
+    connected: bool
+    sdk: str | None = None
+    version: str | None = None
+    message: str | None = None
+    last_seen: datetime | None = None
 
 
 class MetaResponse(BaseModel):
-    facilities: list[Facility]
-    transport_modes: list[TransportModeInfo]
-    conditions: list[ConditionInfo]
+    region: Region
+    regions: list[RegionSummary]
+    modes: list[TransportModeInfo]
     adapters: AdapterStatus
+    bridge: BridgeStatus
     demo_state: DemoState
     now: datetime
-    clock: ClockInfo
-    languages: list[dict[str, Any]]
-    scenarios: list[dict[str, Any]]
+    prepare_options: list[str]
 
 
 class HealthResponse(BaseModel):
@@ -567,21 +381,17 @@ class OkResponse(BaseModel):
     ok: bool = True
 
 
-class ScanJobCreated(BaseModel):
-    job_id: str
-
-
-class ScanJobStatus(BaseModel):
-    status: Literal["queued", "processing", "done", "failed"]
-    reading: VitalsReading | None = None
-    error: str | None = None
-    case_id: UUID | None = None
+class VitalsAck(BaseModel):
+    news2: News2Result | None
+    alerts: list[Alert]
+    monitoring: Monitoring
 
 
 class TrendBucket(BaseModel):
     t: datetime
     hr: float | None = None
     rr: float | None = None
+    hrv: float | None = None
     spo2: float | None = None
     sbp: float | None = None
     temp: float | None = None
@@ -594,47 +404,15 @@ class TrendResponse(BaseModel):
     forecast: DeteriorationForecast | None = None
 
 
-class TrackPoint(BaseModel):
-    t: datetime
-    lat: float
-    lng: float
-    leg_index: int | None = None
-
-
-class TrackResponse(BaseModel):
-    positions: list[TrackPoint]
-    transport: TransportState
-
-
 class TranscribeResponse(BaseModel):
     text: str
     language: str
-    confidence: float | None = None
-    source: Literal["elevenlabs", "mock"] = "mock"
+    source: Literal["elevenlabs", "unavailable"]
 
 
 class SpeakResponse(BaseModel):
     audio_url: str | None
-    source: Literal["elevenlabs", "browser"] = "browser"
-
-
-class GuidanceStep(BaseModel):
-    id: str
-    text: str
-    audio_url: str | None = None
-
-
-class GuidanceResponse(BaseModel):
-    steps: list[GuidanceStep]
-    source_condition_id: str
-    disclaimer: str
-    role: Literal["reporter", "clinician"]
-    selected_by: Literal["gemini", "default_order"]
-
-
-class CrewBriefResponse(BaseModel):
-    text: str
-    audio_url: str | None
+    source: Literal["elevenlabs", "browser"]
 
 
 class ErrorBody(BaseModel):

@@ -1,0 +1,18 @@
+{
+  "name": "atollcare-presage-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Edge bridge: browser camera frames -> Presage SmartSpectra SDK -> AtollCare engine",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@smartspectra/node-sdk": "^3.4.0",
+    "ws": "^8.22.0"
+  }
+}
