@@ -84,6 +84,81 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 
 **Hands off:** a **pre-arrival packet** (identity, early vital cues, observations, companion's account) sent to the health centre before the patient walks in. The ID and slot check is done in advance.
 
+### Running the Part 1 prototype
+
+**What exists so far**
+
+| Built | Not built yet |
+|---|---|
+| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | ID scan |
+| Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Neurological cues (face asymmetry, gaze) |
+| A demo web page that records and logs every trial | Turning the transcript into observations and instructions for the companion |
+
+**What you need**
+
+| Need | Notes |
+|---|---|
+| Python 3.13 | What it was built and tested on |
+| Node.js 20 or later | Presage's SDK only exists for Node. It can live inside your virtual environment (see step 3) |
+| A Presage API key | Free, from [physiology.presagetech.com](https://physiology.presagetech.com) |
+| A Gemini API key | An AI Studio key, or a Google Cloud / Agent Platform key. Optional: without one the voice part runs in mock mode |
+| A browser and a microphone | For the demo page |
+
+Presage's SDK supports Windows x64, Linux x64 and ARM64 (glibc 2.35 or newer) and Apple Silicon Macs.
+
+**Do not share the `.venv` folder.** It holds machine-specific paths and binaries, is several hundred MB, and is git-ignored. Everyone builds their own from [requirements.txt](requirements.txt). Likewise, never commit `inputs/.env`, which holds your keys.
+
+**Setup (Windows PowerShell; on Mac/Linux use `source .venv/bin/activate`)**
+
+```powershell
+# 1. Python environment and packages
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# 2. Your keys: copy the template, then open inputs\.env and fill it in
+mkdir inputs
+copy env.example inputs\.env
+
+# 3. Node.js inside the same environment (skip if you installed Node 20+ yourself)
+nodeenv -p -n 24.11.0
+
+# 4. The Presage SDK
+cd presage-sidecar
+npm install
+cd ..
+```
+
+If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nodejs.org) instead. Re-run the activate line in each new terminal.
+
+**What goes in `inputs/.env`** (everything is configured here and nowhere in the code; restart after editing)
+
+| Line | Meaning |
+|---|---|
+| `PRESAGE_API_KEY` | Your Presage key. `PRESAGE_MODE=mock` gives fake numbers with no key |
+| `GEMINI_API_KEY` | Your Gemini key. Leave blank for mock voice |
+| `GEMINI_PLATFORM` | `developer` for an AI Studio key (starts with `AIza`). `enterprise` for a Google Cloud / Agent Platform key, whose API restrictions must allow the Vertex AI / Agent Platform API, otherwise Google answers `API_KEY_SERVICE_BLOCKED` |
+| `GEMINI_STT_MODEL` | Speech model, currently `gemini-3.8-flash`. A model with `live` in its name streams as you speak, but Google refuses it for express-mode API keys at the moment |
+| `GEMINI_STT_FALLBACK_MODEL` | Optional backup model if the main one cannot start |
+| `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
+| `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
+
+**Run**
+
+```powershell
+python run.py --serve          # demo page at http://127.0.0.1:8000 (on Windows you can double-click start.bat)
+python run.py clip.mp4         # analyse one video from the command line
+python run.py --mock           # try everything with no keys
+python transcribe_file.py note.m4a   # transcribe an audio file
+python -m pytest               # tests (no keys needed, nothing is sent to Google)
+```
+
+The page only works while that command is running. `run.py` starts the Presage sidecar for you.
+
+**Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
+
+**Where results go.** `logs/results.json`, `logs/transcripts.json` and `recordings/` hold your trials. They contain faces and voices, so they are git-ignored. Do not share them.
+
 ---
 
 ## Part 2: Coordination between the health centre and the capital hospital

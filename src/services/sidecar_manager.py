@@ -5,6 +5,8 @@ from pathlib import Path
 
 import httpx
 
+from src import config  # noqa: F401  (loads inputs/.env into the environment before the sidecar starts)
+
 ROOT = Path(__file__).resolve().parents[2]
 SIDECAR_URL = os.environ.get("PRESAGE_SIDECAR_URL", "http://127.0.0.1:3001")
 
@@ -15,6 +17,21 @@ def sidecar_mode() -> str | None:
         return httpx.get(f"{SIDECAR_URL}/health", timeout=2).json().get("mode")
     except (httpx.HTTPError, ValueError):
         return None
+
+
+def sidecar_env(mock: bool = False) -> dict:
+    """Environment for the Node sidecar. The sidecar needs ffmpeg to convert phone video for the SDK."""
+    env = os.environ.copy()
+    if mock:
+        env["PRESAGE_MODE"] = "mock"  # a real environment variable wins over --env-file
+    if not env.get("FFMPEG_PATH"):
+        try:
+            import imageio_ffmpeg
+
+            env["FFMPEG_PATH"] = imageio_ffmpeg.get_ffmpeg_exe()  # bundled with `pip install -r requirements.txt`
+        except ImportError:
+            pass  # falls back to an `ffmpeg` on PATH
+    return env
 
 
 def ensure_sidecar(mock: bool = False, wait_s: float = 15.0) -> subprocess.Popen | None:
@@ -29,9 +46,7 @@ def ensure_sidecar(mock: bool = False, wait_s: float = 15.0) -> subprocess.Popen
         cmd.append(f"--env-file={env_file}")
     cmd.append(str(ROOT / "presage-sidecar" / "server.js"))
 
-    env = os.environ.copy()
-    if mock:
-        env["PRESAGE_MODE"] = "mock"  # real environment wins over --env-file
+    env = sidecar_env(mock)
 
     log_dir = ROOT / "logs"
     log_dir.mkdir(exist_ok=True)
