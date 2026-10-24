@@ -94,7 +94,8 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 | Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Turning the transcript into observations and instructions for the companion |
 | ID photo → name, ID number and age (Gemini vision). Unclear fields stay blank and the card is flagged "needs review" | Insurance check (an ID card does not say) |
 | **Visual signs:** frames of the video are checked for visible signs (Gemini). Every sign in a fixed catalogue is checked and answered separately; a voice account, if there is one, only marks which signs it mentioned (with a quote that must appear in it). Every "seen" cites frames you can look at, and anything the account claims but the video does not show is listed | A clinically validated sign list (the catalogue in `src/data/cue_catalogue.json` is a demo assumption) |
-| A demo web page with three boxes (video, voice, ID) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above |
+| Patient video can be **uploaded or recorded with the camera in the browser**. A recording stays in the browser, and nothing goes to Google or Presage until you press Analyse | |
+| A demo web page with three boxes (video, voice, ID) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above (urgency level, what to prepare, what to tell the family) |
 
 **What you need**
 
@@ -145,6 +146,8 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 | `GEMINI_ID_MODEL` | Vision model that reads ID photos, currently `gemini-3.8-flash` |
 | `GEMINI_CUE_PLANNER_MODEL`, `GEMINI_VQA_MODEL` | Models that choose the cues from the transcript, and inspect the video for them. Currently `gemini-3.8-flash` for both |
 | `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES` | One frame every this many seconds, and the most frames sent in total |
+| `VIDEO_RECORD_MAX_S` | The longest camera recording, in seconds. Presage needs about 45 to 60 for a reliable breathing rate |
+| `GEMINI_TIMEOUT_S`, `GEMINI_RETRY_ATTEMPTS` | Give up on a Google request that does not answer within this many seconds, and the number of tries. Without this, a stalled request would freeze the page forever |
 | `VQA_MODE` | `one_pass`: a single request with the frames, the voice account and every sign, answered one sign at a time. `two_step`: one request reads only the account and picks signs, a second sees only the frames, so it never sees the account |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
 | `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
@@ -163,7 +166,7 @@ python -m pytest               # tests (no keys needed, nothing is sent to Googl
 
 The page only works while that command is running. `run.py` starts the Presage sidecar for you.
 
-**Using the page.** Box 1 takes the patient video: tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
+**Using the page.** Box 1 takes the patient video, either a file or a camera recording (video only, no sound, stopping by itself after `VIDEO_RECORD_MAX_S`). The browser only allows the camera and microphone on `localhost` or an HTTPS address, so a phone opening the page by the laptop's IP address will not be able to record. Tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
 
 **Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
 
@@ -240,7 +243,9 @@ Goal: the receiving doctor reads the patient's story and live condition *before*
 ## Status and next steps
 
 - [ ] Agree on the Case Record schema (the hand-off contract above)
-- [ ] Part 1 prototype: face scan, voice companion, ID scan
+- [x] Part 1 prototype: face scan (Presage heart and breathing rate, upload or camera), voice account (record or file), ID scan, visual signs checked by Gemini
+- [ ] Part 1: the pre-arrival summary that turns those four outputs into an urgency level and an action list
+- [ ] Part 1: speech slurring (needs the audio itself), signs that depend on movement, a clinically validated sign list
 - [ ] Part 2 prototype: referral drafting, specialist routing, decision log
 - [ ] Part 3 prototype: in-transit vitals, nurse voice summary
 - [ ] Join the three parts into one end-to-end demo

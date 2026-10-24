@@ -35,7 +35,26 @@ def test_each_setting_builds_the_matching_client(monkeypatch, enterprise, expect
     monkeypatch.setattr(config, "GEMINI_API_KEY", "KEY")
     monkeypatch.setattr(config, "GEMINI_USE_ENTERPRISE", enterprise)
     gemini_client.make_client()
+    seen.pop("http_options")                            # checked in its own test below
     assert seen == expected_kwargs
+
+
+def test_requests_time_out_and_retry_as_set_in_the_env_file(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(gemini_client.genai, "Client", lambda **kw: seen.update(kw) or object())
+    monkeypatch.setattr(config, "GEMINI_API_KEY", "KEY")
+    monkeypatch.setattr(config, "GEMINI_TIMEOUT_S", 42.5)
+    monkeypatch.setattr(config, "GEMINI_RETRY_ATTEMPTS", 3)
+    gemini_client.make_client()
+    assert seen["http_options"].timeout == 42500           # the SDK counts milliseconds
+    assert seen["http_options"].retry_options.attempts == 3
+
+
+@pytest.mark.parametrize("name", ["GEMINI_TIMEOUT_S", "GEMINI_RETRY_ATTEMPTS"])
+def test_the_timeout_settings_are_required(monkeypatch, name):
+    monkeypatch.delenv(name, raising=False)
+    with pytest.raises(config.ConfigError, match=name):
+        config._required_float(name)
 
 
 def test_the_page_info_shows_which_kind_of_key_is_in_use(monkeypatch):

@@ -10,6 +10,8 @@ def isolated_config(monkeypatch, tmp_path):
     values = {
         "GEMINI_API_KEY": "",
         "GEMINI_USE_ENTERPRISE": True,
+        "GEMINI_TIMEOUT_S": 150.0,
+        "GEMINI_RETRY_ATTEMPTS": 2,
         "GEMINI_STT_MODEL": "gemini-3.8-flash",
         "GEMINI_STT_FALLBACK_MODEL": "",
         "GEMINI_CHAT_MODEL": "gemini-3.8-flash",

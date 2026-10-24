@@ -64,6 +64,8 @@ def __getattr__(name: str):
     }
     required = {
         "GEMINI_USE_ENTERPRISE": lambda: _required_bool("GEMINI_USE_ENTERPRISE"),
+        "GEMINI_TIMEOUT_S": lambda: _required_float("GEMINI_TIMEOUT_S"),
+        "GEMINI_RETRY_ATTEMPTS": lambda: max(1, int(_required_float("GEMINI_RETRY_ATTEMPTS"))),
         "GEMINI_STT_MODEL": lambda: _required("GEMINI_STT_MODEL"),
         "GEMINI_CHAT_MODEL": lambda: _required("GEMINI_CHAT_MODEL"),
         "GEMINI_ID_MODEL": lambda: _required("GEMINI_ID_MODEL"),
