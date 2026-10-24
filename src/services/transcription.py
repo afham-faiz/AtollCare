@@ -60,6 +60,7 @@ def transcription_info() -> dict:
             "mode": "mock" if method == "mock" else "gemini",
             "method": method,
             "model": config.GEMINI_STT_MODEL if method != "mock" else None,
+            "platform": config.gemini_platform() if method != "mock" else None,
             "fallback_model": config.GEMINI_STT_FALLBACK_MODEL or None,
             "silence_stop_s": config.STT_SILENCE_STOP_S,
         }

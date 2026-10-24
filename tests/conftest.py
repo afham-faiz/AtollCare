@@ -9,7 +9,7 @@ def isolated_config(monkeypatch, tmp_path):
     """Tests use fixed settings and temp folders: never the real inputs/.env, key, logs or recordings."""
     values = {
         "GEMINI_API_KEY": "",
-        "GEMINI_PLATFORM": "enterprise",
+        "GEMINI_USE_ENTERPRISE": True,
         "GEMINI_STT_MODEL": "gemini-3.8-flash",
         "GEMINI_STT_FALLBACK_MODEL": "",
         "GEMINI_CHAT_MODEL": "gemini-3.8-flash",

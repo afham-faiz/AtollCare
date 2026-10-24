@@ -5,6 +5,7 @@ inputs/.env. A missing setting raises ConfigError naming the line to add. Settin
 the app starts, so restart the server after editing inputs/.env.
 """
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -37,16 +38,25 @@ def _required_float(name: str) -> float:
         raise ConfigError(f"{name}={raw!r} in {ENV_FILE} is not a number") from None
 
 
+def _required_bool(name: str) -> bool:
+    raw = _required(name).lower()
+    if raw in ("true", "yes", "on", "1"):
+        return True
+    if raw in ("false", "no", "off", "0"):
+        return False
+    raise ConfigError(f"{name}={raw!r} in {ENV_FILE} must be true or false")
+
+
 def __getattr__(name: str):
     """Settings are looked up on access, so an unset one fails only when something needs it."""
     optional = {
         "GEMINI_API_KEY": lambda: _text("GEMINI_API_KEY"),
-        "GEMINI_PLATFORM": lambda: _text("GEMINI_PLATFORM").lower() or "auto",
         "GEMINI_STT_FALLBACK_MODEL": lambda: _text("GEMINI_STT_FALLBACK_MODEL"),   # blank = no backup
         "TRANSCRIBE_LANGUAGE": lambda: _text("TRANSCRIBE_LANGUAGE"),               # blank = auto-detect
         "SAVE_RECORDINGS": lambda: _text("SAVE_RECORDINGS").lower() in ("1", "true", "yes", "on"),
     }
     required = {
+        "GEMINI_USE_ENTERPRISE": lambda: _required_bool("GEMINI_USE_ENTERPRISE"),
         "GEMINI_STT_MODEL": lambda: _required("GEMINI_STT_MODEL"),
         "GEMINI_CHAT_MODEL": lambda: _required("GEMINI_CHAT_MODEL"),
         "STT_SILENCE_STOP_S": lambda: _required_float("STT_SILENCE_STOP_S"),
@@ -61,8 +71,5 @@ def __getattr__(name: str):
 
 
 def gemini_platform() -> str:
-    """'developer' (AI Studio key) or 'enterprise' (Google Cloud / Vertex AI key)."""
-    platform = __getattr__("GEMINI_PLATFORM")
-    if platform in ("developer", "enterprise"):
-        return platform
-    return "developer" if __getattr__("GEMINI_API_KEY").startswith("AIza") else "enterprise"
+    """'enterprise' (Google Cloud / Agent Platform key) or 'developer' (AI Studio key), from GEMINI_USE_ENTERPRISE."""
+    return "enterprise" if getattr(sys.modules[__name__], "GEMINI_USE_ENTERPRISE") else "developer"

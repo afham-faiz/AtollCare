@@ -137,7 +137,7 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 |---|---|
 | `PRESAGE_API_KEY` | Your Presage key. `PRESAGE_MODE=mock` gives fake numbers with no key |
 | `GEMINI_API_KEY` | Your Gemini key. Leave blank for mock voice |
-| `GEMINI_PLATFORM` | `developer` for an AI Studio key (starts with `AIza`). `enterprise` for a Google Cloud / Agent Platform key, whose API restrictions must allow the Vertex AI / Agent Platform API, otherwise Google answers `API_KEY_SERVICE_BLOCKED` |
+| `GEMINI_USE_ENTERPRISE` | **Which kind of Gemini key you have.** `false` for a Google AI Studio key (starts with `AIza`), `true` for a Google Cloud / Gemini Agent Platform (Vertex AI) key. Teammates with different keys each set their own. An enterprise key's API restrictions must allow the Vertex AI / Agent Platform API, otherwise Google answers `API_KEY_SERVICE_BLOCKED` |
 | `GEMINI_STT_MODEL` | Speech model, currently `gemini-3.8-flash`. A model with `live` in its name streams as you speak, but Google refuses it for express-mode API keys at the moment |
 | `GEMINI_STT_FALLBACK_MODEL` | Optional backup model if the main one cannot start |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |

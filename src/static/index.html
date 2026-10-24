@@ -466,7 +466,7 @@ function showVoiceInfo(info) {
     setVoiceStatus(info.error);
   } else {
     badge.textContent = info.mode === "gemini"
-      ? `voice: ${info.model} (${info.method})` + (info.fallback_model ? ` · backup ${info.fallback_model}` : "")
+      ? `voice: ${info.model} (${info.method}, ${info.platform} key)` + (info.fallback_model ? ` · backup ${info.fallback_model}` : "")
       : "voice: mock (no GEMINI_API_KEY)";
     badge.className = "badge " + (info.mode === "gemini" ? "b-ok" : "b-warn");
   }
