@@ -53,6 +53,11 @@
   pre { overflow: auto; background: var(--bg); padding: .75rem; border-radius: .5rem; font-size: .8rem; }
   .meta { color: var(--muted); font-size: .85rem; margin-top: .75rem; }
   .err { color: var(--red); background: var(--red-soft); padding: .75rem; border-radius: .5rem; }
+  .id-grid { display: grid; gap: 1rem; margin-top: .75rem; grid-template-columns: 1fr; }
+  @media (min-width: 40rem) { .id-grid { grid-template-columns: 18rem 1fr; align-items: start; } }
+  .id-grid img { width: 100%; border-radius: .5rem; border: 1px solid var(--line); }
+  .kv { display: grid; grid-template-columns: 8.5rem 1fr; gap: .35rem .75rem; margin: 0 0 .75rem; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; font-weight: 600; word-break: break-all; }
   .voice-row { display: flex; gap: .75rem; align-items: center; }
   .voice-row button { width: 11rem; flex: none; }
   #rec.live { background: var(--red); }
@@ -122,8 +127,29 @@
     <div id="afile-meta" class="meta"></div>
   </section>
 
+  <section class="card" style="grid-column: 1 / -1" aria-live="polite">
+    <h2>ID scan</h2>
+    <p class="sub" style="margin:0 0 .5rem">A photo of a driving licence or national ID. Reads the name, ID number and age; anything unclear is left blank, never guessed.</p>
+    <div class="voice-row">
+      <input id="idfile" type="file" accept="image/*" style="flex:1;min-width:0">
+      <button id="idgo" type="button" disabled style="width:11rem;flex:none">Read ID</button>
+    </div>
+    <div class="id-grid">
+      <img id="idpreview" alt="Selected ID" style="display:none">
+      <div id="idout"><p class="empty" style="padding:1rem 0">Choose a photo and press Read ID.</p></div>
+    </div>
+  </section>
+
   <section class="card" style="grid-column: 1 / -1">
-    <h2>Logged transcripts <span class="sub" style="text-transform:none;letter-spacing:0">(saved in logs/transcripts.json, audio kept in recordings/)</span></h2>
+    <h2>Logged ID scans <span class="sub" style="text-transform:none;letter-spacing:0">(saved in logs/id_scans.json)</span></h2>
+    <div style="overflow-x:auto"><table id="id-table"><thead><tr>
+      <th>Time</th><th>File</th><th>Name</th><th>ID number</th><th>Age</th><th>Review</th>
+    </tr></thead><tbody></tbody></table></div>
+    <p id="id-empty" class="empty" style="display:none">No ID scans logged yet.</p>
+  </section>
+
+  <section class="card" style="grid-column: 1 / -1">
+    <h2>Logged transcripts<span class="sub" style="text-transform:none;letter-spacing:0">(saved in logs/transcripts.json, audio kept in recordings/)</span></h2>
     <div style="overflow-x:auto"><table id="transcripts-table"><thead><tr>
       <th>Time</th><th>Source</th><th>Model</th><th>Seconds</th><th>Transcript</th><th>Replay</th>
     </tr></thead><tbody></tbody></table></div>
@@ -474,6 +500,81 @@ function showVoiceInfo(info) {
   $("silence-s").textContent = String(info.silence_stop_s);
 }
 
+// ---------- ID scan ----------
+$("idfile").addEventListener("change", (ev) => {
+  const f = ev.target.files[0];
+  $("idgo").disabled = !f;
+  const img = $("idpreview");
+  if (!f) { img.style.display = "none"; return; }
+  img.src = URL.createObjectURL(f);
+  img.style.display = "block";
+});
+
+function renderId(data) {
+  const r = data.result;
+  const out = $("idout");
+  out.replaceChildren();
+  const val = (v) => (v == null ? "—" : String(v));
+  const dl = el("dl", { className: "kv" });
+  for (const [label, value] of [
+    ["Name", r.full_name], ["ID number", r.id_number],
+    ["Date of birth", r.date_of_birth], ["Age", r.age], ["Document", r.document_type],
+    ["Insurance", r.insurance_status + (r.insurance_status === "UNKNOWN" ? " (not on an ID card)" : "")],
+  ]) {
+    dl.append(el("dt", { textContent: label }), el("dd", { textContent: val(value) }));
+  }
+  out.append(el("span", { className: "badge " + (r.needs_review ? "b-warn" : "b-ok"),
+    textContent: r.needs_review ? "Needs review: check the card by eye" : "Clearly read" }), dl);
+  if (r.issues.length) {
+    const ul = el("ul", { className: "issues" });
+    for (const issue of r.issues) ul.append(el("li", { textContent: issue }));
+    out.append(ul);
+  }
+  out.append(el("details", {}, el("summary", { textContent: "Raw JSON" }),
+    el("pre", { textContent: JSON.stringify(data, null, 2) })));
+}
+
+$("idgo").addEventListener("click", async () => {
+  const f = $("idfile").files[0];
+  if (!f) return;
+  const btn = $("idgo"), out = $("idout");
+  btn.disabled = true;
+  const start = Date.now();
+  const tick = () => out.replaceChildren(el("p", { className: "empty", style: "padding:1rem 0",
+    textContent: `Reading… ${Math.round((Date.now() - start) / 1000)}s` }));
+  tick();
+  const timer = setInterval(tick, 1000);
+  try {
+    const body = new FormData();
+    body.append("image", f);
+    const resp = await fetch("/api/scan-id", { method: "POST", body });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    renderId(data);
+  } catch (err) {
+    out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    loadIdScans();
+  }
+});
+
+async function loadIdScans() {
+  const body = document.querySelector("#id-table tbody");
+  try {
+    const rows = await (await fetch("/api/id-scans")).json();
+    body.replaceChildren();
+    $("id-empty").style.display = rows.length ? "none" : "block";
+    for (const row of rows) {
+      const r = row.result;
+      const cells = [new Date(row.logged_at).toLocaleString(), row.filename, r.full_name ?? "—",
+        r.id_number ?? "—", r.age ?? "—", r.needs_review ? "yes" : "no"];
+      body.append(el("tr", {}, ...cells.map((c) => el("td", { textContent: String(c) }))));
+    }
+  } catch { $("id-empty").style.display = "block"; }
+}
+
 // ---------- Transcribe an uploaded audio file ----------
 $("afile").addEventListener("change", (ev) => { $("atranscribe").disabled = !ev.target.files[0]; });
 
@@ -533,6 +634,7 @@ navigator.mediaDevices && navigator.mediaDevices.addEventListener &&
 refreshSidecar();
 loadHistory();
 loadTranscripts();
+loadIdScans();
 refreshVoiceMode();
 </script>
 </body>

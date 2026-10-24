@@ -8,6 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from src import config
+from src.services.id_log import log_id_scan, read_id_scans
+from src.services.ocr_service import parse_identity_doc
 from src.services.recordings import RECORDINGS_DIR, save_recording
 from src.services.results_log import log_result, read_history
 from src.services.rppg_extractor import extract_vitals_from_video
@@ -88,6 +90,24 @@ def transcribe_file(audio: UploadFile = File(...)) -> dict:
     result = {**result, **entry}
     log_transcript(result)
     return result
+
+
+@app.post("/api/scan-id")
+def scan_id(image: UploadFile = File(...)) -> dict:
+    """Read name, ID number and age from a photo of an ID. Never fails on a bad read: see `issues`."""
+    raw = image.file.read()
+    if not raw:
+        raise HTTPException(400, "Empty upload")
+    result = parse_identity_doc(raw)
+    ext = (Path(image.filename or "").suffix.lstrip(".") or "jpg").lower()
+    image_file = save_recording("id", raw, ext, label=image.filename or "")  # keep every trial
+    log_id_scan(image.filename or "upload", result, saved_file=image_file)
+    return {"result": result.model_dump(), "image_file": image_file}
+
+
+@app.get("/api/id-scans")
+def id_scans() -> list[dict]:
+    return read_id_scans()
 
 
 @app.websocket("/ws/transcribe")

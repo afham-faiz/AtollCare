@@ -90,9 +90,10 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 
 | Built | Not built yet |
 |---|---|
-| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | ID scan |
-| Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Neurological cues (face asymmetry, gaze) |
-| A demo web page that records and logs every trial | Turning the transcript into observations and instructions for the companion |
+| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | Neurological cues (face asymmetry, gaze) |
+| Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Turning the transcript into observations and instructions for the companion |
+| ID photo → name, ID number and age (Gemini vision). Unclear fields stay blank and the card is flagged "needs review" | Insurance check (an ID card does not say) |
+| A demo web page that records and logs every trial | |
 
 **What you need**
 
@@ -140,6 +141,7 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 | `GEMINI_USE_ENTERPRISE` | **Which kind of Gemini key you have.** `false` for a Google AI Studio key (starts with `AIza`), `true` for a Google Cloud / Gemini Agent Platform (Vertex AI) key. Teammates with different keys each set their own. An enterprise key's API restrictions must allow the Vertex AI / Agent Platform API, otherwise Google answers `API_KEY_SERVICE_BLOCKED` |
 | `GEMINI_STT_MODEL` | Speech model, currently `gemini-3.8-flash`. A model with `live` in its name streams as you speak, but Google refuses it for express-mode API keys at the moment |
 | `GEMINI_STT_FALLBACK_MODEL` | Optional backup model if the main one cannot start |
+| `GEMINI_ID_MODEL` | Vision model that reads ID photos, currently `gemini-3.8-flash` |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
 | `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
 
@@ -150,6 +152,7 @@ python run.py --serve          # demo page at http://127.0.0.1:8000 (on Windows 
 python run.py clip.mp4         # analyse one video from the command line
 python run.py --mock           # try everything with no keys
 python transcribe_file.py note.m4a   # transcribe an audio file
+python scan_id.py card.jpg     # read the name and ID number from a photo of an ID
 python -m pytest               # tests (no keys needed, nothing is sent to Google)
 ```
 
@@ -157,7 +160,7 @@ The page only works while that command is running. `run.py` starts the Presage s
 
 **Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
 
-**Where results go.** `logs/results.json`, `logs/transcripts.json` and `recordings/` hold your trials. They contain faces and voices, so they are git-ignored. Do not share them.
+**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan are sent to Google's Gemini service using your key.
 
 ---
 

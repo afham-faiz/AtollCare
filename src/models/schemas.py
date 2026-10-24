@@ -3,6 +3,22 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class Demographics(BaseModel):
+    """Identity read from an ID document. Unreadable fields are None, never guessed."""
+
+    full_name: str | None = None
+    id_number: str | None = None
+    age: int | None = None
+    # A driving licence says nothing about insurance, so this stays UNKNOWN unless another source verifies it.
+    insurance_status: Literal["VERIFIED", "UNKNOWN", "NONE"] = "UNKNOWN"
+    # Not part of the hand-off contract: helpful for the health-centre clerk.
+    date_of_birth: str | None = None  # ISO date, e.g. 1990-01-01
+    document_type: str | None = None
+    needs_review: bool = True         # True unless every field was clearly read
+    issues: list[str] = []
+    diagnostics: dict = {}
+
+
 class RppgEstimates(BaseModel):
     heart_rate_bpm: int | None = None
     respiration_rate_bpm: int | None = None

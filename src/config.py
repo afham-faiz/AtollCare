@@ -59,6 +59,7 @@ def __getattr__(name: str):
         "GEMINI_USE_ENTERPRISE": lambda: _required_bool("GEMINI_USE_ENTERPRISE"),
         "GEMINI_STT_MODEL": lambda: _required("GEMINI_STT_MODEL"),
         "GEMINI_CHAT_MODEL": lambda: _required("GEMINI_CHAT_MODEL"),
+        "GEMINI_ID_MODEL": lambda: _required("GEMINI_ID_MODEL"),
         "STT_SILENCE_STOP_S": lambda: _required_float("STT_SILENCE_STOP_S"),
         "STT_FLASH_PAUSE_S": lambda: _required_float("STT_FLASH_PAUSE_S"),
         "STT_FLASH_MAX_SEGMENT_S": lambda: _required_float("STT_FLASH_MAX_SEGMENT_S"),

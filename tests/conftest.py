@@ -1,7 +1,7 @@
 import pytest
 
 from src import config
-from src.services import recordings, transcript_log
+from src.services import id_log, recordings, transcript_log
 
 
 @pytest.fixture(autouse=True)
@@ -13,6 +13,7 @@ def isolated_config(monkeypatch, tmp_path):
         "GEMINI_STT_MODEL": "gemini-3.8-flash",
         "GEMINI_STT_FALLBACK_MODEL": "",
         "GEMINI_CHAT_MODEL": "gemini-3.8-flash",
+        "GEMINI_ID_MODEL": "gemini-3.8-flash",
         "TRANSCRIBE_LANGUAGE": "en-US",
         "STT_SILENCE_STOP_S": 2.0,
         "STT_FLASH_PAUSE_S": 0.8,
@@ -23,3 +24,4 @@ def isolated_config(monkeypatch, tmp_path):
         monkeypatch.setattr(config, name, value, raising=False)
     monkeypatch.setattr(recordings, "RECORDINGS_DIR", tmp_path / "recordings")
     monkeypatch.setattr(transcript_log, "LOG_PATH", tmp_path / "transcripts.json")
+    monkeypatch.setattr(id_log, "LOG_PATH", tmp_path / "id_scans.json")
