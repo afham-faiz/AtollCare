@@ -1,0 +1,55 @@
+# F-M7.3 Vultr deploy: Caddy (HTTPS) → web + engine. DATABASE_URL may point to Tiger Cloud; otherwise the bundled
+# TimescaleDB container is used. Storage: set STORAGE_MODE=s3 + S3_* for Vultr Object Storage.
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: atollcare
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d atollcare"]
+      interval: 3s
+      retries: 20
+
+  engine:
+    build: ./engine
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/atollcare}
+      CORS_ORIGINS: https://${PUBLIC_HOST}
+      STORAGE_LOCAL_DIR: /engine/var/storage
+    volumes: [storage:/engine/var/storage]
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_ENGINE_URL: /api
+        ENGINE_INTERNAL_URL: http://engine:8000
+    restart: unless-stopped
+    depends_on: [engine]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web, engine]
+
+volumes:
+  dbdata:
+  storage:
+  caddy_data:
+  caddy_config:

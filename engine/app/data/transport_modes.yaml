@@ -1,0 +1,6 @@
+# DEMO ASSUMPTION — illustrative average door-to-door speeds; ETA = straight-line distance × detour ÷ speed.
+modes:
+  - {mode: road, label: Road ambulance, speed_kmh: 60, detour: 1.3}
+  - {mode: boat, label: Sea ambulance, speed_kmh: 37, detour: 1.25}
+  - {mode: helicopter, label: Air ambulance (helicopter), speed_kmh: 220, detour: 1.05}
+  - {mode: plane, label: Air ambulance (plane), speed_kmh: 400, detour: 1.05}

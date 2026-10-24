@@ -1,0 +1,15 @@
+# F-M7.3 HTTPS reverse proxy. PUBLIC_HOST = your domain or <ip>.sslip.io (instant Let's Encrypt certificate).
+{$PUBLIC_HOST} {
+	encode gzip
+
+	handle /api/* {
+		request_body {
+			max_size 64MB
+		}
+		reverse_proxy engine:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
