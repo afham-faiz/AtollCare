@@ -86,3 +86,56 @@ class RppgEstimates(BaseModel):
     issues: list[str] = []
     # Not part of the hand-off contract: per-sample traces and camera-check counts for inspection/logging.
     diagnostics: dict = {}
+
+
+# ---------------------------------------------------------------- hand-off to the crew app
+
+class AccountDigest(BaseModel):
+    """The voice account made safe to send: names and ID numbers removed, plus a one-line complaint."""
+
+    had_account: bool = False
+    complaint: str = ""
+    account: str = ""        # redacted full account; empty when it could not be redacted (then it is not sent)
+    redacted: bool = False   # True when the model produced the redacted version
+
+
+class PacketVital(BaseModel):
+    source: Literal["presage"] = "presage"
+    heart_rate: float | None = None
+    resp_rate: float | None = None
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    hint: str | None = None
+
+
+class PacketNote(BaseModel):
+    title: str   # shown in the preview only
+    text: str    # posted to the crew app (at most 2000 characters)
+
+
+class PreArrivalPacket(BaseModel):
+    """Everything Part 1 hands to the crew app, and nothing else. Shown to the user before it is sent."""
+
+    patient_label: str | None = None
+    age: int | None = None
+    sex: Literal["M", "F", "X"] | None = None
+    complaint: str
+    vitals: list[PacketVital] = []
+    consciousness: Literal["A"] | None = None
+    notes: list[PacketNote] = []
+    withheld: list[str] = []   # things we have but deliberately do not send
+    missing: list[str] = []    # things the crew should know are absent
+
+
+class HandshakeStep(BaseModel):
+    step: str
+    ok: bool
+    detail: str = ""
+
+
+class HandshakeResult(BaseModel):
+    ok: bool
+    transfer_id: str | None = None
+    code: str | None = None
+    link: str | None = None
+    steps: list[HandshakeStep] = []
+    error: str | None = None

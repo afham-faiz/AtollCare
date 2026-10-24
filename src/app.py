@@ -9,7 +9,14 @@ from fastapi.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from src import config
+from pydantic import BaseModel
+
+from src.models.schemas import Demographics, PreArrivalPacket, RppgEstimates, VisualCueReport
+from src.services import engine_client
+from src.services.account_digest import digest_account
 from src.services.cue_log import log_visual_cues, read_visual_cues
+from src.services.handshake_log import log_handshake, read_handshakes
+from src.services.packet import build_packet
 from src.services.id_log import log_id_scan, read_id_scans
 from src.services.ocr_service import parse_identity_doc
 from src.services.recordings import RECORDINGS_DIR, save_recording
@@ -184,6 +191,55 @@ def scan_id(image: UploadFile = File(...)) -> dict:
 @app.get("/api/id-scans")
 def id_scans() -> list[dict]:
     return read_id_scans()
+
+
+class PreviewRequest(BaseModel):
+    """What the page already holds from the three boxes. Every part is optional."""
+
+    demographics: Demographics | None = None
+    account: str = ""
+    vitals: RppgEstimates | None = None
+    signs: VisualCueReport | None = None
+
+
+class SendRequest(BaseModel):
+    packet: PreArrivalPacket   # exactly the packet that was previewed
+    origin_id: str
+    destination_id: str
+    mode: str
+
+
+@app.get("/api/handshake/options")
+def handshake_options() -> dict:
+    """Facilities and transport modes offered by the crew app, for the From, To and Mode pickers."""
+    return engine_client.get_options()
+
+
+@app.post("/api/handshake/preview")
+def handshake_preview(req: PreviewRequest) -> dict:
+    """Build the packet that would be sent, with what is withheld and what is missing. Sends nothing."""
+    try:
+        digest = digest_account(req.account)
+        packet = build_packet(demographics=req.demographics, vitals=req.vitals, signs=req.signs, digest=digest)
+    except config.ConfigError as exc:
+        raise HTTPException(500, str(exc)) from exc
+    return {"packet": packet.model_dump(), "account_checked": digest.redacted}
+
+
+@app.post("/api/handshake/send")
+def handshake_send(req: SendRequest) -> dict:
+    """Create the transfer in the crew app and fill it in. Starts their journey clock, so only call on departure."""
+    try:
+        result = engine_client.send_packet(req.packet, req.origin_id, req.destination_id, req.mode)
+    except config.ConfigError as exc:
+        raise HTTPException(500, str(exc)) from exc
+    log_handshake(req.packet, {"origin_id": req.origin_id, "destination_id": req.destination_id, "mode": req.mode}, result)
+    return result.model_dump()
+
+
+@app.get("/api/handshakes")
+def handshakes() -> list[dict]:
+    return read_handshakes()
 
 
 @app.websocket("/ws/transcribe")

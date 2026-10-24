@@ -162,18 +162,30 @@
     </div>
   </section>
 
+  <!-- 4. HAND-OFF -->
+  <section class="card" aria-live="polite">
+    <h2>4. Send to the crew screen</h2>
+    <div class="sub">Gathers what boxes 1 to 3 found and hands it to the crew app. Every box is optional, and you see exactly what will be sent first.</div>
+    <div id="hs-stale" class="err" style="display:none;margin-top:.5rem"></div>
+    <div id="hs-ready" class="note"></div>
+    <button id="hs-preview" type="button">Preview what will be sent</button>
+    <div id="hs-out"></div>
+  </section>
+
   <!-- DEVELOPER DETAILS (collapsed by default) -->
   <details class="card dev" id="dev">
     <summary>Developer details</summary>
     <div style="margin-top:.75rem">
       <span id="sidecar" class="badge">presage: checking&hellip;</span>
       <span id="voice-mode" class="badge">voice: checking&hellip;</span>
+      <span id="engine-badge" class="badge">crew engine: checking&hellip;</span>
     </div>
 
     <h3>Latest raw results</h3>
     <details><summary class="sub">Video</summary><pre id="raw-video">Nothing yet.</pre></details>
     <details><summary class="sub">Voice</summary><pre id="raw-voice">Nothing yet.</pre></details>
     <details><summary class="sub">ID</summary><pre id="raw-id">Nothing yet.</pre></details>
+    <details><summary class="sub">Hand-off</summary><pre id="raw-handshake">Nothing yet.</pre></details>
 
     <h3>Logged video runs <span class="sub">(logs/results.json)</span></h3>
     <div style="overflow-x:auto"><table id="runs-table"><thead><tr>
@@ -193,6 +205,11 @@
     <h3>Logged ID scans <span class="sub">(logs/id_scans.json)</span></h3>
     <div style="overflow-x:auto"><table id="id-table"><thead><tr>
       <th>Time</th><th>File</th><th>Name</th><th>ID number</th><th>Age</th><th>Review</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h3>Logged hand-offs <span class="sub">(logs/handshakes.json)</span></h3>
+    <div style="overflow-x:auto"><table id="handshake-table"><thead><tr>
+      <th>Time</th><th>Code</th><th>Route</th><th>Steps ok</th><th>Complaint sent</th>
     </tr></thead><tbody></tbody></table></div>
   </details>
 </main>
@@ -259,6 +276,7 @@ function setAccount(text) {
   account.text = (text || "").trim();
   account.use = true;
   renderAccountNote();
+  renderReadiness();
 }
 
 function renderAccountNote() {
@@ -271,10 +289,10 @@ function renderAccountNote() {
   const short = account.text.length > 160 ? account.text.slice(0, 160) + "…" : account.text;
   if (account.use) {
     n.append("The voice account will decide which signs to look for: ", el("span", { className: "quote", textContent: `“${short}”` }), " ",
-      el("button", { className: "link", type: "button", textContent: "Ignore it", onclick: () => { account.use = false; renderAccountNote(); } }));
+      el("button", { className: "link", type: "button", textContent: "Ignore it", onclick: () => { account.use = false; renderAccountNote(); renderReadiness(); } }));
   } else {
     n.append("The voice account is being ignored, so every standard sign will be checked. ",
-      el("button", { className: "link", type: "button", textContent: "Use it again", onclick: () => { account.use = true; renderAccountNote(); } }));
+      el("button", { className: "link", type: "button", textContent: "Use it again", onclick: () => { account.use = true; renderAccountNote(); renderReadiness(); } }));
   }
 }
 
@@ -499,6 +517,9 @@ $("video-go").addEventListener("click", async () => {
     if (!resp.ok) throw new Error(data.detail || resp.statusText);
     renderVideo(data);
     setRaw("raw-video", data);
+    parts.vitals = data.vitals ? { ...data.vitals, diagnostics: {} } : null;   // the trace is not needed for the hand-off
+    parts.signs = data.signs.report;
+    renderReadiness();
   } catch (err) {
     out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
   } finally {
@@ -758,6 +779,8 @@ $("idgo").addEventListener("click", async () => {
     if (!resp.ok) throw new Error(data.detail || resp.statusText);
     renderId(data);
     setRaw("raw-id", data);
+    parts.demographics = { ...data.result, diagnostics: {} };
+    renderReadiness();
   } catch (err) {
     out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
   } finally {
@@ -768,6 +791,164 @@ $("idgo").addEventListener("click", async () => {
 });
 
 /* ------------------------------------------------------------------ developer panel: logs */
+/* ------------------------------------------------------------------ 4. HAND-OFF to the crew app */
+const parts = { demographics: null, vitals: null, signs: null };   // filled in by boxes 1 and 3
+const handshake = { packet: null, sent: false };
+
+const STALE_MESSAGE = "This page is newer than the server behind it: the server was started before the hand-off was added, " +
+  "so it does not know the hand-off routes. Stop it (close its window) and start it again with start.bat or " +
+  "python run.py --serve. What you have already done in this page stays here.";
+
+function showStale(stale) {
+  const box = $("hs-stale");
+  box.textContent = stale ? STALE_MESSAGE : "";
+  box.style.display = stale ? "block" : "none";
+}
+
+// What each box has produced so far, so it is clear what a preview would contain.
+function renderReadiness() {
+  const v = parts.vitals, s = parts.signs, d = parts.demographics;
+  const readings = v && v.source === "presage" ? [v.heart_rate_bpm != null && "heart rate", v.respiration_rate_bpm != null && "breathing rate"].filter(Boolean) : [];
+  const lines = [
+    `Video: ${s ? `${s.findings.length} signs checked` : "not analysed yet"}${v ? (readings.length ? `, ${readings.join(" and ")} measured` : ", no Presage readings") : ""}`,
+    `Voice: ${account.text ? "account ready" + (account.use ? "" : " (set to be ignored)") : "no account yet"}`,
+    `ID: ${d && (d.full_name || d.age != null) ? "read" : "not read yet"}`,
+  ];
+  $("hs-ready").replaceChildren(el("b", { textContent: "Collected so far: " }), lines.join(". ") + ".");
+}
+
+async function refreshEngineBadge() {
+  const badge = $("engine-badge");
+  try {
+    const resp = await fetch("/api/handshake/options");
+    if (resp.status === 404) {
+      badge.textContent = "server out of date: restart it"; badge.className = "badge b-bad";
+      showStale(true);
+      return;
+    }
+    showStale(false);
+    const o = await resp.json();
+    badge.textContent = o.error ? "crew engine: not reachable" : `crew engine: ${o.region.name}`;
+    badge.className = "badge " + (o.error ? "b-bad" : "b-ok");
+  } catch { badge.textContent = "crew engine: unknown"; badge.className = "badge b-bad"; }
+}
+
+function picker(id, label, choices, chosen) {
+  const select = el("select", { id, style: "width:100%;padding:.4rem;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:.4rem" },
+    ...choices.map((c) => el("option", { value: c.value, textContent: c.text, selected: c.value === chosen })));
+  return el("label", { style: "display:block" }, el("span", { className: "sub", textContent: label }), select);
+}
+
+function pointList(items, empty) {
+  if (!items.length) return el("p", { className: "sub", style: "margin:.25rem 0", textContent: empty });
+  const ul = el("ul", { className: "list" });
+  for (const t of items) ul.append(el("li", { textContent: t }));
+  return ul;
+}
+
+function renderPreview(preview, options) {
+  const p = preview.packet;
+  const out = $("hs-out");
+  out.replaceChildren();
+
+  out.append(h3("What will be sent"));
+  out.append(el("dl", { className: "kv" },
+    el("dt", { textContent: "Patient" }), el("dd", { textContent: [p.patient_label, p.age != null ? `age ${p.age}` : null].filter(Boolean).join(", ") || "—" }),
+    el("dt", { textContent: "Complaint" }), el("dd", { style: "font-weight:400;word-break:normal", textContent: p.complaint })));
+  out.append(el("div", { className: "meta", textContent: "Readings" }), pointList(p.vitals.map((v) =>
+    `${v.heart_rate != null ? `Heart rate ${v.heart_rate}` : `Breathing rate ${v.resp_rate}`} (confidence ${Math.round(v.confidence * 100)}%)` +
+    (v.hint ? `. ${v.hint}` : "")), "None"));
+  for (const n of p.notes) {
+    out.append(el("details", {}, el("summary", { className: "sub", textContent: `Note: ${n.title}` }), el("p", { className: "note", textContent: n.text })));
+  }
+  out.append(h3("Held back on purpose"), pointList(p.withheld, "Nothing"));
+  out.append(h3("Not available"), pointList(p.missing, "Nothing"));
+
+  handshake.packet = p;
+  handshake.sent = false;
+
+  out.append(h3("Route in the crew app"));
+  if (options.error) {
+    out.append(el("div", { className: "err", textContent: options.error }));
+    return;
+  }
+  const firstOf = (kind) => (options.facilities.find((f) => f.kind === kind) || options.facilities[0] || {}).id;
+  const facilities = options.facilities.map((f) => ({ value: f.id, text: `${f.name} (${f.kind})` }));
+  out.append(el("div", { style: "display:grid;gap:.5rem;grid-template-columns:1fr;margin:.25rem 0" },
+    picker("hs-from", "From", facilities, firstOf("clinic")),
+    picker("hs-to", "To", facilities, firstOf("hospital")),
+    picker("hs-mode", "Transport", options.modes.map((m) => ({ value: m, text: m })), options.modes[0])));
+  out.append(el("div", { className: "note", textContent:
+    "Sending starts this transfer's journey clock in the crew app. Do it when the crew actually leaves. The crew then review it on their screen and send the handoff themselves." }));
+  out.append(el("button", { id: "hs-send", type: "button", textContent: "Start transfer and send", onclick: sendHandshake }));
+  out.append(el("div", { id: "hs-result" }));
+}
+
+async function sendHandshake() {
+  const btn = $("hs-send"), box = $("hs-result");
+  if (!handshake.packet || handshake.sent) return;
+  btn.disabled = true;
+  box.replaceChildren(el("p", { className: "empty", textContent: "Sending…" }));
+  try {
+    const resp = await fetch("/api/handshake/send", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ packet: handshake.packet, origin_id: $("hs-from").value, destination_id: $("hs-to").value, mode: $("hs-mode").value }) });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    setRaw("raw-handshake", data);
+    box.replaceChildren();
+    if (!data.ok) {
+      box.append(el("div", { className: "err", textContent: "Not sent: " + data.error }));
+      btn.disabled = false;
+      return;
+    }
+    handshake.sent = true;
+    const failed = data.steps.filter((s) => !s.ok);
+    box.append(el("span", { className: "badge " + (failed.length ? "b-warn" : "b-ok"),
+      textContent: failed.length ? "Sent with problems" : "Sent" }), " ",
+      el("b", { textContent: `Transfer ${data.code}` }), " ",
+      el("a", { href: data.link, target: "_blank", rel: "noopener", textContent: "Open on the crew screen" }));
+    box.append(pointList(data.steps.map((s) => `${s.ok ? "✓" : "✗"} ${s.step}${s.detail ? ": " + s.detail : ""}`), ""));
+    btn.textContent = "Sent";
+  } catch (err) {
+    box.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+    btn.disabled = false;
+  } finally {
+    loadHandshakes();
+  }
+}
+
+$("hs-preview").addEventListener("click", async () => {
+  const btn = $("hs-preview"), out = $("hs-out");
+  btn.disabled = true;
+  out.replaceChildren(el("p", { className: "empty", textContent: "Preparing the preview…" }));
+  try {
+    const body = { demographics: parts.demographics, vitals: parts.vitals, signs: parts.signs,
+                   account: account.use ? account.text : "" };
+    const [previewResp, optionsResp] = await Promise.all([
+      fetch("/api/handshake/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+      fetch("/api/handshake/options")]);
+    if (previewResp.status === 404) { showStale(true); out.replaceChildren(); return; }
+    const preview = await previewResp.json();
+    if (!previewResp.ok) throw new Error(preview.detail || previewResp.statusText);
+    setRaw("raw-handshake", preview);
+    renderPreview(preview, await optionsResp.json());
+  } catch (err) {
+    out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+  } finally {
+    btn.disabled = false;
+    refreshEngineBadge();
+  }
+});
+
+async function loadHandshakes() {
+  try {
+    const rows = await (await fetch("/api/handshakes")).json();
+    fillTable("handshake-table", rows.map((row) => [
+      when(row.logged_at), val(row.result.code), `${row.route.origin_id} → ${row.route.destination_id} (${row.route.mode})`,
+      `${row.result.steps.filter((s) => s.ok).length}/${row.result.steps.length}`, row.packet.complaint]));
+  } catch { /* optional */ }
+}
+
 function fillTable(tableId, rows) {
   const body = document.querySelector(`#${tableId} tbody`);
   body.replaceChildren();
@@ -817,7 +998,9 @@ async function loadIdScans() {
 /* ------------------------------------------------------------------ start up */
 renderAccountNote();
 refreshStatus();
-loadRuns(); loadCueSessions(); loadTranscripts(); loadIdScans();
+loadRuns(); loadCueSessions(); loadTranscripts(); loadIdScans(); loadHandshakes();
+renderReadiness();
+refreshEngineBadge();
 </script>
 </body>
 </html>

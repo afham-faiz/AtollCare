@@ -95,7 +95,8 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 | ID photo → name, ID number and age (Gemini vision). Unclear fields stay blank and the card is flagged "needs review" | Insurance check (an ID card does not say) |
 | **Visual signs:** frames of the video are checked for visible signs (Gemini). Every sign in a fixed catalogue is checked and answered separately; a voice account, if there is one, only marks which signs it mentioned (with a quote that must appear in it). Every "seen" cites frames you can look at, and anything the account claims but the video does not show is listed | A clinically validated sign list (the catalogue in `src/data/cue_catalogue.json` is a demo assumption) |
 | Patient video can be **uploaded or recorded with the camera in the browser**. A recording stays in the browser, and nothing goes to Google or Presage until you press Analyse | |
-| A demo web page with three boxes (video, voice, ID) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above (urgency level, what to prepare, what to tell the family) |
+| **Hand-off to the crew app:** gathers the salient items (an initials label, age, a one-line complaint, Presage readings each with its own confidence, short notes), withholds the name, ID number and date of birth, shows a preview, and creates the transfer in the teammate's engine on an explicit click. Checked against their real engine | The crew app cannot yet label an AI video impression, so consciousness is not sent by default |
+| A demo web page with four boxes (video, voice, ID, send) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above (urgency level, what to prepare, what to tell the family) |
 
 **What you need**
 
@@ -148,6 +149,10 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 | `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES` | One frame every this many seconds, and the most frames sent in total |
 | `VIDEO_RECORD_MAX_S` | The longest camera recording, in seconds. Presage needs about 45 to 60 for a reliable breathing rate |
 | `GEMINI_TIMEOUT_S`, `GEMINI_RETRY_ATTEMPTS` | Give up on a Google request that does not answer within this many seconds, and the number of tries. Without this, a stalled request would freeze the page forever |
+| `ENGINE_URL`, `ENGINE_WEB_URL`, `ENGINE_TIMEOUT_S` | The teammate's crew-app engine (default `http://127.0.0.1:8010`), their web app for the "open on the crew screen" link, and how long to wait for it |
+| `HANDSHAKE_PATIENT_LABEL` | `initials` (for example "D. M.") or `none`. Real names and ID numbers are never sent either way |
+| `GEMINI_SUMMARY_MODEL` | Model that condenses the voice account into their one-line complaint and removes names and ID numbers from the full account |
+| `HANDSHAKE_SEND_CONSCIOUSNESS`, `HANDSHAKE_CONSCIOUSNESS_MIN_CONFIDENCE` | Whether "alert and responsive" seen on video is sent as consciousness A, and how confident it must be. Off by default: their app would show it as a crew entry |
 | `VQA_MODE` | `one_pass`: a single request with the frames, the voice account and every sign, answered one sign at a time. `two_step`: one request reads only the account and picks signs, a second sees only the frames, so it never sees the account |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
 | `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
@@ -170,7 +175,13 @@ The page only works while that command is running. `run.py` starts the Presage s
 
 **Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
 
-**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan, and frames from videos you check for visual cues, are sent to Google's Gemini service using your key.
+**Hand-off to the crew app (box 4).** *Preview* builds the packet from whatever boxes 1 to 3 produced, and shows what will be sent, what is held back on purpose, and what is missing. Pick From, To and Transport (read from their engine), then *Start transfer and send*. Four things to know:
+- **Sending starts that transfer's journey clock** in their app, so do it when the crew actually leaves. The transfer arrives in their `preparing` state and the crew send the handoff themselves.
+- **Names and ID numbers never cross.** The label is initials, the ID note only describes the card, and the spoken account is redacted by Gemini (and any run of 4 or more digits is masked). If the account cannot be checked, only the one-line summary goes.
+- **Only real Presage readings are sent as vitals,** each with its own confidence. Mock or unavailable readings are never passed on. Monitoring is set to `presage` (or `off`) so their engine does not invent simulated vitals.
+- **Their engine and this page must run on different ports.** This page uses 8000, so run their engine on 8010 (`ENGINE_URL`). To run it locally, run `python run_crew_engine.py` in a second terminal (run `git fetch origin` first). The first run copies their `engine/` folder from `origin/main`, builds its own environment and takes about a minute; after that it starts in seconds, with mock adapters and nothing saved. If the page says "server out of date", the server behind it was started before the hand-off existed: close it and start it again.
+
+**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json`, `logs/handshakes.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan, and frames from videos you check for visual cues, are sent to Google's Gemini service using your key.
 
 ---
 
