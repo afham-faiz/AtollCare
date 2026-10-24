@@ -90,10 +90,11 @@ Goal: by the time the patient reaches the health centre, staff already know who 
 
 | Built | Not built yet |
 |---|---|
-| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | Neurological cues (face asymmetry, gaze) |
+| Face video → heart rate and breathing rate, with a quality score ([Presage SmartSpectra](https://smartspectra.presagetech.com)) | Speech slurring (needs the audio itself, not only the text) |
 | Companion's voice → text, from the microphone or an uploaded audio file (Gemini 3.8 Flash) | Turning the transcript into observations and instructions for the companion |
 | ID photo → name, ID number and age (Gemini vision). Unclear fields stay blank and the card is flagged "needs review" | Insurance check (an ID card does not say) |
-| A demo web page that records and logs every trial | |
+| **Visual signs:** frames of the video are checked for visible signs (Gemini). Every sign in a fixed catalogue is checked and answered separately; a voice account, if there is one, only marks which signs it mentioned (with a quote that must appear in it). Every "seen" cites frames you can look at, and anything the account claims but the video does not show is listed | A clinically validated sign list (the catalogue in `src/data/cue_catalogue.json` is a demo assumption) |
+| A demo web page with three boxes (video, voice, ID) and a collapsed developer panel holding raw results, logs and replays | A final recommendation that combines all of the above |
 
 **What you need**
 
@@ -142,6 +143,9 @@ If `nodeenv` fails on Windows, install Node 24 LTS from [nodejs.org](https://nod
 | `GEMINI_STT_MODEL` | Speech model, currently `gemini-3.8-flash`. A model with `live` in its name streams as you speak, but Google refuses it for express-mode API keys at the moment |
 | `GEMINI_STT_FALLBACK_MODEL` | Optional backup model if the main one cannot start |
 | `GEMINI_ID_MODEL` | Vision model that reads ID photos, currently `gemini-3.8-flash` |
+| `GEMINI_CUE_PLANNER_MODEL`, `GEMINI_VQA_MODEL` | Models that choose the cues from the transcript, and inspect the video for them. Currently `gemini-3.8-flash` for both |
+| `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES` | One frame every this many seconds, and the most frames sent in total |
+| `VQA_MODE` | `one_pass`: a single request with the frames, the voice account and every sign, answered one sign at a time. `two_step`: one request reads only the account and picks signs, a second sees only the frames, so it never sees the account |
 | `GEMINI_CHAT_MODEL`, `TRANSCRIBE_LANGUAGE`, `STT_*` | Chat model, language, and timing settings |
 | `SAVE_RECORDINGS` | `true` keeps every voice, upload and video trial in `recordings/` for replay |
 
@@ -153,14 +157,17 @@ python run.py clip.mp4         # analyse one video from the command line
 python run.py --mock           # try everything with no keys
 python transcribe_file.py note.m4a   # transcribe an audio file
 python scan_id.py card.jpg     # read the name and ID number from a photo of an ID
+python visual_cues.py clip.mp4 --latest   # look for the signs the latest transcript suggests
 python -m pytest               # tests (no keys needed, nothing is sent to Google)
 ```
 
 The page only works while that command is running. `run.py` starts the Presage sidecar for you.
 
+**Using the page.** Box 1 takes the patient video: tick or untick *Also measure heart rate and breathing rate* to run Presage or skip it, and the visual signs are always checked. Box 2 takes the voice account, either recorded fresh or from a file you already have, and that account steers which signs are looked for in box 1's video. Box 3 reads the ID. Each box works alone. Raw results, logs and replays live in the collapsed *Developer details* panel at the bottom.
+
 **Filming tips.** Presage needs 45 to 60 seconds with the phone propped still, the patient quiet and facing the camera, the face and upper chest in frame, and steady light on the face. Talking invalidates the breathing rate. It plays the video in real time, so a one-minute clip takes one to two minutes to analyse. Phone videos are shrunk automatically before analysis.
 
-**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan are sent to Google's Gemini service using your key.
+**Where results go.** `logs/results.json`, `logs/transcripts.json`, `logs/id_scans.json` and `recordings/` hold your trials. They contain faces, voices and ID details, so they are git-ignored. Do not share them, and test with specimen or fake ID cards, not real ones. Photos you scan, and frames from videos you check for visual cues, are sent to Google's Gemini service using your key.
 
 ---
 

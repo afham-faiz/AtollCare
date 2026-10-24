@@ -38,6 +38,13 @@ def _required_float(name: str) -> float:
         raise ConfigError(f"{name}={raw!r} in {ENV_FILE} is not a number") from None
 
 
+def _required_choice(name: str, choices: tuple[str, ...]) -> str:
+    raw = _required(name).lower()
+    if raw not in choices:
+        raise ConfigError(f"{name}={raw!r} in {ENV_FILE} must be one of: {', '.join(choices)}")
+    return raw
+
+
 def _required_bool(name: str) -> bool:
     raw = _required(name).lower()
     if raw in ("true", "yes", "on", "1"):
@@ -60,6 +67,12 @@ def __getattr__(name: str):
         "GEMINI_STT_MODEL": lambda: _required("GEMINI_STT_MODEL"),
         "GEMINI_CHAT_MODEL": lambda: _required("GEMINI_CHAT_MODEL"),
         "GEMINI_ID_MODEL": lambda: _required("GEMINI_ID_MODEL"),
+        "GEMINI_CUE_PLANNER_MODEL": lambda: _required("GEMINI_CUE_PLANNER_MODEL"),
+        "GEMINI_VQA_MODEL": lambda: _required("GEMINI_VQA_MODEL"),
+        "VQA_FRAME_INTERVAL_S": lambda: _required_float("VQA_FRAME_INTERVAL_S"),
+        "VQA_MAX_FRAMES": lambda: int(_required_float("VQA_MAX_FRAMES")),
+        "VQA_MODE": lambda: _required_choice("VQA_MODE", ("one_pass", "two_step")),
+        "VIDEO_RECORD_MAX_S": lambda: _required_float("VIDEO_RECORD_MAX_S"),
         "STT_SILENCE_STOP_S": lambda: _required_float("STT_SILENCE_STOP_S"),
         "STT_FLASH_PAUSE_S": lambda: _required_float("STT_FLASH_PAUSE_S"),
         "STT_FLASH_MAX_SEGMENT_S": lambda: _required_float("STT_FLASH_MAX_SEGMENT_S"),

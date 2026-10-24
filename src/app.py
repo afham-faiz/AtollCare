@@ -1,13 +1,15 @@
 import asyncio
+import base64
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from src import config
+from src.services.cue_log import log_visual_cues, read_visual_cues
 from src.services.id_log import log_id_scan, read_id_scans
 from src.services.ocr_service import parse_identity_doc
 from src.services.recordings import RECORDINGS_DIR, save_recording
@@ -16,7 +18,9 @@ from src.services.rppg_extractor import extract_vitals_from_video
 from src.services.sidecar_manager import sidecar_mode
 from src.services.transcript_log import log_transcript, read_transcripts
 from src.services.transcription import transcribe_pcm, transcribe_stream, transcription_info, wav_bytes
+from src.services.video_analysis import analyse_video
 from src.services.video_prep import audio_to_pcm, downsample_video
+from src.services.vqa_evaluator import run_visual_cue_session
 
 STATIC = Path(__file__).parent / "static"
 RECORDINGS_DIR.mkdir(exist_ok=True)
@@ -31,9 +35,17 @@ def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
 
 
+def video_record_settings() -> dict:
+    """What the page needs to record video. A missing setting is reported, never raised."""
+    try:
+        return {"max_s": config.VIDEO_RECORD_MAX_S, "error": None}
+    except config.ConfigError as exc:
+        return {"max_s": None, "error": str(exc)}
+
+
 @app.get("/api/health")
 def health() -> dict:
-    return {"sidecar": sidecar_mode(), "transcription": transcription_info()}
+    return {"sidecar": sidecar_mode(), "transcription": transcription_info(), "video_record": video_record_settings()}
 
 
 @app.post("/api/vitals")
@@ -90,6 +102,70 @@ def transcribe_file(audio: UploadFile = File(...)) -> dict:
     result = {**result, **entry}
     log_transcript(result)
     return result
+
+
+@app.post("/api/analyse-video")
+def analyse(video: UploadFile = File(...), transcript: str = Form(""), age: str = Form(""),
+            presage: str = Form("true")) -> dict:
+    """The one video entry point: visual signs (Gemini) plus, if switched on, heart/breathing rate (Presage)."""
+    raw = video.file.read()
+    if not raw:
+        raise HTTPException(400, "Empty upload")
+    use_presage = presage.strip().lower() in ("1", "true", "yes", "on")
+    name = video.filename or "upload"
+    try:
+        result = analyse_video(raw, transcript, int(age) if age.strip().isdigit() else None, use_presage)
+    except config.ConfigError as exc:  # e.g. VQA_MODE missing from inputs/.env
+        raise HTTPException(500, str(exc)) from exc
+
+    video_file = save_recording("video", result.small, "mp4", label=name)  # keep every trial
+    if result.estimates is not None:
+        log_result(name, result.sizes_mb, {"downsample": result.seconds["downsample"], "presage": result.seconds["presage"]},
+                   result.estimates, saved_file=video_file)
+
+    cited = {i for f in result.report.findings for i in f.evidence_frames}
+    evidence: dict[str, dict] = {}
+    files: dict[int, str | None] = {}
+    for fr in result.frames:
+        if fr.index in cited:  # keep only the frames a conclusion depends on
+            files[fr.index] = save_recording("cue-frame", fr.jpeg, "jpg", label=f"{name}_f{fr.index}")
+            evidence[str(fr.index)] = {"t_s": fr.t_s, "file": files[fr.index],
+                                       "data_url": "data:image/jpeg;base64," + base64.b64encode(fr.jpeg).decode()}
+    log_visual_cues(name, transcript, result.report, files)
+    return {
+        "vitals": result.estimates.model_dump() if result.estimates else None,
+        "vitals_note": result.vitals_note,
+        "signs": {"report": result.report.model_dump(), "evidence": evidence},
+        "used_account": bool(transcript.strip()),
+        "video_file": video_file,
+        "sizes_mb": result.sizes_mb,
+        "seconds": result.seconds,
+    }
+
+
+@app.post("/api/visual-cues")
+def visual_cues(video: UploadFile = File(...), transcript: str = Form(""), age: str = Form("")) -> dict:
+    """Plan which cues to look for from the account, then inspect the video for them. Never fails on a bad read."""
+    raw = video.file.read()
+    if not raw:
+        raise HTTPException(400, "Empty upload")
+    report, frames = run_visual_cue_session(raw, transcript, int(age) if age.strip().isdigit() else None)
+
+    cited = {i for f in report.findings for i in f.evidence_frames}
+    evidence: dict[str, dict] = {}
+    files: dict[int, str | None] = {}
+    for fr in frames:
+        if fr.index in cited:  # keep only the frames a conclusion depends on
+            files[fr.index] = save_recording("cue-frame", fr.jpeg, "jpg", label=f"{video.filename or 'video'}_f{fr.index}")
+            evidence[str(fr.index)] = {"t_s": fr.t_s, "file": files[fr.index],
+                                       "data_url": "data:image/jpeg;base64," + base64.b64encode(fr.jpeg).decode()}
+    log_visual_cues(video.filename or "upload", transcript, report, files)
+    return {"report": report.model_dump(), "evidence": evidence}
+
+
+@app.get("/api/visual-cue-sessions")
+def visual_cue_sessions() -> list[dict]:
+    return read_visual_cues()
 
 
 @app.post("/api/scan-id")

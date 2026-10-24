@@ -1,7 +1,9 @@
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+from dataclasses import dataclass
 
 
 def _ffmpeg_exe() -> str:
@@ -47,6 +49,51 @@ def normalise_image(data: bytes, max_side: int = 2000, max_bytes: int = 4_000_00
             if mime:  # could not shrink it, but the original is still a usable image
                 return data, mime
             raise ValueError("Could not read that file as an image.") from exc
+
+
+@dataclass
+class Frame:
+    index: int      # 1-based, as shown to the model and to the user
+    t_s: float
+    jpeg: bytes
+
+
+_DURATION = re.compile(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)")
+
+
+def _duration_s(path: str) -> float | None:
+    probe = subprocess.run([_ffmpeg_exe(), "-i", path], capture_output=True, text=True, timeout=60)
+    m = _DURATION.search(probe.stderr)
+    return int(m[1]) * 3600 + int(m[2]) * 60 + float(m[3]) if m else None
+
+
+def sample_frames(video: bytes, every_s: float, max_frames: int, max_side: int = 768) -> list[Frame]:
+    """Evenly spaced JPEG stills from a video (phone rotation applied). Raises ValueError if unreadable.
+
+    One frame every `every_s` seconds, widened if needed so there are never more than `max_frames`.
+    """
+    scale = f"scale='if(gt(iw,ih),min({max_side},iw),-2)':'if(gt(iw,ih),-2,min({max_side},ih))'"
+    with tempfile.TemporaryDirectory() as tmp:
+        src = os.path.join(tmp, "in.bin")
+        with open(src, "wb") as f:
+            f.write(video)
+        try:
+            duration = _duration_s(src)
+            interval = max(every_s, duration / max_frames) if duration else every_s
+            cmd = [_ffmpeg_exe(), "-y", "-loglevel", "error", "-i", src, "-an",
+                   "-vf", f"fps=1/{interval},{scale}", "-frames:v", str(max_frames), "-q:v", "4",
+                   os.path.join(tmp, "f_%03d.jpg")]
+            subprocess.run(cmd, check=True, timeout=900, capture_output=True)
+        except (subprocess.SubprocessError, OSError) as exc:
+            raise ValueError("Could not read frames from that video.") from exc
+        files = sorted(p for p in os.listdir(tmp) if p.startswith("f_"))
+        frames = []
+        for i, name in enumerate(files):
+            with open(os.path.join(tmp, name), "rb") as f:
+                frames.append(Frame(index=i + 1, t_s=round(i * interval, 1), jpeg=f.read()))
+    if not frames:
+        raise ValueError("That video has no frames.")
+    return frames
 
 
 def audio_to_pcm(data: bytes) -> bytes:
