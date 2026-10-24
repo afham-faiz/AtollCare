@@ -149,7 +149,9 @@ class CaseService:
         return decision.assess(case, await self._assess_context(case, trend)).routes
 
     # ---------------------------------------------------------------- assessment (F-M2.1)
-    async def _assess(self, case: Case, actor: str = "system", reason: str | None = None) -> None:
+    async def _assess(
+        self, case: Case, actor: str = "system", reason: str | None = None, handle_replan: bool = True
+    ) -> None:
         """Run the engine on a case (lock held). Handles explanation caching, re-plans and referral re-send."""
         self._last_assess[case.id] = _time.monotonic()
         trend = (await self.trend(case.id)).buckets
@@ -173,7 +175,7 @@ class CaseService:
                 f"({decision.fmt_min(route.total_min if route else None)})",
                 {"destination_id": rec.destination_id, "route_id": rec.chosen_route_id, "reason": reason},
             )
-        if changed_dest and prev is not None:
+        if changed_dest and prev is not None and handle_replan:
             await self._handle_replan(case, prev, reason)
 
     async def _handle_replan(self, case: Case, prev: Recommendation, reason: str | None) -> None:
@@ -506,7 +508,7 @@ class CaseService:
                 await self._event(case, EventType.declined, "specialist",
                                   f"Declined by {req.responder_name} ({dest_label}): {req.note}")
                 prev = case.recommendation
-                await self._assess(case, "system", f"{dest_label} declined")
+                await self._assess(case, "system", f"{dest_label} declined", handle_replan=False)
                 rec = case.recommendation
                 assert rec is not None
                 old_dest = ref.destination_id
@@ -516,7 +518,7 @@ class CaseService:
                 )
                 case.status = CaseStatus.referred
                 case.referral.sbar = await self._sbar(case)
-                if prev is None or prev.destination_id == old_dest:
+                if prev is None or rec.destination_id != old_dest:
                     await self._event(
                         case, EventType.replanned, "system",
                         f"Re-routed to {self._fac_label(rec.destination_id)}: {dest_label} declined ({req.note}). "

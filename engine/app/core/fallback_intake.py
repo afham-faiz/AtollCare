@@ -114,7 +114,8 @@ def extract(raw_text: str, now: datetime, language: str = "en") -> Intake:
         raw_text=raw_text,
         language=language,
         chief_complaint=COMPLAINTS[primary],
-        symptoms=list(dict.fromkeys(symptoms))[:8],
+        # symptoms already covered by a red-flag phrase are not repeated
+        symptoms=[x for x in dict.fromkeys(symptoms) if not any(x in f for f in red_flags)][:8],
         red_flags=list(dict.fromkeys(red_flags)),
         onset_time=onset,
         onset_confidence=confidence,  # type: ignore[arg-type]

@@ -27,7 +27,7 @@
 .actions {
   position: sticky;
   bottom: 0;
-  z-index: 10;
+  z-index: 1000;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

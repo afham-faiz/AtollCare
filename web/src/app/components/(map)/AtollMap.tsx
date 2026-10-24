@@ -110,7 +110,7 @@ export default function ({
   const dark = useDark();
   const byId = useMemo(() => Object.fromEntries(facilities.map((f) => [f.id, f])), [facilities]);
   // OSM standard tiles by default (CARTO basemaps now need a key); dark mode dims them with a CSS filter.
-  const tiles = process.env.NEXT_PUBLIC_MAP_TILES ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const tiles = process.env.NEXT_PUBLIC_MAP_TILES || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   const fitPoints: [number, number][] = [];
   for (const c of cases) {
