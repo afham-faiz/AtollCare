@@ -284,6 +284,7 @@ def assess(case: Case, ctx: AssessContext) -> AssessResult:
         explanation_source="template",
         input_hash=input_hash(chosen, alternatives, breach),
         onset_confidence=cctx.onset_confidence,  # type: ignore[arg-type]
+        window_from=cctx.spec.get("window_from", "onset"),
         interim_window_min=(interim_spec or {}).get("window_min"),
         condition_probabilities=case.intake.suspected_conditions if case.intake else [],
         all_routes_count=len(routes),

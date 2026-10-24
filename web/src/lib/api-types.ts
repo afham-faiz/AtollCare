@@ -1370,6 +1370,12 @@ export interface components {
              * @enum {string}
              */
             onset_confidence: "exact" | "approx" | "unknown";
+            /**
+             * Window From
+             * @default onset
+             * @enum {string}
+             */
+            window_from: "onset" | "first_medical_contact";
             /** Interim Window Min */
             interim_window_min?: number | null;
             /**

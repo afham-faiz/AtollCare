@@ -312,6 +312,7 @@ class Recommendation(BaseModel):
     explanation_source: Literal["gemini", "template"] = "template"
     input_hash: str = ""
     onset_confidence: Literal["exact", "approx", "unknown"] = "unknown"
+    window_from: Literal["onset", "first_medical_contact"] = "onset"
     interim_window_min: float | None = None
     condition_probabilities: list[SuspectedCondition] = []
     all_routes_count: int = 0

@@ -30,25 +30,30 @@ const RANK: Record<CaseStatus, number> = {
 export default function ({ status, className }: { status: CaseStatus; className?: string }) {
   const rank = RANK[status];
   return (
-    <ol className={twMerge("grid grid-cols-6 gap-[.25rem]", className)}>
-      {STEPS.map((s, i) => {
-        const done = i < rank || (i === rank && status === "arrived") || status === "closed";
-        const current = i === rank && !done;
-        return (
-          <li key={s.id} className="flex flex-col items-center gap-[.25rem] text-center">
-            <span
-              className={twMerge(
-                "flex h-[1.75rem] w-[1.75rem] items-center justify-center rounded-[50%] border-[1px] border-border text-[0.875rem]",
-                done && "border-brand bg-brand text-brand-fg",
-                current && "border-brand text-brand animate-skeleton",
-              )}
-            >
-              {done ? <Check size={16} /> : i + 1}
-            </span>
-            <span className={twMerge("text-[0.875rem] leading-tight text-muted", (done || current) && "text-fg")}>{s.label}</span>
-          </li>
-        );
-      })}
-    </ol>
+    // 3 × 2 grid in narrow columns, one row once the container is ≥ 30rem
+    <div className={twMerge("@container", className)}>
+      <ol className="grid grid-cols-3 gap-x-[.25rem] gap-y-[.75rem] @[30rem]:grid-cols-6">
+        {STEPS.map((s, i) => {
+          const done = i < rank || (i === rank && status === "arrived") || status === "closed";
+          const current = i === rank && !done;
+          return (
+            <li key={s.id} className="flex flex-col items-center gap-[.25rem] text-center">
+              <span
+                className={twMerge(
+                  "flex h-[1.75rem] w-[1.75rem] items-center justify-center rounded-[50%] border-[1px] border-border text-[0.875rem]",
+                  done && "border-brand bg-brand text-brand-fg",
+                  current && "border-brand text-brand animate-skeleton",
+                )}
+              >
+                {done ? <Check size={16} /> : i + 1}
+              </span>
+              <span className={twMerge("text-[0.875rem] leading-tight text-muted", (done || current) && "text-fg")}>
+                {s.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

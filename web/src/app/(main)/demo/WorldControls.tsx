@@ -12,6 +12,50 @@ import { toastError } from "@/lib/toast";
 
 const SPEEDS = [1, 10, 60, 300];
 
+function Slider({
+  label,
+  hint,
+  unit = "",
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  hint: string;
+  unit?: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState<number | null>(null);
+  const shown = draft ?? value;
+  const commit = () => {
+    if (draft === null) return;
+    onCommit(draft);
+    setDraft(null);
+  };
+  return (
+    <label className="flex flex-col gap-[.25rem] text-[0.875rem]">
+      <span>
+        {label} <strong className="tabular-nums">{shown}{unit}</strong> <span className="text-muted">{hint}</span>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={shown}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+        className="accent-[var(--brand)]"
+      />
+    </label>
+  );
+}
+
 export default function ({ meta }: { meta: MetaResponse }) {
   const st = meta.demo_state;
   const [time, setTime] = useState("");
@@ -61,47 +105,32 @@ export default function ({ meta }: { meta: MetaResponse }) {
             ))}
           </div>
         </div>
-        <label className="flex flex-col gap-[.25rem] text-[0.875rem]">
-          <span>
-            Sea state <strong className="tabular-nums">{st.weather.sea_state}</strong>{" "}
-            <span className="text-muted">(speedboat off ≥ 5, sea ambulance off ≥ 6)</span>
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={9}
-            value={st.weather.sea_state}
-            onChange={(e) => apply({ weather: { sea_state: Number(e.target.value) } })}
-            className="accent-[var(--brand)]"
-          />
-        </label>
-        <label className="flex flex-col gap-[.25rem] text-[0.875rem]">
-          <span>
-            Wind <strong className="tabular-nums">{st.weather.wind_kt} kt</strong> <span className="text-muted">(seaplane off ≥ 25)</span>
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={50}
-            value={st.weather.wind_kt}
-            onChange={(e) => apply({ weather: { wind_kt: Number(e.target.value) } })}
-            className="accent-[var(--brand)]"
-          />
-        </label>
-        <label className="flex flex-col gap-[.25rem] text-[0.875rem]">
-          <span>
-            Visibility <strong className="tabular-nums">{st.weather.visibility_km} km</strong>{" "}
-            <span className="text-muted">(seaplane off &lt; 5, fixed-wing off &lt; 2)</span>
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={20}
-            value={st.weather.visibility_km}
-            onChange={(e) => apply({ weather: { visibility_km: Number(e.target.value) } })}
-            className="accent-[var(--brand)]"
-          />
-        </label>
+        <Slider
+          label="Sea state"
+          hint="(speedboat off ≥ 5, sea ambulance off ≥ 6)"
+          value={st.weather.sea_state}
+          min={0}
+          max={9}
+          onCommit={(v) => apply({ weather: { sea_state: v } })}
+        />
+        <Slider
+          label="Wind"
+          unit=" kt"
+          hint="(seaplane off ≥ 25)"
+          value={st.weather.wind_kt}
+          min={0}
+          max={50}
+          onCommit={(v) => apply({ weather: { wind_kt: v } })}
+        />
+        <Slider
+          label="Visibility"
+          unit=" km"
+          hint="(seaplane off < 5, fixed-wing off < 2)"
+          value={st.weather.visibility_km}
+          min={0}
+          max={20}
+          onCommit={(v) => apply({ weather: { visibility_km: v } })}
+        />
         <label className="flex min-h-[2.75rem] items-center justify-between gap-[.5rem] text-[0.875rem]">
           Helicopter enabled (hypothetical asset)
           <input

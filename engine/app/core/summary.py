@@ -83,14 +83,18 @@ def template_sbar(case: Case) -> SbarSummary:
         f"Meds: {', '.join(p.medications) or 'not recorded'}. Allergies: {', '.join(p.allergies) or 'not recorded'}."
     )
     vals = n2.values_used if n2 else {}
+    def num(v: object) -> str:
+        return f"{v:g}" if isinstance(v, float) else str(v)
+
     vit = ", ".join(
-        f"{label} {vals[k]}"
+        f"{label} {num(vals[k])}"
         for k, label in [("heart_rate", "HR"), ("resp_rate", "RR"), ("spo2", "SpO₂"), ("systolic_bp", "SBP"),
                          ("temperature_c", "T"), ("consciousness", "ACVPU")]
         if k in vals
     ) or "not recorded"
     flags = ", ".join(intake.red_flags) if intake and intake.red_flags else "none recorded"
-    assessment = f"Suspected {condition_label(rec.primary_condition_id if rec else None).lower()}. Red flags: {flags}. Vitals: {vit}."
+    cond = condition_label(rec.primary_condition_id if rec else None)
+    assessment = f"Suspected {cond[:1].lower() + cond[1:]}. Red flags: {flags}. Vitals: {vit}."
     route = chosen_route(case)
     dest = case.referral.destination_id if case.referral else (rec.destination_id if rec else None)
     recommendation = f"Request acceptance at {_fac(dest)}"
@@ -184,7 +188,8 @@ def crew_brief(case: Case) -> str:
     n2 = case.news2
     parts = [f"Crew brief, case {case.short_code}. {who.capitalize()} from {_fac(case.origin_facility_id)}."]
     if rec:
-        parts.append(f"Suspected {condition_label(rec.primary_condition_id).lower()}, severity {rec.severity.value.replace('_', ' ')}.")
+        label = condition_label(rec.primary_condition_id)
+        parts.append(f"Suspected {label[:1].lower() + label[1:]}, severity {rec.severity.value.replace('_', ' ')}.")
     if n2 and n2.total is not None:
         parts.append(f"Latest NEWS2 {n2.total}.")
     if p.allergies:

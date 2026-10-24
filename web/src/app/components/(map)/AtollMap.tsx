@@ -109,9 +109,8 @@ export default function ({
 }) {
   const dark = useDark();
   const byId = useMemo(() => Object.fromEntries(facilities.map((f) => [f.id, f])), [facilities]);
-  const tiles = dark
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-    : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+  // OSM standard tiles by default (CARTO basemaps now need a key); dark mode dims them with a CSS filter.
+  const tiles = process.env.NEXT_PUBLIC_MAP_TILES ?? "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   const fitPoints: [number, number][] = [];
   for (const c of cases) {
@@ -123,12 +122,11 @@ export default function ({
   }
 
   return (
-    <div style={{ height }} className="w-full overflow-hidden rounded-[.75rem] border-[1px] border-border">
+    <div style={{ height }} className={`w-full overflow-hidden rounded-[.75rem] border-[1px] border-border ${dark ? "atoll-map-dark" : ""}`}>
       <MapContainer center={[3.2, 73.2]} zoom={6} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          key={tiles}
           url={tiles}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {fit && <FitBounds points={fitPoints} />}
         {facilities.map((f) => {

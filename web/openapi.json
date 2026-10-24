@@ -4000,6 +4000,15 @@
             "title": "Onset Confidence",
             "default": "unknown"
           },
+          "window_from": {
+            "type": "string",
+            "enum": [
+              "onset",
+              "first_medical_contact"
+            ],
+            "title": "Window From",
+            "default": "onset"
+          },
           "interim_window_min": {
             "anyOf": [
               {

@@ -98,7 +98,7 @@ export default function () {
       <WeatherBanner meta={meta} />
       <div className="grid gap-[1rem] lg:grid-cols-[1fr_22rem]">
         <div className="flex min-w-0 flex-col gap-[1rem]">
-          <div className="grid gap-[1rem] md:grid-cols-3">
+          <div className="grid gap-[1rem] md:grid-cols-2 2xl:grid-cols-3">
             {COLUMNS.map((col) => {
               const items = (cases ?? []).filter((c) => col.statuses.includes(c.status));
               return (

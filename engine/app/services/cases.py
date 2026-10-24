@@ -358,7 +358,7 @@ class CaseService:
         await self._event(
             case, EventType.intake_extracted, actor,
             f"Intake ({'Gemini' if intake.extracted_by == 'gemini' else 'rule-based'}): {intake.chief_complaint}"
-            + (f" — suspected {summary.condition_label(top.condition_id).lower()} ({top.probability:.0%})" if top else ""),
+            + (f" — suspected {summary.condition_label(top.condition_id)} ({top.probability:.0%})" if top else ""),
             {"extracted_by": intake.extracted_by, "red_flags": intake.red_flags},
             at=now,
         )

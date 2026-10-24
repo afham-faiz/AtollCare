@@ -77,7 +77,13 @@ export default function ({
         {CONDITION_LABEL[rec.primary_condition_id ?? "other"] ?? rec.primary_condition_id}
         {rec.window_min ? ` · window ${fmtMin(rec.window_min)}` : ""}
         {rec.time_since_onset_min !== null && rec.time_since_onset_min !== undefined
-          ? ` · ${fmtMin(rec.time_since_onset_min)} since ${rec.onset_confidence === "unknown" ? "alert" : "onset"}`
+          ? ` · ${fmtMin(rec.time_since_onset_min)} since ${
+              rec.window_from === "first_medical_contact"
+                ? "first medical contact"
+                : rec.onset_confidence === "unknown"
+                  ? "alert"
+                  : "onset"
+            }`
           : ""}
         {chosen && (
           <>

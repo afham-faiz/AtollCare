@@ -8,7 +8,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {
     rules: {
-      "*.css": {
+      // Only the global stylesheet needs Tailwind; matching "*.css" would also swallow compiled *.module.scss
+      // output and strip its class exports.
+      "globals.css": {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },
