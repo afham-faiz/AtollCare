@@ -25,6 +25,12 @@ export type InfraStatus = S["InfraStatus"];
 export type InsightsResponse = S["InsightsResponse"];
 export type BenchmarkResponse = S["BenchmarkResponse"];
 export type SeedHistoryResponse = S["SeedHistoryResponse"];
+export type Intake = S["Intake"];
+export type Scan = S["Scan"];
+export type Demographics = S["Demographics"];
+export type VisualCueReport = S["VisualCueReport"];
+export type CueFinding = S["CueFinding"];
+export type RppgEstimates = S["RppgEstimates"];
 
 export class ApiError extends Error {
   constructor(

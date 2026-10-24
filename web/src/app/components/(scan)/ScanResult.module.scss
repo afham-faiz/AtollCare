@@ -1,0 +1,271 @@
+.scan {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.when {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.stage,
+.failed {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+
+.stage {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.failed {
+  background: var(--critical-soft);
+  color: var(--critical);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--line);
+
+  &:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.blockHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+
+  h4 {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+}
+
+.source {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.vitalLabel {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.vitalValue {
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.weakValue {
+  color: var(--ink-2);
+}
+
+.muted {
+  color: var(--line-strong);
+}
+
+.unit {
+  margin-left: 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.quality {
+  align-self: flex-start;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.good {
+  background: var(--teal-soft);
+  color: var(--teal-strong);
+}
+
+.weak {
+  background: var(--caution-soft);
+  color: var(--caution);
+}
+
+.poor {
+  background: var(--well);
+  color: var(--ink-2);
+}
+
+.note,
+.hints {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.hints {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+
+.mismatch {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--caution-soft);
+  color: var(--caution);
+  font-size: 0.9375rem;
+}
+
+.present {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+.presentHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink);
+}
+
+.conf {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+.reason {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.frames {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 5.5rem;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  text-align: left;
+
+  img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 0.625rem;
+    box-shadow: 0 0 0 1px var(--line);
+    transition: box-shadow var(--dur-1) var(--ease-out);
+  }
+
+  &:hover img,
+  &.thumbOpen img {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
+
+.large {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1rem;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.absent {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+
+.absentLabel {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.unclear {
+  font-size: 0.875rem;
+  color: var(--ink-2);
+
+  summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink-2);
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+}

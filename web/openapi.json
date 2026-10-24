@@ -794,6 +794,60 @@
         }
       }
     },
+    "/api/transfers/{transfer_id}/scans": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Add Scan",
+        "description": "A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background.",
+        "operationId": "add_scan_api_transfers__transfer_id__scans_post",
+        "parameters": [
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Transfer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_scan_api_transfers__transfer_id__scans_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transfers/{transfer_id}/interventions/remove": {
       "post": {
         "tags": [
@@ -1175,6 +1229,447 @@
           }
         }
       }
+    },
+    "/api/intakes": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Create Intake",
+        "operationId": "create_intake_api_intakes_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntakeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "List Intakes",
+        "operationId": "list_intakes_api_intakes_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Intake"
+                  },
+                  "title": "Response List Intakes Api Intakes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}": {
+      "get": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Get Intake",
+        "operationId": "get_intake_api_intakes__intake_id__get",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Update Intake",
+        "operationId": "update_intake_api_intakes__intake_id__patch",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntakeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}/scans": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Add Scan",
+        "operationId": "add_scan_api_intakes__intake_id__scans_post",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_scan_api_intakes__intake_id__scans_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}/account/voice": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Account Voice",
+        "operationId": "account_voice_api_intakes__intake_id__account_voice_post",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_account_voice_api_intakes__intake_id__account_voice_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}/id-photo": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Id Photo",
+        "operationId": "id_photo_api_intakes__intake_id__id_photo_post",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_id_photo_api_intakes__intake_id__id_photo_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}/send": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Send",
+        "operationId": "send_api_intakes__intake_id__send_post",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intakes/{intake_id}/transfer": {
+      "post": {
+        "tags": [
+          "intakes"
+        ],
+        "summary": "Start Transfer",
+        "operationId": "start_transfer_api_intakes__intake_id__transfer_post",
+        "parameters": [
+          {
+            "name": "intake_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intake Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTransferRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transfer"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1336,7 +1831,8 @@
         "enum": [
           "crew",
           "hospital",
-          "system"
+          "system",
+          "companion"
         ],
         "title": "Author"
       },
@@ -1382,6 +1878,62 @@
           "speedup"
         ],
         "title": "BenchmarkResponse"
+      },
+      "Body_account_voice_api_intakes__intake_id__account_voice_post": {
+        "properties": {
+          "audio": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audio"
+        ],
+        "title": "Body_account_voice_api_intakes__intake_id__account_voice_post"
+      },
+      "Body_add_scan_api_intakes__intake_id__scans_post": {
+        "properties": {
+          "video": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Video"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video"
+        ],
+        "title": "Body_add_scan_api_intakes__intake_id__scans_post"
+      },
+      "Body_add_scan_api_transfers__transfer_id__scans_post": {
+        "properties": {
+          "video": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Video"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video"
+        ],
+        "title": "Body_add_scan_api_transfers__transfer_id__scans_post"
+      },
+      "Body_id_photo_api_intakes__intake_id__id_photo_post": {
+        "properties": {
+          "image": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Image"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "title": "Body_id_photo_api_intakes__intake_id__id_photo_post"
       },
       "Body_voice_note_api_transfers__transfer_id__notes_voice_post": {
         "properties": {
@@ -1583,6 +2135,34 @@
         ],
         "title": "Consciousness"
       },
+      "CreateIntakeRequest": {
+        "properties": {
+          "region_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Id"
+          },
+          "health_centre_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Centre Id"
+          }
+        },
+        "type": "object",
+        "title": "CreateIntakeRequest"
+      },
       "CreateTransferRequest": {
         "properties": {
           "patient": {
@@ -1614,6 +2194,84 @@
           "mode"
         ],
         "title": "CreateTransferRequest"
+      },
+      "CueFinding": {
+        "properties": {
+          "cue_id": {
+            "type": "string",
+            "title": "Cue Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "finding": {
+            "type": "string",
+            "enum": [
+              "present",
+              "absent",
+              "cannot_assess"
+            ],
+            "title": "Finding"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 0.0
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "evidence_frames": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Evidence Frames",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "cue_id",
+          "label",
+          "finding"
+        ],
+        "title": "CueFinding"
+      },
+      "CuePlan": {
+        "properties": {
+          "presentations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Presentations",
+            "default": []
+          },
+          "cues": {
+            "items": {
+              "$ref": "#/components/schemas/PlannedCue"
+            },
+            "type": "array",
+            "title": "Cues",
+            "default": []
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "CuePlan"
       },
       "DemoCase": {
         "properties": {
@@ -1745,6 +2403,97 @@
         },
         "type": "object",
         "title": "DemoStatePatch"
+      },
+      "Demographics": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "id_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Number"
+          },
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "insurance_status": {
+            "type": "string",
+            "enum": [
+              "VERIFIED",
+              "UNKNOWN",
+              "NONE"
+            ],
+            "title": "Insurance Status",
+            "default": "UNKNOWN"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "default": true
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "diagnostics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diagnostics",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "Demographics",
+        "description": "Identity read from an ID document. Unreadable fields are None, never guessed."
       },
       "DeteriorationForecast": {
         "properties": {
@@ -1914,6 +2663,24 @@
           "lng"
         ],
         "title": "Facility"
+      },
+      "FrameInfo": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "t_s": {
+            "type": "number",
+            "title": "T S"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "t_s"
+        ],
+        "title": "FrameInfo"
       },
       "GeoPoint": {
         "properties": {
@@ -2258,6 +3025,150 @@
         ],
         "title": "InsightsResponse"
       },
+      "Intake": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "region_id": {
+            "type": "string",
+            "title": "Region Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IntakeStatus",
+            "default": "draft"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "health_centre_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Centre Id"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/Patient",
+            "default": {}
+          },
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "account_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "voice",
+                  "text"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Source"
+          },
+          "complaint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complaint"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Demographics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scans": {
+            "items": {
+              "$ref": "#/components/schemas/Scan"
+            },
+            "type": "array",
+            "title": "Scans",
+            "default": []
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "region_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Intake",
+        "description": "The pre-arrival packet from the companion's phone: who the patient is, what happened in their own words,\nand what one recorded clip showed. Captured once, then carried into the transfer and never asked again."
+      },
+      "IntakeStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "sent",
+          "started"
+        ],
+        "title": "IntakeStatus"
+      },
       "Intervention": {
         "properties": {
           "at": {
@@ -2473,6 +3384,65 @@
           "off"
         ],
         "title": "MonitoringSource"
+      },
+      "NeurologicalCues": {
+        "properties": {
+          "facial_asymmetry_detected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facial Asymmetry Detected"
+          },
+          "gaze_deviation_detected": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gaze Deviation Detected"
+          },
+          "gross_motor_deficit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gross Motor Deficit"
+          },
+          "cincinnati_scale_positive": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cincinnati Scale Positive"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "NeurologicalCues",
+        "description": "PRD contract. None means 'not assessed', which is different from False ('looked, not seen')."
       },
       "News2Result": {
         "properties": {
@@ -2743,6 +3713,115 @@
         "type": "object",
         "title": "Patient"
       },
+      "PlannedCue": {
+        "properties": {
+          "cue_id": {
+            "type": "string",
+            "title": "Cue Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "question": {
+            "type": "string",
+            "title": "Question"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "transcript",
+              "baseline"
+            ],
+            "title": "Source"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why",
+            "default": ""
+          },
+          "transcript_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Quote"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cue_id",
+          "label",
+          "question",
+          "source"
+        ],
+        "title": "PlannedCue"
+      },
+      "PreArrival": {
+        "properties": {
+          "intake_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Intake Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          },
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Demographics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scans": {
+            "items": {
+              "$ref": "#/components/schemas/Scan"
+            },
+            "type": "array",
+            "title": "Scans",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "intake_id",
+          "code"
+        ],
+        "title": "PreArrival",
+        "description": "The packet as the transfer received it (a copy, so later edits to the intake don't rewrite history)."
+      },
       "Region": {
         "properties": {
           "id": {
@@ -2820,6 +3899,200 @@
         ],
         "title": "RemoveInterventionRequest",
         "description": "The crew strike an item the extraction got wrong; their original words stay in the timeline."
+      },
+      "RppgEstimates": {
+        "properties": {
+          "heart_rate_bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Bpm"
+          },
+          "respiration_rate_bpm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respiration Rate Bpm"
+          },
+          "heart_rate_quality": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Quality"
+          },
+          "respiration_quality": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respiration Quality"
+          },
+          "signal_quality_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Signal Quality Score",
+            "default": 0.0
+          },
+          "uncalibrated": {
+            "type": "boolean",
+            "title": "Uncalibrated",
+            "default": true
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "presage",
+              "mock",
+              "unavailable"
+            ],
+            "title": "Source",
+            "default": "unavailable"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "diagnostics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diagnostics",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "RppgEstimates"
+      },
+      "Scan": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScanStatus",
+            "default": "processing"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          },
+          "vitals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RppgEstimates"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vitals_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vitals Note"
+          },
+          "signs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisualCueReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Evidence",
+            "default": {}
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "seconds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Seconds",
+            "default": {}
+          },
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "at"
+        ],
+        "title": "Scan",
+        "description": "One recorded clip (about 60 s, phone propped up): Presage heart and breathing rate and Gemini's check for\nvisible signs, both from the same video. The video itself is not kept; only frames a finding cites are."
+      },
+      "ScanStatus": {
+        "type": "string",
+        "enum": [
+          "processing",
+          "done",
+          "failed"
+        ],
+        "title": "ScanStatus"
       },
       "SeedHistoryResponse": {
         "properties": {
@@ -2937,6 +4210,34 @@
           "source"
         ],
         "title": "SpeakResponse"
+      },
+      "StartTransferRequest": {
+        "properties": {
+          "origin_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Id"
+          },
+          "destination_id": {
+            "type": "string",
+            "title": "Destination Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TransportMode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "destination_id",
+          "mode"
+        ],
+        "title": "StartTransferRequest"
       },
       "StorageTable": {
         "properties": {
@@ -3212,6 +4513,24 @@
               }
             ],
             "title": "Arrived At"
+          },
+          "pre_arrival": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PreArrival"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scans": {
+            "items": {
+              "$ref": "#/components/schemas/Scan"
+            },
+            "type": "array",
+            "title": "Scans",
+            "default": []
           }
         },
         "type": "object",
@@ -3570,6 +4889,45 @@
         ],
         "title": "TrendResponse"
       },
+      "UpdateIntakeRequest": {
+        "properties": {
+          "patient": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Patient"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health_centre_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Centre Id"
+          },
+          "account": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          }
+        },
+        "type": "object",
+        "title": "UpdateIntakeRequest"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -3609,6 +4967,62 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VisualCueReport": {
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/CuePlan"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/CueFinding"
+            },
+            "type": "array",
+            "title": "Findings",
+            "default": []
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/FrameInfo"
+            },
+            "type": "array",
+            "title": "Frames",
+            "default": []
+          },
+          "reported_but_not_seen": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reported But Not Seen",
+            "default": []
+          },
+          "neurological_cues": {
+            "$ref": "#/components/schemas/NeurologicalCues",
+            "default": {
+              "notes": []
+            }
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "diagnostics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diagnostics",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "title": "VisualCueReport"
       },
       "VitalsAck": {
         "properties": {

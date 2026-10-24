@@ -132,8 +132,8 @@ class ScanRunner:
             s.vitals = estimates
             s.seconds = {**s.seconds, "presage": seconds}
             if estimates.heart_rate_bpm is None and estimates.respiration_rate_bpm is None:
-                s.vitals_note = "Presage could not measure this clip." + (
-                    f" {', '.join(estimates.diagnostics.get('hints') or [])}." if estimates.diagnostics.get("hints") else "")
+                hints = [h.rstrip(".") + "." for h in estimates.diagnostics.get("hints") or []]
+                s.vitals_note = " ".join(["Presage couldn't measure this clip.", *hints])
             holder["scan"] = s
 
         await mutate(scan_id, apply)

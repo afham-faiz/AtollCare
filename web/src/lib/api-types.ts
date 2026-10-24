@@ -315,6 +315,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/transfers/{transfer_id}/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Scan
+         * @description A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background.
+         */
+        post: operations["add_scan_api_transfers__transfer_id__scans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transfers/{transfer_id}/interventions/remove": {
         parameters: {
             query?: never;
@@ -451,6 +471,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Intakes */
+        get: operations["list_intakes_api_intakes_get"];
+        put?: never;
+        /** Create Intake */
+        post: operations["create_intake_api_intakes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Intake */
+        get: operations["get_intake_api_intakes__intake_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Intake */
+        patch: operations["update_intake_api_intakes__intake_id__patch"];
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Scan */
+        post: operations["add_scan_api_intakes__intake_id__scans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}/account/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Account Voice */
+        post: operations["account_voice_api_intakes__intake_id__account_voice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}/id-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Id Photo */
+        post: operations["id_photo_api_intakes__intake_id__id_photo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send */
+        post: operations["send_api_intakes__intake_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intakes/{intake_id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Transfer */
+        post: operations["start_transfer_api_intakes__intake_id__transfer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -529,7 +670,7 @@ export interface components {
          * Author
          * @enum {string}
          */
-        Author: "crew" | "hospital" | "system";
+        Author: "crew" | "hospital" | "system" | "companion";
         /** BenchmarkResponse */
         BenchmarkResponse: {
             /** Question */
@@ -546,6 +687,26 @@ export interface components {
             rows_scanned: number;
             /** Speedup */
             speedup: number;
+        };
+        /** Body_account_voice_api_intakes__intake_id__account_voice_post */
+        Body_account_voice_api_intakes__intake_id__account_voice_post: {
+            /** Audio */
+            audio: string;
+        };
+        /** Body_add_scan_api_intakes__intake_id__scans_post */
+        Body_add_scan_api_intakes__intake_id__scans_post: {
+            /** Video */
+            video: string;
+        };
+        /** Body_add_scan_api_transfers__transfer_id__scans_post */
+        Body_add_scan_api_transfers__transfer_id__scans_post: {
+            /** Video */
+            video: string;
+        };
+        /** Body_id_photo_api_intakes__intake_id__id_photo_post */
+        Body_id_photo_api_intakes__intake_id__id_photo_post: {
+            /** Image */
+            image: string;
         };
         /** Body_voice_note_api_transfers__transfer_id__notes_voice_post */
         Body_voice_note_api_transfers__transfer_id__notes_voice_post: {
@@ -617,6 +778,13 @@ export interface components {
          * @enum {string}
          */
         Consciousness: "A" | "C" | "V" | "P" | "U";
+        /** CreateIntakeRequest */
+        CreateIntakeRequest: {
+            /** Region Id */
+            region_id?: string | null;
+            /** Health Centre Id */
+            health_centre_id?: string | null;
+        };
         /** CreateTransferRequest */
         CreateTransferRequest: {
             /** @default {} */
@@ -628,6 +796,51 @@ export interface components {
             /** Destination Id */
             destination_id: string;
             mode: components["schemas"]["TransportMode"];
+        };
+        /** CueFinding */
+        CueFinding: {
+            /** Cue Id */
+            cue_id: string;
+            /** Label */
+            label: string;
+            /**
+             * Finding
+             * @enum {string}
+             */
+            finding: "present" | "absent" | "cannot_assess";
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Evidence Frames
+             * @default []
+             */
+            evidence_frames: number[];
+        };
+        /** CuePlan */
+        CuePlan: {
+            /**
+             * Presentations
+             * @default []
+             */
+            presentations: string[];
+            /**
+             * Cues
+             * @default []
+             */
+            cues: components["schemas"]["PlannedCue"][];
+            /**
+             * Issues
+             * @default []
+             */
+            issues: string[];
         };
         /** DemoCase */
         DemoCase: {
@@ -676,6 +889,45 @@ export interface components {
             speed_multiplier?: number | null;
             /** Region Id */
             region_id?: string | null;
+        };
+        /**
+         * Demographics
+         * @description Identity read from an ID document. Unreadable fields are None, never guessed.
+         */
+        Demographics: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Id Number */
+            id_number?: string | null;
+            /** Age */
+            age?: number | null;
+            /**
+             * Insurance Status
+             * @default UNKNOWN
+             * @enum {string}
+             */
+            insurance_status: "VERIFIED" | "UNKNOWN" | "NONE";
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Document Type */
+            document_type?: string | null;
+            /**
+             * Needs Review
+             * @default true
+             */
+            needs_review: boolean;
+            /**
+             * Issues
+             * @default []
+             */
+            issues: string[];
+            /**
+             * Diagnostics
+             * @default {}
+             */
+            diagnostics: {
+                [key: string]: unknown;
+            };
         };
         /** DeteriorationForecast */
         DeteriorationForecast: {
@@ -736,6 +988,13 @@ export interface components {
             lat: number;
             /** Lng */
             lng: number;
+        };
+        /** FrameInfo */
+        FrameInfo: {
+            /** Index */
+            index: number;
+            /** T S */
+            t_s: number;
         };
         /** GeoPoint */
         GeoPoint: {
@@ -878,6 +1137,59 @@ export interface components {
              */
             queries: components["schemas"]["TimedQuery"][];
         };
+        /**
+         * Intake
+         * @description The pre-arrival packet from the companion's phone: who the patient is, what happened in their own words,
+         *     and what one recorded clip showed. Captured once, then carried into the transfer and never asked again.
+         */
+        Intake: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Region Id */
+            region_id: string;
+            /** @default draft */
+            status: components["schemas"]["IntakeStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Health Centre Id */
+            health_centre_id?: string | null;
+            /** @default {} */
+            patient: components["schemas"]["Patient"];
+            /** Account */
+            account?: string | null;
+            /** Account Source */
+            account_source?: ("voice" | "text") | null;
+            /** Complaint */
+            complaint?: string | null;
+            identity?: components["schemas"]["Demographics"] | null;
+            /**
+             * Scans
+             * @default []
+             */
+            scans: components["schemas"]["Scan"][];
+            /** Sent At */
+            sent_at?: string | null;
+            /** Transfer Id */
+            transfer_id?: string | null;
+        };
+        /**
+         * IntakeStatus
+         * @enum {string}
+         */
+        IntakeStatus: "draft" | "sent" | "started";
         /** Intervention */
         Intervention: {
             /**
@@ -956,6 +1268,25 @@ export interface components {
          * @enum {string}
          */
         MonitoringSource: "presage" | "simulated" | "off";
+        /**
+         * NeurologicalCues
+         * @description PRD contract. None means 'not assessed', which is different from False ('looked, not seen').
+         */
+        NeurologicalCues: {
+            /** Facial Asymmetry Detected */
+            facial_asymmetry_detected?: boolean | null;
+            /** Gaze Deviation Detected */
+            gaze_deviation_detected?: boolean | null;
+            /** Gross Motor Deficit */
+            gross_motor_deficit?: boolean | null;
+            /** Cincinnati Scale Positive */
+            cincinnati_scale_positive?: boolean | null;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+        };
         /** News2Result */
         News2Result: {
             /** Total */
@@ -1044,6 +1375,50 @@ export interface components {
             /** Sex */
             sex?: ("M" | "F" | "X") | null;
         };
+        /** PlannedCue */
+        PlannedCue: {
+            /** Cue Id */
+            cue_id: string;
+            /** Label */
+            label: string;
+            /** Question */
+            question: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "transcript" | "baseline";
+            /**
+             * Why
+             * @default
+             */
+            why: string;
+            /** Transcript Quote */
+            transcript_quote?: string | null;
+        };
+        /**
+         * PreArrival
+         * @description The packet as the transfer received it (a copy, so later edits to the intake don't rewrite history).
+         */
+        PreArrival: {
+            /**
+             * Intake Id
+             * Format: uuid
+             */
+            intake_id: string;
+            /** Code */
+            code: string;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Account */
+            account?: string | null;
+            identity?: components["schemas"]["Demographics"] | null;
+            /**
+             * Scans
+             * @default []
+             */
+            scans: components["schemas"]["Scan"][];
+        };
         /** Region */
         Region: {
             /** Id */
@@ -1077,6 +1452,96 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** RppgEstimates */
+        RppgEstimates: {
+            /** Heart Rate Bpm */
+            heart_rate_bpm?: number | null;
+            /** Respiration Rate Bpm */
+            respiration_rate_bpm?: number | null;
+            /** Heart Rate Quality */
+            heart_rate_quality?: number | null;
+            /** Respiration Quality */
+            respiration_quality?: number | null;
+            /**
+             * Signal Quality Score
+             * @default 0
+             */
+            signal_quality_score: number;
+            /**
+             * Uncalibrated
+             * @default true
+             */
+            uncalibrated: boolean;
+            /**
+             * Source
+             * @default unavailable
+             * @enum {string}
+             */
+            source: "presage" | "mock" | "unavailable";
+            /**
+             * Issues
+             * @default []
+             */
+            issues: string[];
+            /**
+             * Diagnostics
+             * @default {}
+             */
+            diagnostics: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * Scan
+         * @description One recorded clip (about 60 s, phone propped up): Presage heart and breathing rate and Gemini's check for
+         *     visible signs, both from the same video. The video itself is not kept; only frames a finding cites are.
+         */
+        Scan: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** @default processing */
+            status: components["schemas"]["ScanStatus"];
+            /** Stage */
+            stage?: string | null;
+            vitals?: components["schemas"]["RppgEstimates"] | null;
+            /** Vitals Note */
+            vitals_note?: string | null;
+            signs?: components["schemas"]["VisualCueReport"] | null;
+            /**
+             * Evidence
+             * @default {}
+             */
+            evidence: {
+                [key: string]: string;
+            };
+            /** Error */
+            error?: string | null;
+            /**
+             * Seconds
+             * @default {}
+             */
+            seconds: {
+                [key: string]: number;
+            };
+            /**
+             * Recorded
+             * @default false
+             */
+            recorded: boolean;
+        };
+        /**
+         * ScanStatus
+         * @enum {string}
+         */
+        ScanStatus: "processing" | "done" | "failed";
         /** SeedHistoryResponse */
         SeedHistoryResponse: {
             /** Transfers */
@@ -1138,6 +1603,14 @@ export interface components {
              * @enum {string}
              */
             source: "elevenlabs" | "browser";
+        };
+        /** StartTransferRequest */
+        StartTransferRequest: {
+            /** Origin Id */
+            origin_id?: string | null;
+            /** Destination Id */
+            destination_id: string;
+            mode: components["schemas"]["TransportMode"];
         };
         /** StorageTable */
         StorageTable: {
@@ -1272,6 +1745,12 @@ export interface components {
             vitals: components["schemas"]["VitalsReading"][];
             /** Arrived At */
             arrived_at?: string | null;
+            pre_arrival?: components["schemas"]["PreArrival"] | null;
+            /**
+             * Scans
+             * @default []
+             */
+            scans: components["schemas"]["Scan"][];
         };
         /** TransferListItem */
         TransferListItem: {
@@ -1375,6 +1854,14 @@ export interface components {
             query_ms?: number | null;
             forecast?: components["schemas"]["DeteriorationForecast"] | null;
         };
+        /** UpdateIntakeRequest */
+        UpdateIntakeRequest: {
+            patient?: components["schemas"]["Patient"] | null;
+            /** Health Centre Id */
+            health_centre_id?: string | null;
+            /** Account */
+            account?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1387,6 +1874,43 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VisualCueReport */
+        VisualCueReport: {
+            plan: components["schemas"]["CuePlan"];
+            /**
+             * Findings
+             * @default []
+             */
+            findings: components["schemas"]["CueFinding"][];
+            /**
+             * Frames
+             * @default []
+             */
+            frames: components["schemas"]["FrameInfo"][];
+            /**
+             * Reported But Not Seen
+             * @default []
+             */
+            reported_but_not_seen: string[];
+            /**
+             * @default {
+             *       "notes": []
+             *     }
+             */
+            neurological_cues: components["schemas"]["NeurologicalCues"];
+            /**
+             * Issues
+             * @default []
+             */
+            issues: string[];
+            /**
+             * Diagnostics
+             * @default {}
+             */
+            diagnostics: {
+                [key: string]: unknown;
+            };
         };
         /** VitalsAck */
         VitalsAck: {
@@ -2060,6 +2584,41 @@ export interface operations {
             };
         };
     };
+    add_scan_api_transfers__transfer_id__scans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transfer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_scan_api_transfers__transfer_id__scans_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_intervention_api_transfers__transfer_id__interventions_remove_post: {
         parameters: {
             query?: never;
@@ -2304,6 +2863,307 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SeedHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_intakes_api_intakes_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_intake_api_intakes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIntakeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_intake_api_intakes__intake_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_intake_api_intakes__intake_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIntakeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_scan_api_intakes__intake_id__scans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_scan_api_intakes__intake_id__scans_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    account_voice_api_intakes__intake_id__account_voice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_account_voice_api_intakes__intake_id__account_voice_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    id_photo_api_intakes__intake_id__id_photo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_id_photo_api_intakes__intake_id__id_photo_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_api_intakes__intake_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_transfer_api_intakes__intake_id__transfer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                intake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
                 };
             };
             /** @description Validation Error */

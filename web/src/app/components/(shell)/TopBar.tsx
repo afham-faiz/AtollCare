@@ -1,4 +1,4 @@
-// Quiet top bar: product mark, the two roles, active region, discreet presenter entry.
+// Quiet top bar: product mark, the three moments (pre-arrival, crew, hospital), active region, presenter entry.
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
@@ -13,6 +13,7 @@ import { useMeta } from "@/lib/swr";
 import styles from "./TopBar.module.scss";
 
 const ROLES = [
+  { href: "/pre-arrival", label: "Pre-arrival" },
   { href: "/crew", label: "Crew" },
   { href: "/hospital", label: "Hospital" },
 ];
@@ -34,7 +35,7 @@ export default function () {
       <div className={styles.inner}>
         <Link href="/crew" className={styles.brand}>
           <Mark className="h-[1.375rem] w-[1.375rem] text-teal" />
-          {APP_NAME}
+          <span className={styles.brandText}>{APP_NAME}</span>
         </Link>
         <nav className={styles.roles} aria-label="Role">
           {ROLES.map((r) => (

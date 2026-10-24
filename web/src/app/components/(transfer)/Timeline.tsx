@@ -24,7 +24,7 @@ const TONE: Record<string, string> = {
   text: "text-teal-strong bg-teal-soft",
 };
 
-const WHO = { crew: "Crew", hospital: "Hospital", system: "AtollCare" } as const;
+const WHO = { crew: "Crew", hospital: "Hospital", system: "AtollCare", companion: "Companion" } as const;
 
 export default function ({
   notes,
