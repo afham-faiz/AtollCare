@@ -35,6 +35,8 @@ const NOT_MEASURING: Partial<Record<PresageState, string>> = {
 export function instrumentPhase(camera: CameraState, presage: PresageState, metrics: PresageMetrics): Instrument {
   if (camera !== "on") return { phase: "off", label: camera === "starting" ? "Opening camera" : "Camera off" };
   if (presage === "starting") return { phase: "connecting", label: "Connecting to Presage" };
+  // a phone scan is using Presage; this screen picks up again by itself when it's done
+  if (presage === "paused") return { phase: "connecting", label: "Paused · a scan is using Presage" };
   if (presage !== "running") return { phase: "demo", label: NOT_MEASURING[presage] ?? "Not measuring" };
   if (metrics.hr?.stable || metrics.rr?.stable) return { phase: "measuring", label: "Presage · measuring" };
   return { phase: "acquiring", label: "Presage · acquiring" };

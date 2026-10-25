@@ -101,6 +101,41 @@ def test_scan_during_a_transfer(client, clip):
     assert lines == ["Crew scan: heart and breathing rate not measured. Visible signs not checked."]
 
 
+def live_summary(hr: int = 84, rr: int = 15) -> str:
+    """What the bridge hands the phone when a live scan stops (presage-bridge `summary`)."""
+    import json
+
+    pulse = [{"t_s": i, "value": hr, "confidence": 0.7, "stable": True} for i in range(20)]
+    breathing = [{"t_s": i, "value": rr, "confidence": 0.5, "stable": True} for i in range(10)]
+    return json.dumps({"mode": "sdk", "heart_rate_bpm": hr, "respiration_rate_bpm": rr, "confidence": 0.5,
+                       "issues": [], "hints": [], "diagnostics": {"pulse_series": pulse, "breathing_series": breathing,
+                                                                  "path": "live", "frames": 900, "seconds": 31.0}})
+
+
+def test_live_scan_result_comes_with_the_clip(client, clip):
+    """The phone streamed to Presage while recording: its numbers land at once, scored once; only Gemini runs."""
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    ok(client.post(f"/api/transfers/{t['id']}/scans", files={"video": ("c.mp4", clip, "video/mp4")},
+                   data={"presage": live_summary()}))
+    scan = wait_scans(client, f"/api/transfers/{t['id']}")[0]
+    v = scan["vitals"]
+    assert (v["heart_rate_bpm"], v["respiration_rate_bpm"]) == (84, 15)
+    assert v["heart_rate_stable"] and v["respiration_stable"] and v["diagnostics"]["path"] == "live"
+    assert scan["vitals_note"] is None  # not "bridge isn't running": the clip wasn't sent to Presage at all
+    t = ok(client.get(f"/api/transfers/{t['id']}"))
+    assert {(r["heart_rate"], r["resp_rate"]) for r in t["vitals"] if r["source"] == "presage"} == {(None, 15), (84, None)}
+    # the live result isn't a live camera: the monitoring state is left as it was
+    assert t["monitoring"]["source"] == "simulated"
+
+
+def test_a_malformed_live_result_is_refused(client, clip):
+    i = ok(client.post("/api/intakes", json={"health_centre_id": "dhiffushi_hc"}))
+    resp = client.post(f"/api/intakes/{i['id']}/scans", files={"video": ("c.mp4", clip, "video/mp4")},
+                       data={"presage": "not json"})
+    assert resp.status_code == 422
+
+
 def test_scan_mode_stops_simulated_readings(client):
     t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
                                                "destination_id": "igmh", "mode": "boat"}))

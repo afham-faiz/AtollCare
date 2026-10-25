@@ -1,5 +1,5 @@
 // Crew monitor. Hierarchy: who → contactless assessment → vitals → note → next step. Contactless vitals come either
-// from 60 s scans (a propped-up phone: the default on phones) or a live camera stream (a mounted tablet or laptop).
+// from phone scans (Presage live for 30–60 s, the default on phones) or a continuous stream (a mounted tablet or laptop).
 "use client";
 
 import { ArrowUpRight, Check, CheckCircle2, Clock3, Flag, ListChecks, Smartphone, Volume2, VolumeX } from "lucide-react";
@@ -216,8 +216,8 @@ export default function ({ transferId }: { transferId: string }) {
             value={mode}
             onChange={setChosen}
             options={[
-              { value: "scan", label: "60 s scan", title: "Record a minute on a propped-up phone; measured on the server" },
-              { value: "live", label: "Live camera", title: "Continuous, from a mounted camera" },
+              { value: "scan", label: "Phone scan", title: "Presage measures for 30–60 s on a propped-up phone" },
+              { value: "live", label: "Continuous", title: "Presage measures continuously from a mounted camera" },
             ]}
           />
         </div>

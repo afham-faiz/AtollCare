@@ -19,7 +19,8 @@ from uuid import UUID, uuid4
 
 from app.core import regions
 from app.intake.ocr_service import parse_identity_doc
-from app.intake.rppg_extractor import bridge_ready, extract_vitals_from_video
+from app.intake.rppg_extractor import bridge_ready, estimates_from_bridge, extract_vitals_from_video
+from app.intake.schemas import RppgEstimates
 from app.intake.transcription import transcribe_pcm
 from app.intake.video_prep import Frame, audio_to_pcm, downsample_video
 from app.intake.vqa_evaluator import run_visual_cue_session
@@ -51,6 +52,16 @@ def first_sentence(text: str, limit: int = 120) -> str:
     return s if len(s) <= limit else s[: limit - 1].rstrip() + "…"
 
 
+def live_estimates(presage: dict | None) -> RppgEstimates | None:
+    """The bridge's summary of a live phone scan, sent up with the clip. None when the phone couldn't stream."""
+    if not presage:
+        return None
+    try:
+        return estimates_from_bridge(presage)
+    except (TypeError, ValueError, KeyError) as exc:
+        raise AppError("bad_presage_result", f"The live Presage result couldn't be read ({exc})", 422) from exc
+
+
 class ScanRunner:
     """Runs a scan's two analyses and saves each result through `mutate` as it finishes."""
 
@@ -60,8 +71,9 @@ class ScanRunner:
         self.tasks: set[asyncio.Task] = set()
 
     def start(self, scan: Scan, raw: bytes, account: str, age: int | None, mutate: MutateScan,
-              on_vitals: Callable[[Scan], Awaitable[None]] | None = None) -> None:
-        task = asyncio.create_task(self._run(scan.id, raw, account, age, mutate, on_vitals))
+              on_vitals: Callable[[Scan], Awaitable[None]] | None = None, live: RppgEstimates | None = None) -> None:
+        """live: Presage already measured this clip as it was recorded (the phone streamed to the bridge)."""
+        task = asyncio.create_task(self._run(scan.id, raw, account, age, mutate, on_vitals, live))
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)
 
@@ -81,16 +93,22 @@ class ScanRunner:
             self.clips.popitem(last=False)
 
     async def _run(self, scan_id: UUID, raw: bytes, account: str, age: int | None, mutate: MutateScan,
-                   on_vitals: Callable[[Scan], Awaitable[None]] | None) -> None:
+                   on_vitals: Callable[[Scan], Awaitable[None]] | None, live: RppgEstimates | None = None) -> None:
         try:
+            if live is not None:
+                await self._apply_vitals(scan_id, live, None, mutate, on_vitals)
             await mutate(scan_id, lambda s: setattr(s, "stage", "Preparing the video"))
             small = await asyncio.to_thread(downsample_video, raw)
             self._remember(scan_id, small)
-            await mutate(scan_id, lambda s: setattr(s, "stage", "Checking visible signs and measuring vitals"))
-            # Gemini looks at stills, so the small copy is enough; Presage reads colour changes too faint to survive
-            # a second lossy encode, so it gets the original upload
-            await asyncio.gather(self._signs(scan_id, small, account, age, mutate),
-                                 self._vitals(scan_id, raw, mutate, on_vitals))
+            if live is not None:
+                await mutate(scan_id, lambda s: setattr(s, "stage", "Checking visible signs"))
+                await self._signs(scan_id, small, account, age, mutate)
+            else:
+                await mutate(scan_id, lambda s: setattr(s, "stage", "Checking visible signs and measuring vitals"))
+                # Gemini looks at stills, so the small copy is enough; Presage reads colour changes too faint to
+                # survive a second lossy encode, so it gets the original upload
+                await asyncio.gather(self._signs(scan_id, small, account, age, mutate),
+                                     self._vitals(scan_id, raw, mutate, on_vitals))
             await mutate(scan_id, lambda s: (setattr(s, "status", ScanStatus.done), setattr(s, "stage", None)))
         except Exception as exc:
             log.exception("scan %s failed", scan_id)
@@ -128,11 +146,16 @@ class ScanRunner:
         started = asyncio.get_running_loop().time()
         estimates = await asyncio.to_thread(extract_vitals_from_video, small)
         seconds = round(asyncio.get_running_loop().time() - started, 1)
+        await self._apply_vitals(scan_id, estimates, seconds, mutate, on_vitals)
+
+    async def _apply_vitals(self, scan_id: UUID, estimates: RppgEstimates, seconds: float | None, mutate: MutateScan,
+                            on_vitals: Callable[[Scan], Awaitable[None]] | None) -> None:
         holder: dict[str, Scan] = {}
 
         def apply(s: Scan) -> None:
             s.vitals = estimates
-            s.seconds = {**s.seconds, "presage": seconds}
+            if seconds is not None:
+                s.seconds = {**s.seconds, "presage": seconds}
             if estimates.heart_rate_bpm is None and estimates.respiration_rate_bpm is None:
                 hints = [h.rstrip(".") + "." for h in estimates.diagnostics.get("hints") or []]
                 s.vitals_note = " ".join(["Presage couldn't measure this clip.", *hints])
@@ -275,7 +298,7 @@ class IntakeService:
             await self._save(i)
         return i
 
-    async def add_scan(self, intake_id: UUID, video: bytes) -> Intake:
+    async def add_scan(self, intake_id: UUID, video: bytes, presage: dict | None = None) -> Intake:
         if not video:
             raise AppError("empty_upload", "No video was received", 400)
         if len(video) > MAX_CLIP_BYTES:
@@ -286,7 +309,8 @@ class IntakeService:
             scan = Scan(id=uuid4(), at=self.now(), stage="Uploading")
             i.scans.append(scan)
             await self._save(i)
-        self.runner.start(scan, video, i.account or "", i.patient.age, self._mutate_scan(intake_id))
+        self.runner.start(scan, video, i.account or "", i.patient.age, self._mutate_scan(intake_id),
+                          live=live_estimates(presage))
         return i
 
     def _mutate_scan(self, intake_id: UUID):

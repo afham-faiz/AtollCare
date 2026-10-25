@@ -429,7 +429,7 @@ class TransferService:
             await self._note_scan(t, copy, "Pre-arrival video")
             await self._save(t)
 
-    async def add_scan(self, transfer_id: UUID, video: bytes) -> Transfer:
+    async def add_scan(self, transfer_id: UUID, video: bytes, presage: dict | None = None) -> Transfer:
         if not video:
             raise AppError("empty_upload", "No video was received", 400)
         if self.runner is None:
@@ -441,7 +441,10 @@ class TransferService:
             scan = Scan(id=uuid4(), at=self.now(), stage="Uploading")
             t.scans.append(scan)
             await self._save(t)
-        self.runner.start(scan, video, t.complaint, t.patient.age, self._mutate_scan(transfer_id))
+        from app.services.intakes import live_estimates
+
+        self.runner.start(scan, video, t.complaint, t.patient.age, self._mutate_scan(transfer_id),
+                          live=live_estimates(presage))
         return await self.get(transfer_id)
 
     def _mutate_scan(self, transfer_id: UUID):

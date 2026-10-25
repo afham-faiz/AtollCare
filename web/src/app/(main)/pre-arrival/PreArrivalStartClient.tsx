@@ -45,7 +45,7 @@ export default function () {
 
       <ol className={styles.preview}>
         <li>
-          <span>1</span>Record a 60-second video of the patient
+          <span>1</span>Point your phone at the patient: Presage reads heart and breathing rate
         </li>
         <li>
           <span>2</span>Say what happened, in your own words

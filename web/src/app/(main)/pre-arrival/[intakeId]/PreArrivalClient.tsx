@@ -15,6 +15,7 @@ import ScanRecorder from "@/app/components/(scan)/ScanRecorder";
 import ScanResult from "@/app/components/(scan)/ScanResult";
 import Skeleton from "@/app/components/Skeleton";
 import { api, patch, post, type Intake } from "@/lib/api";
+import type { PresageSummary } from "@/lib/presage";
 import { place } from "@/lib/format";
 import { useIntake, useMeta } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
@@ -73,10 +74,11 @@ export default function ({ intakeId }: { intakeId: string }) {
   const sent = intake.status !== "draft";
   const ready = !!(intake.account || intake.scans.length || intake.identity);
 
-  const uploadClip = async (clip: Blob, filename: string) => {
+  const uploadClip = async (clip: Blob, filename: string, presage: PresageSummary | null) => {
     setUploading(true);
     const form = new FormData();
     form.append("video", clip, filename);
+    if (presage) form.append("presage", JSON.stringify(presage)); // measured live while recording
     try {
       refresh(await api<Intake>(`/intakes/${intakeId}/scans`, { method: "POST", body: form }));
       setRecordAgain(false);
@@ -139,7 +141,7 @@ export default function ({ intakeId }: { intakeId: string }) {
         <h1 className={styles.title}>Before you arrive</h1>
       </header>
 
-      <Step n={1} title="Record the patient" done={!!scan} hint={scan ? undefined : "About 60 seconds. Heart and breathing rate are measured from the video."}>
+      <Step n={1} title="Measure the patient" done={!!scan} hint={scan ? undefined : "Presage reads heart and breathing rate from the camera, with no contact, in 30 to 60 seconds."}>
         {!scan || recordAgain ? (
           <>
             <ScanRecorder onClip={uploadClip} disabled={uploading} />

@@ -9,6 +9,7 @@ import { useState } from "react";
 import ScanRecorder from "@/app/components/(scan)/ScanRecorder";
 import ScanResult from "@/app/components/(scan)/ScanResult";
 import { api, type Transfer } from "@/lib/api";
+import type { PresageSummary } from "@/lib/presage";
 import { toastError } from "@/lib/toast";
 
 import styles from "./ScanStage.module.scss";
@@ -20,10 +21,11 @@ export default function ({ t, tz, onSaved }: { t: Transfer; tz?: string; onSaved
   const earlier = t.scans.slice(0, -1).reverse();
   const finished = t.status === "arrived" || t.status === "closed";
 
-  const upload = async (clip: Blob, filename: string) => {
+  const upload = async (clip: Blob, filename: string, presage: PresageSummary | null) => {
     setUploading(true);
     const form = new FormData();
     form.append("video", clip, filename);
+    if (presage) form.append("presage", JSON.stringify(presage)); // measured live while recording
     try {
       onSaved(await api<Transfer>(`/transfers/${t.id}/scans`, { method: "POST", body: form }));
       setRecording(false);
@@ -38,7 +40,7 @@ export default function ({ t, tz, onSaved }: { t: Transfer; tz?: string; onSaved
     return (
       <section className={styles.stage} aria-label="Scan">
         <header className={styles.head}>
-          <h2 className={styles.title}>{latest ? "Measure again" : "Measure with a 60-second scan"}</h2>
+          <h2 className={styles.title}>{latest ? "Measure again" : "Measure with the phone camera"}</h2>
           {latest && (
             <button type="button" className={styles.link} onClick={() => setRecording(false)} disabled={uploading}>
               Cancel

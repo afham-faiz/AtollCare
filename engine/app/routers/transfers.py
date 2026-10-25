@@ -78,9 +78,13 @@ async def message(transfer_id: UUID, body: MessageRequest, h: Hub = Depends(hub)
 
 
 @router.post("/{transfer_id}/scans", response_model=Transfer)
-async def add_scan(transfer_id: UUID, video: UploadFile = File(...), h: Hub = Depends(hub)):
-    """A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background."""
-    return await h.transfers.add_scan(transfer_id, await video.read())
+async def add_scan(transfer_id: UUID, video: UploadFile = File(...), presage: str | None = Form(None),
+                   h: Hub = Depends(hub)):
+    """A clip from a propped-up phone: visible signs, plus Presage vitals (measured live while recording when the
+    phone could stream, `presage`; otherwise from the clip), processed in the background."""
+    from app.routers.intakes import presage_result
+
+    return await h.transfers.add_scan(transfer_id, await video.read(), presage_result(presage))
 
 
 @router.post("/{transfer_id}/interventions/remove", response_model=Transfer)

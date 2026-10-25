@@ -1,14 +1,18 @@
-// Records one ~60 s clip for a scan: Presage needs a steady phone (propped up, not handheld), face and upper chest in
-// view, and a still, quiet patient; breathing rate needs 30 s or more. The clip goes nowhere until it's handed over.
+// A Presage scan on a phone. While the shot is lined up, the camera streams to Presage, which answers with framing
+// hints ("no face found", "too dark"); while recording, live heart rate, breathing rate and the breathing wave appear
+// within seconds. It finishes by itself once Presage calls both stable after its 30 s window (or at 60 s), and hands
+// over the clip (for Gemini's sign check) with Presage's summary. If Presage can't be reached live, it records as
+// before and Presage measures the uploaded clip instead.
 "use client";
 
 import { Camera, CameraOff, RefreshCw, SwitchCamera, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
+import { cameraConstraints, cameraError, lockExposure, usePresageScan, type CameraState, type PresageSummary } from "@/lib/presage";
+
 import styles from "./ScanRecorder.module.scss";
 
-type CameraState = "off" | "starting" | "on" | "denied" | "unavailable";
 const TYPES = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
 const RING = 2 * Math.PI * 34;
 
@@ -17,30 +21,49 @@ function pickType(): string {
   return TYPES.find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
 }
 
+function Wave({ trace }: { trace: number[] }) {
+  if (trace.length < 4) return null;
+  const min = Math.min(...trace);
+  const span = Math.max(...trace) - min || 1;
+  const pts = trace.map((v, i) => `${(i / (trace.length - 1)) * 120},${30 - ((v - min) / span) * 26}`).join(" ");
+  return (
+    <svg viewBox="0 0 120 32" preserveAspectRatio="none" className={styles.wave} aria-label="Live breathing waveform">
+      <polyline points={pts} />
+    </svg>
+  );
+}
+
 export default function ({
   onClip,
   maxSeconds = 60,
-  breathingSeconds = 30,
+  windowSeconds = 30,
   defaultFacing = "environment",
   disabled,
 }: {
-  onClip: (clip: Blob, filename: string) => void;
+  onClip: (clip: Blob, filename: string, presage: PresageSummary | null) => void;
   maxSeconds?: number;
-  breathingSeconds?: number;
+  windowSeconds?: number; // Presage's cleared measurement window (K254169)
   defaultFacing?: "environment" | "user";
   disabled?: boolean;
 }) {
-  const video = useRef<HTMLVideoElement>(null);
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const stream = useRef<MediaStream | null>(null);
+  const unlock = useRef<(() => void) | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const summary = useRef<Promise<PresageSummary | null> | null>(null);
   const [camera, setCamera] = useState<CameraState>("off");
   const [facing, setFacing] = useState(defaultFacing);
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const presage = usePresageScan(videoEl, camera === "on");
+  const live = presage.state === "running";
+  const hr = live ? presage.metrics.hr : null;
+  const rr = live ? presage.metrics.rr : null;
 
   const stopCamera = useCallback(() => {
+    unlock.current?.();
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
   }, []);
@@ -51,56 +74,64 @@ export default function ({
       setCamera("starting");
       stopCamera();
       try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-          audio: false,
-        });
+        const s = await navigator.mediaDevices.getUserMedia(cameraConstraints(mode));
         stream.current = s;
-        if (video.current) {
-          video.current.srcObject = s;
-          await video.current.play().catch(() => undefined);
+        if (videoEl) {
+          videoEl.srcObject = s;
+          await videoEl.play().catch(() => undefined);
         }
+        unlock.current = lockExposure(s);
         setCamera("on");
       } catch (err) {
-        setCamera(err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "SecurityError") ? "denied" : "unavailable");
+        setCamera(cameraError(err));
       }
     },
-    [stopCamera],
+    [stopCamera, videoEl],
   );
 
   useEffect(() => stopCamera, [stopCamera]);
 
   const finish = useCallback(() => {
-    if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
-  }, []);
+    const r = recorder.current;
+    if (!r || r.state === "inactive") return;
+    summary.current = live ? presage.finish() : Promise.resolve(null);
+    r.stop();
+  }, [live, presage]);
 
   useEffect(() => {
     if (!recording) return;
     const started = Date.now();
-    const t = window.setInterval(() => {
-      const s = (Date.now() - started) / 1000;
-      setElapsed(s);
-      if (s >= maxSeconds) finish();
-    }, 200);
+    const t = window.setInterval(() => setElapsed((Date.now() - started) / 1000), 200);
     return () => window.clearInterval(t);
-  }, [recording, maxSeconds, finish]);
+  }, [recording]);
+
+  // done when Presage calls both stable after its window, or at the limit
+  useEffect(() => {
+    if (!recording) return;
+    if (elapsed >= maxSeconds || (elapsed >= windowSeconds && hr?.stable && rr?.stable)) finish();
+  }, [recording, elapsed, maxSeconds, windowSeconds, hr?.stable, rr?.stable, finish]);
 
   const record = () => {
     if (!stream.current) return;
     const type = pickType();
-    // 6 Mbps: the pulse is a colour change of a fraction of a percent, and a starved encoder smooths it away
-    const r = new MediaRecorder(stream.current, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 6_000_000 });
+    // measured live, the clip only feeds Gemini's stills; otherwise Presage measures the clip, so keep it rich
+    // (the pulse is a colour change of a fraction of a percent, and a starved encoder smooths it away)
+    const bitrate = live ? 2_500_000 : 6_000_000;
+    const r = new MediaRecorder(stream.current, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: bitrate });
     chunks.current = [];
     r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
-    r.onstop = () => {
+    r.onstop = async () => {
       setRecording(false);
       const blob = new Blob(chunks.current, { type: r.mimeType || "video/webm" });
       const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+      const result = (await summary.current) ?? null;
       stopCamera();
       setCamera("off");
-      onClip(blob, `scan-${new Date().toISOString().slice(11, 19).replaceAll(":", "")}.${ext}`);
+      onClip(blob, `scan-${new Date().toISOString().slice(11, 19).replaceAll(":", "")}.${ext}`, result);
     };
     recorder.current = r;
+    summary.current = null;
+    if (live) presage.mark();
     r.start(1000);
     setElapsed(0);
     setRecording(true);
@@ -108,32 +139,67 @@ export default function ({
 
   const left = Math.max(0, Math.ceil(maxSeconds - elapsed));
   const progress = Math.min(1, elapsed / maxSeconds);
-  const breathingOk = elapsed >= breathingSeconds;
+  const settling = recording && elapsed < windowSeconds;
+  const capsule = recording
+    ? live
+      ? `Measuring · ${settling ? `${Math.ceil(windowSeconds - elapsed)} s to a reading` : `${left} s left`}`
+      : `Recording · ${left} s left`
+    : live
+      ? "Presage is watching · line up face and chest"
+      : "Face and upper chest inside the corners";
 
   return (
     <div className={styles.wrap}>
       <div className={styles.viewport}>
-        <video ref={video} playsInline muted className={twMerge(styles.video, camera !== "on" && styles.hidden, facing === "user" && styles.mirror)} />
+        <video ref={setVideoEl} playsInline muted className={twMerge(styles.video, camera !== "on" && styles.hidden, facing === "user" && styles.mirror)} />
         {camera === "on" ? (
           <>
-            <svg className={twMerge(styles.guide, recording && styles.guideLive)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+            <svg className={twMerge(styles.guide, recording && styles.guideLive, live && presage.hint && styles.guideHint)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
               <path d="M24 16 V8 Q24 4 28 4 H36" />
               <path d="M76 16 V8 Q76 4 72 4 H64" />
               <path d="M24 84 V92 Q24 96 28 96 H36" />
               <path d="M76 84 V92 Q76 96 72 96 H64" />
             </svg>
             <span className={styles.capsule}>
-              <span className={twMerge(styles.dot, recording && styles.dotLive)} />
-              {recording ? `Recording · ${left} s left` : "Face and upper chest inside the corners"}
+              <span className={twMerge(styles.dot, recording && styles.dotLive, !recording && live && styles.dotPresage)} />
+              {capsule}
             </span>
+            {live && presage.hint && (
+              <span className={styles.hint} role="status" key={presage.hint}>
+                {presage.hint}
+              </span>
+            )}
+            {live && (
+              <div className={styles.readout} aria-live="polite">
+                <span className={styles.readoutSource}>Presage · live</span>
+                <div className={styles.readoutRow}>
+                  <span className={twMerge(styles.reading, !hr?.stable && styles.readingSettling)}>
+                    <span className={styles.readingValue}>{hr?.stable ? Math.round(hr.value) : "—"}</span>
+                    <span className={styles.readingUnit}>bpm</span>
+                  </span>
+                  <span className={twMerge(styles.reading, !rr?.stable && styles.readingSettling)}>
+                    <span className={styles.readingValue}>{rr?.stable ? Math.round(rr.value) : "—"}</span>
+                    <span className={styles.readingUnit}>/min</span>
+                  </span>
+                  <Wave trace={presage.metrics.trace} />
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>{camera === "denied" || camera === "unavailable" ? <CameraOff size={22} /> : <Camera size={22} />}</span>
+            <span className={styles.emptyIcon}>{camera === "denied" || camera === "unavailable" || camera === "busy" ? <CameraOff size={22} /> : <Camera size={22} />}</span>
             <p className={styles.emptyTitle}>
-              {camera === "starting" ? "Opening camera…" : camera === "denied" ? "Camera access is blocked" : camera === "unavailable" ? "No camera available" : "Record about 60 seconds"}
+              {camera === "starting"
+                ? "Opening camera…"
+                : camera === "denied"
+                  ? "Camera access is blocked"
+                  : camera === "unavailable" || camera === "busy"
+                    ? "No camera available"
+                    : "Measure with the camera"}
             </p>
             {camera === "denied" && <p className={styles.emptyText}>Allow the camera from the icon in the address bar, or upload a video instead.</p>}
+            {camera === "off" && <p className={styles.emptyText}>Heart and breathing rate from the camera, no contact. About 30–60 seconds.</p>}
             {camera !== "starting" && (
               <button type="button" className={styles.startCam} onClick={() => startCamera(facing)} disabled={disabled}>
                 {camera === "off" ? <Camera size={16} /> : <RefreshCw size={16} />} {camera === "off" ? "Turn on camera" : "Try again"}
@@ -164,7 +230,7 @@ export default function ({
           className={twMerge(styles.record, recording && styles.recordLive)}
           onClick={recording ? finish : record}
           disabled={camera !== "on" || disabled}
-          aria-label={recording ? "Stop recording" : "Start recording"}
+          aria-label={recording ? "Stop" : "Start measuring"}
         >
           <svg viewBox="0 0 76 76" className={styles.ring} aria-hidden>
             <circle cx="38" cy="38" r="34" className={styles.ringTrack} />
@@ -183,7 +249,7 @@ export default function ({
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) onClip(f, f.name);
+            if (f) onClip(f, f.name, null);
             e.target.value = "";
           }}
         />
@@ -192,10 +258,15 @@ export default function ({
       <ul className={styles.coach}>
         <li className={twMerge(recording && styles.coachDim)}>Prop the phone up so it doesn&apos;t move</li>
         <li className={twMerge(recording && styles.coachDim)}>Keep their face and upper chest in view, in good light</li>
-        <li className={twMerge(recording && !breathingOk && styles.coachNow)}>
-          {recording && !breathingOk ? `Keep still and quiet — breathing needs ${Math.ceil(breathingSeconds - elapsed)} s more` : "Ask them to stay still and not talk"}
-        </li>
+        <li className={twMerge(settling && styles.coachNow)}>{settling ? "Keep still and quiet until the numbers settle" : "Ask them to stay still and not talk"}</li>
       </ul>
+      {camera === "on" && !live && presage.state !== "starting" && (
+        <p className={styles.fallback}>
+          {presage.state === "paused"
+            ? "Presage is busy with another scan. Record anyway; it measures the video after you send it."
+            : "Presage isn't reachable live from here. Record anyway; it measures the video after you send it."}
+        </p>
+      )}
     </div>
   );
 }

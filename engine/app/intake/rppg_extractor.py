@@ -67,10 +67,15 @@ def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
         data = resp.json()
     except (httpx.HTTPError, ValueError) as exc:
         return RppgEstimates(issues=[f"bridge_unavailable: {exc.__class__.__name__}"])
+    return estimates_from_bridge(data, source_fps=fps)
 
-    diagnostics = data.get("diagnostics") or {}
+
+def estimates_from_bridge(data: dict, source_fps: float | None = None) -> RppgEstimates:
+    """The bridge's result (live stream from the phone, or an uploaded clip: same shape) as estimates."""
+    diagnostics = dict(data.get("diagnostics") or {})
     diagnostics["hints"] = data.get("hints") or []  # Presage's own plain-language framing hints, for the screen
-    diagnostics["source_fps"] = fps
+    if source_fps is not None:
+        diagnostics["source_fps"] = source_fps
     hr, hr_q, hr_stable = _vital(diagnostics.get("pulse_series"), data.get("heart_rate_bpm"), data.get("confidence"))
     rr, rr_q, rr_stable = _vital(diagnostics.get("breathing_series"), data.get("respiration_rate_bpm"),
                                  data.get("confidence"))
