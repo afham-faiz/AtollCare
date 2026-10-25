@@ -1,88 +1,133 @@
 ---
 title: "AtollCare: the patient's story arrives before the patient does"
 published: false
-tags: hackathon, healthtech, ai, webdev
+tags: hackathon, healthtech, ai, mlh
 ---
 
-> Draft for the DEV Writing Challenge. Add screenshots, a short video and the live URL, then publish.
+*Built in 24 hours at OxHack 2026 (theme: **Time**) by Afham, Percy and Debanjan.*
 
-## The problem
+## Where the idea came from
 
-Remote emergency transfers (island, rural, maritime, mountain) can put a patient in a boat, ambulance or aircraft
-for an hour or more before they reach the hospital that can treat them. The crew have both hands on the patient. The
-receiving team, meanwhile, knows almost nothing until the doors open.
+Afham is Maldivian. When we sat down on Friday night to pick a problem, they told us what a medical emergency looks
+like at home.
 
-We started with a nine-screen prototype for the Maldives: route optimiser, reporter app, dispatch board. Our
-testers were blunt. Too much, too specific, and the one thing that should feel magic (contactless vitals) didn't work.
-Then three mock judges told us the second version still put Presage on a laptop on a stand, while the people in our
-story only have phones. So the phone became the instrument.
+The Maldives is about 1,200 coral islands in 26 atolls, strung out over hundreds of kilometres of the Indian Ocean.
+Around 190 of them are inhabited. Most have a small health centre at best; the specialists, the cath lab and the
+intensive care beds are concentrated in Malé, the capital. So when someone on an outer island has a heart attack, a
+stroke, a bad fall or a complicated birth, the medicine is often not the slowest part. The journey is: a sea ambulance
+for an hour or more, a seaplane that can't fly after dark, a chain of phone calls between the island, the atoll
+hospital and Malé.
+
+And during all of that, the team waiting in Malé usually knows almost nothing. They learn who the patient is, what
+happened and how sick they are when the doors open. Every minute of that journey could have been a minute of
+preparation. That gap is what we built for, and it's why the hackathon's theme, *Time*, fit so well: we can't make the
+boat go faster, but we can make the time on it count.
 
 ## What we built
 
-1. **The companion's phone** (`/pre-arrival`): "Call 102 first", consent, then film the patient for 30–60 seconds while
-   saying what happened. **Presage** measures heart and breathing rate live from the camera; the words become the
-   account (**ElevenLabs Scribe**). **Gemini** checks still frames for visible signs and cites the frames. Send.
-2. **The crew's phone** (`/crew`): the packet is waiting; one tap starts the transfer with everything carried over.
-   Presage scans on a propped-up phone, as often as the patient's acuity calls for. Voice notes become the handoff.
-3. **The hospital** (`/hospital`): a Presage tile with the latest heart and breathing rate, the trace, *"known 1 h 19 min
-   before arrival"*, the camera trend and the oximeter check; every other measurement with its source and age; an
-   SBAR; and one primary decision: **Accept**.
+AtollCare turns the phone everyone already has into the first monitor in the chain, and carries one patient story
+through three connected screens. What is captured once is never asked again.
+
+1. **The companion's phone** (`/pre-arrival`). A family member scans the health centre's QR code. "Call 102 first",
+   consent, then they film the patient for 30–60 seconds while saying what happened. **Presage** measures heart and
+   breathing rate live from the camera, with hints on framing the shot. The spoken words become the account
+   (**ElevenLabs Scribe**, with Gemini as a fallback). **Gemini** checks still frames for visible signs and cites the
+   frame it saw each one in. An optional ID photo is read by Gemini. Nothing is sent until they press **Send**.
+2. **The crew's phone** (`/crew`). The packet is waiting; one tap starts the transfer with everything carried over.
+   Presage scans on a propped-up phone, as often as the patient's acuity calls for. The crew speak their notes ("aspirin
+   300, GTN spray"), Gemini turns them into a structured handoff, and the hospital's questions are read aloud in the
+   boat by **ElevenLabs**, so nobody has to look away from the patient.
+3. **The hospital** (`/hospital`). A Presage tile with the latest heart and breathing rate, the trace, *"known 1 h 19 min
+   before arrival"*, the camera trend and an oximeter cross-check; every other measurement with its source and age; what
+   was seen on video; an SBAR handoff; and one primary decision: **Accept**.
+4. **Network insights** (`/insights`). For the people running the service: time to acceptance by hospital, journey
+   times, alerts and questions per day, built on **Tiger Data**.
+
+## Sponsor tracks we entered
+
+| Track | How we used it |
+|---|---|
+| **Best Use of Presage** (our main track) | Contactless heart rate, breathing rate and waveforms from a phone camera, live or from an uploaded clip, with Presage's own stability verdict deciding what counts |
+| **Best Use of Gemini API** | Visible-sign check on video frames with cited evidence, ID reading, live SBAR handoff, and drug/dose extraction from spoken notes, each with a fallback |
+| **Best Use of ElevenLabs** | Scribe speech-to-text for the companion's account and crew notes; hospital questions and alerts spoken aloud in the vehicle |
+| **Best Use of Tiger Data** | Vitals and timelines as hypertables on Tiger Cloud, three continuous aggregates, compression, and a live benchmark |
+| **DEV Writing Challenge** | This post |
 
 ## Presage: the phone as the first monitor
 
 - **Live from the phone.** The phone sends JPEG frames (30 fps, 640 px, each stamped with its capture time) over the
-  app's own HTTPS address to `presage-bridge/`, which runs the official `@smartspectra/node-sdk`. Presage answers
-  with framing hints while the shot is lined up, then HR, RR, the pulse waveform and the chest-movement waveform
-  within seconds. The scan ends itself once Presage calls both stable after its 30-second window. If the phone can't
-  stream, Presage measures the uploaded clip instead (converted once, at constant 30 fps, from the original upload).
+  app's own HTTPS address to `presage-bridge/`, which runs the official `@smartspectra/node-sdk`. Presage answers with
+  framing hints while the shot is lined up, then heart rate, breathing rate, the pulse waveform and the chest-movement
+  waveform within seconds. The scan ends by itself once Presage calls both stable. If the phone can't stream, Presage
+  measures the uploaded clip instead.
 - **Presage's verdict decides.** A reading it calls stable (±3 bpm, ±1 breath/min) is scored; anything else is shown and
-  never counted. Each scan's report shows the waveforms, when the shot wasn't usable and why ("Too much movement
-  3–7 s"), a pause in breathing if Presage detects one, and how much the patient talked.
+  labelled, never counted. Each scan's report shows the waveforms, when the shot wasn't usable and why ("Too much
+  movement 3–7 s"), a pause in breathing if Presage detects one, and how much the patient talked.
 - **It changes a decision.** Two stable crew scans minutes apart that moved a lot raise *"Camera trend HR 92→124, RR
-  18→25 over 3 min — take a full manual set"*: spoken in the vehicle, amber on the hospital tile, and the accept dialog
+  18→25 over 3 min, take a full manual set"*: spoken in the vehicle, amber on the hospital tile, and the accept dialog
   suggests the resus bay.
 - **Inside the clearance.** Presage's FDA 510(k) K254169 covers spot checks of pulse (50–150 bpm) and breathing (8–26)
-  over 30 s, on a phone in a static mount, by trained staff. Our ranges are those; the crew's propped-up scan copies
-  that setup; the companion's video is a *bystander estimate*, never scored; and a camera reading alone never raises a
-  critical alert. When the crew enter an oximeter pulse it's checked against the camera, on screen.
-- **Where the video goes.** To our server while it's measured (Presage, and Gemini on still frames). It isn't stored;
-  only frames that show a sign are kept, for the hospital. Presage's native mobile SDK, keeping everything on the
-  phone, is the next step.
+  over 30 s, on a phone in a static mount, by trained staff. Our ranges are those; the crew's propped-up scan copies that
+  setup; the companion's video is a *bystander estimate*, shown but never scored; and a camera reading alone never
+  raises a critical alert.
+- **Where the video goes.** To our server while it's measured, then discarded; only frames that show a sign are kept,
+  for the hospital. Presage's native mobile SDK, keeping everything on the phone, is the next step.
 
 ## The rest of the stack
 
-- **Engine (FastAPI + Pydantic):** transfer lifecycle (`preparing → pending → accepted → arrived → closed`), NEWS2
-  (partial until the crew add SpO₂ / BP / temperature / ACVPU), a least-squares deterioration forecast, and alerts with
-  hysteresis so they don't flap. Pydantic models generate the OpenAPI spec and, from that, the web app's TypeScript
-  types.
-- **Gemini** writes the SBAR with a JSON response schema and only from recorded facts. A deterministic template takes
-  over if it fails, and the UI says which one wrote it.
-- **Tiger Data:** vitals and notes are hypertables with daily chunks. A real-time 1-minute continuous aggregate of
-  *measured* readings feeds each patient's trend chart and forecast (the chart says which aggregate answered, and in
-  how many ms). Two more aggregates power a Network insights page for operations leads: time to acceptance, the
-  slowest hospitals, alerts and questions per day. Columnar compression after a week took 60 days of seeded history
-  from 71 MB to 12 MB, and the page runs a live benchmark: 2.6 ms from the aggregate vs 22.8 ms scanning 189k rows.
-- **Vultr:** engine + web on Cloud Compute behind Caddy (automatic HTTPS via sslip.io), deployed with one script; the
-  engine reads Vultr's instance metadata so the presenter panel shows the region it's really running in. The bridge
-  in the vehicle posts to it.
-- **Web (Next.js 16):** a light, quiet clinical interface. The crew screen fits a 1024×768 tablet without scrolling,
-  and the hospital detail pane lays out by its own width with container queries.
+- **Engine (FastAPI + Pydantic):** the transfer lifecycle (`preparing → pending → accepted → arrived → closed`), NEWS2
+  (partial until the crew add SpO₂, blood pressure, temperature and consciousness), a least-squares deterioration
+  forecast, and alerts with hysteresis so they don't flap. Pydantic models generate the OpenAPI spec and, from that, the
+  web app's TypeScript types.
+- **Gemini** writes the SBAR with a JSON response schema, only from recorded facts, with a fallback model when the
+  first is overloaded and a deterministic template if both fail. The UI says which one wrote it. The sign check is
+  grounded in code: a sign can only be "seen" if it cites real frames.
+- **Tiger Data (Tiger Cloud, TimescaleDB 2.31):** vitals and notes are hypertables with daily chunks. A real-time
+  1-minute continuous aggregate of *measured* readings feeds each patient's trend chart and forecast; two more
+  aggregates power the insights page. With 60 days of seeded history (480 transfers, about 340,000 readings) on the
+  free tier, compression shrank the older chunks from 69 MB to 12 MB (83% smaller), and the page's live benchmark
+  answers the same question from the aggregate in about 90 ms versus 300 ms scanning every raw reading.
+- **Web (Next.js 16):** a calm clinical interface. The crew screen fits a 1024×768 tablet without scrolling, and the
+  same address serves the app, the API and the Presage bridge, which matters because phones only allow their camera on
+  HTTPS.
+
+## Not just the Maldives
+
+Nothing in AtollCare is specific to one country. Hospitals, clinics and transport modes live in region packs (JSON
+files), and we ship two: the Maldives and Scotland's Western Isles. The same gap, a long journey and a receiving team
+that knows nothing until the doors open, shows up in many places:
+
+- **Other archipelagos:** the Philippines and Indonesia (thousands of inhabited islands each), and Pacific nations such
+  as Fiji, Vanuatu, the Solomon Islands and Kiribati, where transfers to a referral hospital can mean a long boat ride or
+  an inter-island flight.
+- **Remote islands in rich countries:** Scotland's Hebrides and Orkney, the Greek islands, Norway's coast. The air
+  ambulances are excellent, but the hospital still benefits from knowing early.
+- **Long road and air distances:** rural Australia (where flying doctors cover huge areas), northern Canada and Alaska,
+  and rural districts in India or sub-Saharan Africa, where the nearest specialist may be hours away by road.
+- **Mountains and sea:** helicopter rescues in Nepal or the Alps, and offshore platforms or ships at sea.
+
+Anywhere the patient spends time in transit, that time can carry their story ahead of them.
 
 ## What was hard
 
 - **Being honest about data provenance.** Every value carries `presage`, `manual` or `simulated` and a timestamp,
-  rendered next to the number. Testers still read our "demo signal" as real, so simulated values became muted, lost
-  their status word, and stopped counting: NEWS2, alerts and the forecast use measured readings only. Prepared demo
-  cases now pre-fill nothing.
-- **Designing for a moving vehicle.** One primary action at a time, status in words as well as colour, a hospital
-  question that lands *on* the mic button, and everything spoken aloud once.
-- **A demo that survives stage conditions.** Prepared cases, a presenter panel behind a shortcut, a sim clock for the
-  journey, and a typed fallback for every voice step.
+  rendered next to the number. Testers still read our demo signal as real, so simulated values became muted, lost their
+  status word and stopped counting: NEWS2, alerts and the forecast use measured readings only.
+- **Designing for a moving boat.** One primary action at a time, status in words as well as colour, a hospital question
+  that lands *on* the mic button, and everything spoken aloud once.
+- **Narrowing the idea.** We started with a nine-screen system for the whole Maldives referral chain: a route optimiser,
+  a reporter app, a dispatch board. Our testers were blunt: too much, and the one thing that should feel like magic
+  (contactless vitals) wasn't there. Cutting it down to one story across three screens, with Presage on the phone at
+  its centre, made it a product.
+- **Free-tier limits at 3 a.m.** Gemini's free tier allows about 20 requests a day per model, which a few demo runs
+  use up, so the engine spreads work across models and falls back cleanly.
 
 ## What's next
 
-Presage's native mobile SDK so only numbers leave the phone, per-hospital inboxes and authentication, push instead of
-polling, SMS fallback for low-connectivity legs, and validation of the contactless readings against a monitor in a
-real vehicle.
+Presage's native mobile SDK so only numbers leave the phone, a Dhivehi interface and voice, per-hospital inboxes and
+authentication, an SMS fallback for low-connectivity legs, and validation of the contactless readings against a
+monitor in a real sea ambulance.
 
 *Decision support only. No real patient data. Clinical thresholds and timings in the demo are illustrative.*
+
+**Code:** https://github.com/afham-faiz/AtollCare
