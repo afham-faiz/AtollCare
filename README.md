@@ -8,6 +8,18 @@ AtollCare turns the phone everyone already has into the first monitor in the cha
 through three connected screens. What is captured once is never asked again. Decision support only; every clinical
 number in the demo is illustrative.
 
+Built at OxHack 2026 (theme: **Time**). Every minute the receiving team knows a patient is coming is a minute of
+preparation instead of a cold start at the door.
+
+## Built with
+
+| Sponsor | What it does here | Where |
+|---|---|---|
+| **Presage SmartSpectra** | Contactless heart rate, breathing rate, waveforms and framing hints from a phone or laptop camera, live or from an uploaded clip. Presage's own stability verdict decides what gets scored | `presage-bridge/`, `web/src/lib/presage.ts`, `engine/app/intake/rppg_extractor.py` |
+| **Google Gemini** | Visible-sign check on video frames (each finding cites the frame it was seen in), ID photo read, speech to text, live SBAR handoff, and drug/dose extraction from spoken notes, with a fallback model and rule-based fallbacks | `engine/app/intake/`, `engine/app/adapters/gemini.py` |
+| **ElevenLabs** | Scribe speech to text for crew notes; hospital questions and alerts spoken aloud in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
+| **Tiger Data (Tiger Cloud)** | Vitals and timeline as hypertables, three continuous aggregates (1-minute trend, network hourly vitals, daily events), compression after 7 days, and a live aggregate-vs-raw benchmark on `/insights` | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |
+
 ## What it does
 
 | Screen | Who, on what | What happens |
@@ -15,7 +27,7 @@ number in the demo is illustrative.
 | **Pre-arrival** `/pre-arrival` | The companion, on their own phone, before anyone reaches the health centre | "Call 102 first", consent, then film the patient for 30–60 seconds while saying what happened. **Presage** reads heart and breathing rate from the camera, live, with hints on how to frame the shot. The spoken words become the account. **Gemini** checks still frames for visible signs and cites the frame it saw each one in. Optional ID photo, read by Gemini. Nothing reaches the health centre until they press **Send**. |
 | **Crew** `/crew` | The ambulance or boat crew, on a phone or a mounted tablet or laptop | A sent packet appears under "Sent ahead from a phone"; one tap starts the transfer from it, account, ID and video carried over. Contactless **scans** on a propped-up phone, as often as the patient's acuity calls for (or a continuous stream from a mount). Oximeter, BP, temperature and consciousness are entered by hand. Spoken notes become a structured handoff (SBAR). Hospital replies are read aloud. |
 | **Hospital** `/hospital` | The receiving team, on a desktop or tablet | A tile with the latest Presage heart and breathing rate, the trace, how long before arrival they knew, the camera trend and the oximeter cross-check. Every measurement with its source and age, what was seen on video (with the frame), the companion's account and ID, the SBAR, and one primary decision: **Accept**. They can also ask the crew a question. |
-| **Network insights** `/insights` | Operations leads | Handoffs, median and 90th-percentile time to acceptance, journey times, alerts and questions per day, slowest-accepting hospitals. Needs a database to show anything (see below). |
+| **Network insights** `/insights` | Operations leads | Handoffs, median and 90th-percentile time to acceptance, journey times, alerts and questions per day, slowest-accepting hospitals, storage and compression figures, and a live aggregate-vs-raw benchmark. Needs Tiger Cloud or TimescaleDB ([below](#tiger-cloud-optional-powers-insights)). |
 
 Also in the app: a **presenter panel** (press **Ctrl + .**, or ⌘ + . on a Mac) with prepared demo cases, region
 choice, journey speed (1× to 60×), service status, and a **QR code that opens a screen on a phone**. The same tools are
@@ -58,15 +70,27 @@ phone (companion / crew) ──► web  Next.js · the three screens · proxies 
 - **Lifecycles.** Packet: `draft` → `sent` → `started`. Transfer: `preparing` → `pending` (the hospital can now see
   it) → `accepted` → `arrived` → `closed`.
 
+### Repository layout
+
+```
+engine/                FastAPI engine (Python 3.11+)
+  app/core/            NEWS2, alerts, forecast, briefing (SBAR), regions, sim clock
+  app/intake/          pre-arrival services: sign check (VQA), ID read, speech, Presage clip summary
+  app/adapters/        Gemini, ElevenLabs, storage
+  app/migrations/      TimescaleDB / Tiger Cloud schema (hypertables, continuous aggregates, compression)
+  app/data/regions/    region packs (maldives.json, scotland.json)
+  tests/               pytest (in-memory store; TEST_DATABASE_URL runs them on TimescaleDB too)
+web/                   Next.js 16 app: /pre-arrival, /crew, /hospital, /insights, /demo
+presage-bridge/        Node service around the Presage SmartSpectra SDK (live frames and uploaded clips)
+scripts/               phone_tunnel.sh, predemo_check.mjs, demo_e2e.py, deploy_vultr.sh
+part1/                 the original standalone pre-arrival prototype, kept runnable on its own
+docs/                  brief, pitch, features, known issues, design notes
+```
+
 ## Quickstart (Windows, macOS or Linux; no Docker)
 
 You need **Python 3.11+**, **Node 20+** and a terminal for each of three services. The commands below are for
 PowerShell on Windows; on macOS/Linux use `source .venv/bin/activate` and forward slashes.
-
-**Windows shortcut:** once `.env` exists (step 1) and the `.venv` is set up, `.\scripts\start.ps1` starts the engine,
-the Presage bridge, the web app and the Cloudflare tunnel, waits until they answer, and opens the phone-ready
-`https://…trycloudflare.com` address. `-NoTunnel` for local only, `-Prod` for a production web build, `-Stop` to close
-everything. Steps 2 to 4 below are the same thing by hand.
 
 ### 1. Configure
 
@@ -81,10 +105,13 @@ PRESAGE_API_KEY=your-presage-key   # https://physiology.presagetech.com
 ```
 
 With none of these, everything still runs on mock adapters with clearly labelled simulated heart and breathing rate,
-which is enough to click through the whole flow.
+which is enough to click through the whole flow. [`.env.example`](.env.example) lists every setting with safe
+defaults (empty `DATABASE_URL` = in-memory store).
 
-> Do not copy [`.env.example`](.env.example) as it stands: it still points `DATABASE_URL` at a Docker database that
-> no longer exists in our setup, and the engine would fail to connect. Leave `DATABASE_URL` empty.
+> **Gemini free tier:** an AI Studio key allows about 20 requests a day **per model**. A demo run uses several, so
+> spread the work across models (e.g. `GEMINI_MODEL=gemini-flash-lite-latest`, the intake models on
+> `gemini-3-flash-preview`) or use a billed key. `node scripts/predemo_check.mjs --quick` tells you if a model is out
+> of quota.
 
 ### 2. Start the three services
 
@@ -121,8 +148,8 @@ npm run dev
 
 ### 3. Open it
 
-Go to **http://localhost:3000**. It lands on the crew screen; the companion's screen is `/pre-arrival` and the
-hospital's is `/hospital`. Press **Ctrl + .** for the presenter panel, pick a prepared case, and play the story.
+Go to **http://localhost:3000**. The home page shows the three places someone can be in a transfer, with what's live
+in each: `/pre-arrival` (the companion), `/crew` and `/hospital`. Press **Ctrl + .** for the presenter panel, pick a prepared case, and play the story.
 
 Camera and microphone need a secure context: `localhost` works in Chrome or Edge, but an editor's built-in preview
 pane usually blocks capture.
@@ -183,8 +210,32 @@ with a log line. Restart the service after editing.
 | `NEXT_PUBLIC_ENGINE_URL`, `NEXT_PUBLIC_PRESAGE_BRIDGE_URL` | web | Browser-side overrides. Normally leave unset: the app uses its own address |
 | `DEFAULT_REGION`, `DEFAULT_SPEED_MULTIPLIER` | engine | Demo defaults (`maldives`, `1`) |
 | `CORS_ORIGINS` | engine | Default `http://localhost:3000` |
-| `DATABASE_URL` | engine | **Leave empty.** Empty means the in-memory store. A Postgres/TimescaleDB URL still works and is the only way to get data on `/insights`, but it is not part of the current setup |
+| `DATABASE_URL` | engine | Empty = in-memory store (resets on restart). A Tiger Cloud / TimescaleDB URL (`…?sslmode=require`) persists everything and turns on `/insights` |
 | `STORAGE_MODE`, `S3_*` | engine | `local` (default) keeps cached speech audio and cited frames on disk under `engine/var/`; `s3` is optional |
+
+## Tiger Cloud (optional, powers `/insights`)
+
+The engine runs fine in memory. Point it at Tiger Cloud to persist data and light up the insights page:
+
+```powershell
+irm https://cli.tigerdata.com/install.ps1 | iex        # Tiger CLI (macOS/Linux: curl -fsSL https://cli.tigerdata.com | sh)
+tiger auth login                                        # browser sign-in (--headless prints a code instead)
+tiger service create --name atollcare --cpu shared      # free tier; shared CPU runs in us-east-1
+tiger service get --with-password -o env                # PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
+```
+
+Set `DATABASE_URL=postgresql://<PGUSER>:<PGPASSWORD>@<PGHOST>:<PGPORT>/<PGDATABASE>?sslmode=require` in `.env` and
+restart the engine. Migrations run on startup (hypertables, continuous aggregates, compression policy). Then press
+**Ctrl + . → Seed 60 days of history** (or `POST /api/demo/history?days=60`) to load 60 days of flagged demo history: on the free
+tier that is about 480 transfers and 340,000 readings in ~20 s, with older chunks compressed by about 80%. The presenter
+panel shows `Database: Tiger Cloud`.
+
+**Fallback:** if the venue network can't reach Tiger Cloud, the engine retries for about a minute and then stops.
+Empty `DATABASE_URL` and restart to go back to the in-memory store; only `/insights` needs the database.
+
+A local TimescaleDB works the same way: `docker run -d --name atollcare-tsdb -e POSTGRES_PASSWORD=postgres -e
+POSTGRES_DB=atollcare -p 5433:5432 timescale/timescaledb:latest-pg17`, then
+`DATABASE_URL=postgresql://postgres:postgres@localhost:5433/atollcare`.
 
 ## Checks
 
@@ -207,6 +258,6 @@ the web test runner; it needs bun.)
   (phone propped up, face and chest in view, well lit, patient still).
 - [`part1/`](part1/) is the standalone Part 1 prototype, kept whole so it still runs on its own (copy `env.example`
   to `inputs/.env`, `pip install -r requirements.txt`, `python run.py --serve`).
-- Optional and legacy, not our current path: Docker Compose files (`docker-compose*.yml`), the Vultr deploy
-  ([`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md), `scripts/deploy_vultr.sh`, `Caddyfile`) and the TimescaleDB /
-  Tiger Data migrations in `engine/app/migrations/`. `docs/CONCEPT.md` and `docs/PRD.md` are the original v1 concept.
+- Optional, not our current path: Docker Compose files (`docker-compose*.yml`) and the Vultr deploy
+  ([`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md), `scripts/deploy_vultr.sh`, `Caddyfile`). `docs/CONCEPT.md` and
+  `docs/PRD.md` are the original v1 concept.
