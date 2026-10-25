@@ -74,25 +74,8 @@ export function cameraError(err: unknown): CameraState {
   return "unavailable";
 }
 
-/** Presage's model cards call fixed exposure and white balance essential: once auto-exposure has settled, hold it
- *  where the camera allows (many webcams and iOS don't; then nothing changes). */
-export function lockExposure(stream: MediaStream, afterMs = 2000): () => void {
-  const timer = window.setTimeout(() => {
-    const track = stream.getVideoTracks()[0];
-    if (!track?.getCapabilities) return;
-    const caps = track.getCapabilities() as Record<string, unknown>;
-    const now = track.getSettings() as Record<string, unknown>;
-    const advanced: Record<string, unknown>[] = [];
-    if (Array.isArray(caps.exposureMode) && caps.exposureMode.includes("manual") && now.exposureTime != null) {
-      advanced.push({ exposureMode: "manual", exposureTime: now.exposureTime });
-    }
-    if (Array.isArray(caps.whiteBalanceMode) && caps.whiteBalanceMode.includes("manual") && now.colorTemperature != null) {
-      advanced.push({ whiteBalanceMode: "manual", colorTemperature: now.colorTemperature });
-    }
-    if (advanced.length) track.applyConstraints({ advanced } as MediaTrackConstraints).catch(() => undefined);
-  }, afterMs);
-  return () => window.clearTimeout(timer);
-}
+// Exposure is left to the camera. Locking it (Presage's model cards prefer fixed exposure) froze many webcams and
+// Android phones at a wrong, near-black value they reported, and Presage then asked for more light.
 
 export function useCamera(enabled: boolean) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -103,7 +86,6 @@ export function useCamera(enabled: boolean) {
     if (!enabled) return;
     let stream: MediaStream | null = null;
     let cancelled = false;
-    let unlock: (() => void) | null = null;
     const open = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
         setCamera("unavailable");
@@ -124,7 +106,6 @@ export function useCamera(enabled: boolean) {
           videoRef.current.srcObject = opened;
           await videoRef.current.play().catch(() => undefined);
         }
-        unlock = lockExposure(opened);
         setCamera("on");
       } catch (err) {
         setCamera(cameraError(err));
@@ -133,7 +114,6 @@ export function useCamera(enabled: boolean) {
     open();
     return () => {
       cancelled = true;
-      unlock?.();
       stream?.getTracks().forEach((t) => t.stop());
     };
   }, [enabled, attempt]);

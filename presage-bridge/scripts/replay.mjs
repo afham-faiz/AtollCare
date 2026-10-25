@@ -1,11 +1,12 @@
 // Stream a video file through the bridge's live path exactly as a phone does (JPEG frames over the WebSocket, at the
 // clip's own pace), then print Presage's summary. Rehearse with a recorded face before trusting a stage.
 //
-//   node scripts/replay.mjs face.mp4 [--url ws://localhost:8787/ws] [--ffmpeg path/to/ffmpeg] [--fps 30]
+//   node scripts/replay.mjs face.mp4 [--url ws://localhost:8787/ws] [--ffmpeg path/to/ffmpeg] [--fps 30] [--out summary.json]
 //
 // ffmpeg cuts the clip into JPEG frames (long side 640, like the phone); frames are sent in real time with their
 // capture timestamps, so the SDK sees what a phone would send.
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 
 import { WebSocket } from "ws";
 
@@ -22,6 +23,7 @@ if (!file) {
 const url = opt("url", "ws://localhost:8787/ws");
 const ffmpeg = opt("ffmpeg", process.env.FFMPEG ?? "ffmpeg");
 const fps = Number(opt("fps", 30));
+const out = opt("out", null); // save Presage's summary: it's what a phone uploads with its clip (form field "presage")
 const JPEG_MAGIC = 0x4143504a;
 
 // split ffmpeg's MJPEG stream into single JPEGs (each runs from FFD8 to FFD9)
@@ -69,6 +71,7 @@ ws.on("message", (data) => {
     console.log(`\n[replay] summary: HR ${r.heart_rate_bpm ?? "-"} · RR ${r.respiration_rate_bpm ?? "-"} · ${r.diagnostics.frames} frames in ${r.diagnostics.seconds} s`);
     console.log(`[replay] hints: ${r.hints.join(" · ") || "none"}`);
     console.log(`[replay] stable samples: pulse ${r.diagnostics.pulse_series.filter((s) => s.stable).length}, breathing ${r.diagnostics.breathing_series.filter((s) => s.stable).length}`);
+    if (out) fs.writeFileSync(out, JSON.stringify(r));
     ws.close();
   }
 });

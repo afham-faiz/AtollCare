@@ -69,6 +69,28 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
   return (await res.json()) as T;
 }
 
+/** A multipart upload with progress (fetch can't report upload progress): phone videos are tens of MB on a slow
+ *  uplink, and the person holding the phone needs to see it going. */
+export function uploadForm<T>(path: string, form: FormData, onProgress?: (fraction: number) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${ENGINE_URL}${path}`);
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
+    xhr.onerror = () => reject(new ApiError("network", "Can't reach the server — check the connection", 0));
+    xhr.onload = () => {
+      let body: { error?: { code?: string; message?: string } } | null = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        body = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && body) return resolve(body as T);
+      reject(new ApiError(body?.error?.code ?? "http_error", body?.error?.message ?? `Request failed (${xhr.status})`, xhr.status));
+    };
+    xhr.send(form);
+  });
+}
+
 export const post = <T>(path: string, json?: unknown) => api<T>(path, { method: "POST", json: json ?? {} });
 export const patch = <T>(path: string, json: unknown) => api<T>(path, { method: "PATCH", json });
 export const fetcher = <T>(path: string) => api<T>(path);

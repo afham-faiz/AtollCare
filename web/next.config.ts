@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // The floating dev badge sits on top of the crew screen's mic button; build/runtime errors still surface.
   devIndicators: false,
+  experimental: {
+    // phone videos go through the /api proxy: Next otherwise cuts request bodies at 10 MB (the engine then waits for
+    // the rest until the proxy gives up at 30 s, and the upload fails), and slow uplinks need more than 30 s
+    proxyClientMaxBodySize: "200mb",
+    proxyTimeout: 300_000,
+  },
   // phones reach the dev server through an HTTPS tunnel; let those hosts load dev assets and hot reload
   allowedDevOrigins: ["*.trycloudflare.com", "*.ngrok-free.app", "*.ngrok.app", "*.loca.lt"],
   turbopack: {

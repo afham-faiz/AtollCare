@@ -14,8 +14,7 @@ import Segmented from "@/app/components/(controls)/Segmented";
 import ScanRecorder from "@/app/components/(scan)/ScanRecorder";
 import ScanResult from "@/app/components/(scan)/ScanResult";
 import Skeleton from "@/app/components/Skeleton";
-import { api, patch, post, type Intake } from "@/lib/api";
-import type { PresageSummary } from "@/lib/presage";
+import { patch, post, type Intake } from "@/lib/api";
 import { patientTitle } from "@/lib/clinical";
 import { place } from "@/lib/format";
 import { useIntake, useMeta } from "@/lib/swr";
@@ -46,7 +45,6 @@ export default function ({ intakeId }: { intakeId: string }) {
   const { data: intake, error } = useIntake(intakeId);
   const { data: meta } = useMeta();
   const [recordAgain, setRecordAgain] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [editPatient, setEditPatient] = useState(false);
   const region = meta?.regions.find((r) => r.id === intake?.region_id);
@@ -75,21 +73,6 @@ export default function ({ intakeId }: { intakeId: string }) {
   const scan = intake.scans.at(-1);
   const sent = intake.status !== "draft";
   const ready = !!(intake.account || intake.scans.length || intake.identity);
-
-  const uploadClip = async (clip: Blob, filename: string, presage: PresageSummary | null) => {
-    setUploading(true);
-    const form = new FormData();
-    form.append("video", clip, filename);
-    if (presage) form.append("presage", JSON.stringify(presage)); // measured live while recording
-    try {
-      refresh(await api<Intake>(`/intakes/${intakeId}/scans`, { method: "POST", body: form }));
-      setRecordAgain(false);
-    } catch (err) {
-      toastError(err);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const setPatient = async (update: { age?: number | null; sex?: Sex | null }) => {
     try {
@@ -150,14 +133,14 @@ export default function ({ intakeId }: { intakeId: string }) {
         hint={scan ? undefined : "30 to 60 seconds. Presage reads heart and breathing rate from the camera with no contact; your words become the account. Keep the patient still and quiet."}
       >
         {!scan || recordAgain ? (
-          <>
-            <ScanRecorder onClip={uploadClip} disabled={uploading} withAudio />
-            {uploading && (
-              <p className={styles.uploading}>
-                <Loader2 size={16} className="animate-spin" /> Sending the video…
-              </p>
-            )}
-          </>
+          <ScanRecorder<Intake>
+            endpoint={`/intakes/${intakeId}/scans`}
+            onSent={(next) => {
+              refresh(next);
+              setRecordAgain(false);
+            }}
+            withAudio
+          />
         ) : (
           <div className={styles.card}>
             <ScanResult scan={scan} tz={region?.timezone} title="Your video" coach bystander />
