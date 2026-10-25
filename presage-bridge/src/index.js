@@ -40,7 +40,7 @@ const HINTS = {
   4: "Adjust the distance to the patient",
   5: "Too dark — add light",
   6: "Too bright — reduce glare",
-  7: "Chest not visible — show the upper chest",
+  7: "Chest not visible — move back so the chest shows, down to the belly",
   10: "Camera adjusting…",
   11: "Frame rate too low",
   12: "Too much movement — hold still",

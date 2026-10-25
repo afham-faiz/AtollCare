@@ -44,11 +44,19 @@ Presage: see `scripts/phone_tunnel.sh`.
 ## Rehearse without a phone
 
 ```bash
-node scripts/replay.mjs face.mp4 --ffmpeg /path/to/ffmpeg
+node scripts/replay.mjs fixtures/face.mp4 [--seconds 30] [--url wss://….trycloudflare.com/presage/ws] [--ffmpeg /path/to/ffmpeg]
 ```
 
 Streams a video file through the live path exactly as a phone does (JPEG frames at the clip's own pace, with capture
-timestamps) and prints Presage's summary. Use a recorded face to check the whole chain before a demo.
+timestamps), prints Presage's summary and the numbers the phone would show, and exits 1 without a stable heart rate.
+
+Before a demo, run the whole chain instead: `node scripts/predemo_check.mjs` from the repo root checks the services,
+the public link and Gemini, streams `fixtures/face.mp4` through the public link, uploads it and waits for the scan.
+
+`fixtures/` is kept out of git (a face on video). Put a 40–45 s clip there as `face.mp4`: one still person, face high in
+the frame with the chest below it, lit from the front, ideally talking for part of it so the spoken account is
+exercised too. We used a public-domain video address with black padding added below the picture; without the room
+below the face, Presage reported `kChestNotVisible` on every frame and measured nothing.
 
 ## Getting a good measurement
 
@@ -56,7 +64,8 @@ From Presage's model cards and its FDA clearance (K254169: spot checks, phone in
 healthy adults 18–70):
 
 - Prop the phone up or mount it. Breathing rate needs a camera that is **not handheld**.
-- Keep the patient's face **and upper chest** in view, well lit, and not backlit.
+- Keep the patient's face **and chest down to the belly** in view, well lit, and not backlit. Presage measures
+  nothing while it reports `kChestNotVisible`, which a face close-up always triggers.
 - The patient should be still and not talking (the companion can talk off camera).
 - 30 s window. Pulse is cleared for 50–150 bpm and breathing for 8–26 /min; screens flag readings outside that.
 - "Stable" is Presage's own accuracy standard: ±3 bpm for pulse, ±1 breath/min for breathing.

@@ -15,9 +15,11 @@ Chrome), each with a fingertip oximeter on and breathing counted by hand for 60 
 The product builds this as you go: enter the oximeter pulse in the crew's vitals sheet and the hospital's Presage
 tile shows *"camera 98, oximeter 96 · agree"*. Without that table, don't claim accuracy.
 
-**Rehearse with a recorded face.** `node presage-bridge/scripts/replay.mjs face.mp4 --ffmpeg <path>` streams a video
-through the live path exactly as a phone would and prints Presage's summary. Use it to check the bridge before every
-rehearsal.
+**Run the pre-demo check before every rehearsal and right before going on.** `node scripts/predemo_check.mjs`
+(about two minutes) checks the engine, bridge, web app and public link, asks Gemini directly (a used-up quota shows
+here, not on stage), streams a recorded face through the public link exactly as a phone does and needs a stable heart
+rate, then uploads the clip and waits for the scan: vitals, Gemini's sign check, the spoken account. `--quick` checks
+only the services, in seconds. The clip lives in `presage-bridge/fixtures/` (see the bridge README).
 
 **The room.**
 - Laptop runs engine, Presage bridge and a **production** web build (`bun run build && bun run start`: faster on a
@@ -25,7 +27,8 @@ rehearsal.
 - `./scripts/phone_tunnel.sh` on our own 4G hotspot, not venue Wi-Fi. Open the printed `https://…` address on the
   laptop, press **Ctrl + .**, pick *Dhangethi Health Centre* under **On a phone**, and scan the QR with both phones.
 - Projector split: left, the companion's phone mirrored (scrcpy for Android, QuickTime for iPhone); right, `/hospital`.
-- A teammate plays the patient: seated, still, face and upper chest lit from the front.
+- A teammate plays the patient: seated, still, lit from the front, phone an arm's length or more away so the face and
+  chest down to the belly are in view (Presage measures nothing without the chest).
 - Presenter panel → *Clear live transfers*. Speed 1×. Crew phone volume up.
 - A packet recorded from a real face at rehearsal, already sent, as the fallback. A 30 s screen recording of a good run.
 - Never show *Simulated* during the Presage pitch.

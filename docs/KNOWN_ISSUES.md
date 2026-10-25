@@ -22,14 +22,21 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 - **Live phone path:** JPEG frames → the web app's `/presage/ws` (Next proxy) → bridge → SmartSpectra runs end to end
   with `presage-bridge/scripts/replay.mjs`: 240 frames in 8 s, framing hints back at once, the summary (traces,
   framing intervals) on stop. The engine stores a live summary sent with the clip and only runs Gemini on it.
+- **A real face, through the public link (25 October).** A recorded face (a public-domain video address) gave a
+  stable heart rate on both paths over the Cloudflare tunnel: 78–79 bpm live at 30 fps, 76 bpm from the uploaded clip.
+  Presage measures nothing while it reports `kChestNotVisible`, which a face close-up always triggers: the face has to
+  sit high in the frame with the chest below it. `scripts/predemo_check.mjs` now runs this end to end through the
+  public link (see `PITCH.md`). Phone uploads over 10 MB were being cut off by the web app's proxy; the limit is now
+  200 MB (`web/next.config.ts`).
 - **FDA clearance details** checked against the 510(k) summary K254169 (18 June 2026): pulse 50–150 bpm and
   respiratory rate 8–26 /min over a 30 s window, healthy adults 18–70, phone in a static mount, trained staff, not
   for critical care. Maldives ambulance 102 (two embassies and the CIA Factbook agree).
 
 ## Not verified yet
 
-- **A real face, live, on a real phone.** The most important open item. Every measurement so far used a test
-  pattern, so no heart or breathing rate has come back from either path. Check (see `PITCH.md` → Hour 0):
+- **A person in front of a real phone, live.** The most important open item. A recorded real face works on both
+  paths (above), but the first Android try on 25 October got no live numbers: the live session broke (see *Rough
+  edges*) and the uploaded clip was measured instead (HR 84, RR 12). Check (see `PITCH.md` → Hour 0):
   `scripts/phone_tunnel.sh`, scan the presenter QR, prop the phone up, measure a teammate with a fingertip oximeter on.
 - **JPEG frames vs Presage's accuracy.** Each frame is a JPEG at quality 0.9, 640 px on the long side. Per-frame JPEG
   keeps each frame's colour (no inter-frame smoothing), but whether it costs accuracy against raw frames is untested.
@@ -38,9 +45,6 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
   queued), which lowers the frame rate Presage sees. Use our own hotspot on stage.
 - **Recording on a real phone** (camera, microphone for "film and speak", iOS Safari MP4). The desktop browser pane
   blocks both, so only uploads and typing were exercised.
-- **Exposure lock** (`applyConstraints` exposure/white balance after 2 s) is attempted where the camera says it can;
-  untested on real phones.
-
 - **Tiger Cloud specifically.** Everything Tiger-related ran against self-hosted TimescaleDB 2.31; the same SQL should
   run on Tiger Cloud, but it hasn't been pointed at a Tiger Cloud service yet.
 - **Vultr deployment.** The runbook (`DEPLOY_VULTR.md`), deploy script and images are ready; the instance hasn't been
@@ -68,7 +72,8 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 - **The camera trend needs two stable crew scans at least 2 minutes apart.** It compares the first and the latest;
   big rises are a prompt for a manual set, not a diagnosis.
 - **Gemini's free quota runs out.** During testing the sign check hit `429 RESOURCE_EXHAUSTED`; the scan card then says
-  "Gemini's usage limit was reached" and Presage is unaffected. Use a paid key on stage.
+  "Gemini's usage limit was reached" and Presage is unaffected. Use a key with billing on stage;
+  `scripts/predemo_check.mjs` asks Gemini directly and says when the quota is used up and when it resets.
 
 ## Simplifications
 
@@ -88,11 +93,17 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 - **Rule-based extraction** (without Gemini) knows common drugs, doses, routes and a few procedures, and reads
   spoken units ("300 milligrams"). Unusual phrasing can be missed; the crew can strike anything wrong.
 - **NEWS2 is partial** until the crew add SpO₂, BP, temperature and ACVPU.
+- **Exposure is left to the camera.** Presage's model cards prefer fixed exposure, but locking it froze some webcams
+  and Android phones near black, and Presage then asked for more light.
 - **Sim clock:** journeys run on an accelerated clock (1–60×).
 - **Map tiles:** Esri's public World Light Gray service (English labels, no key).
 
 ## Rough edges
 
+- **Restarting the camera quickly can break a live scan.** Each time the camera turns on or flips, the phone opens a
+  new SmartSpectra session. On 25 October the bridge started four in about two seconds, the SDK fell into an error
+  state (`SDK error 8: SmartSpectra processing failed`) and no live numbers came back; the uploaded clip was measured
+  instead. Until that's fixed: turn the camera on once and leave it.
 - The clinical trend window is 60 sim-minutes; after a long fast-forward the oldest readings drop off the chart.
 - Closing a transfer is crew-side only.
 - Gemini's sign check takes 20–50 s per clip with `GEMINI_VQA_THINKING=low` (up to two minutes with the model's

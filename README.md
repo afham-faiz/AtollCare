@@ -87,7 +87,8 @@ Then open the crew screen in Chrome or Edge and allow the camera. Camera and mic
 **Phones.** A phone only gets its camera on HTTPS. With engine, bridge and web running, `./scripts/phone_tunnel.sh`
 puts the web app on a Cloudflare quick tunnel; open the printed address on the laptop, press **Ctrl + .**, and scan
 the **On a phone** QR code. The web app proxies `/api` to the engine and `/presage` to the bridge, so that one address
-carries everything. To rehearse the live path without a phone: `node presage-bridge/scripts/replay.mjs face.mp4`.
+carries everything. Before a demo, `node scripts/predemo_check.mjs` checks the whole chain through that address,
+Presage and Gemini included (`--quick` checks only the services).
 Without the bridge, scans still run Gemini's sign check and say plainly that heart and breathing rate weren't
 measured.
 

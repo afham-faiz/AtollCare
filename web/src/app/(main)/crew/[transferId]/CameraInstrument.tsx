@@ -78,7 +78,7 @@ export default function ({
         <>
           <div className={styles.vignette} aria-hidden />
           <svg className={twMerge(styles.guide, guideTone)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-            {/* corner brackets around the face + upper chest region */}
+            {/* corner brackets around the face + chest region */}
             <path d="M28 14 V8 Q28 4 32 4 H38" />
             <path d="M72 14 V8 Q72 4 68 4 H62" />
             <path d="M28 86 V92 Q28 96 32 96 H38" />
@@ -113,7 +113,7 @@ export default function ({
       )}
       {camera === "on" && instrument.phase !== "demo" && (
         <span className={twMerge(styles.hint, hint ? styles.hintWarn : styles.hintCalm)} key={hint ?? "calm"}>
-          {hint ?? (instrument.phase === "measuring" ? (rrStable ? "Steady signal" : `Breathing settles in ${secondsLeft} s`) : "Face and upper chest in frame · hold still")}
+          {hint ?? (instrument.phase === "measuring" ? (rrStable ? "Steady signal" : `Breathing settles in ${secondsLeft} s`) : "Face and chest to the belly in frame · hold still")}
         </span>
       )}
 
