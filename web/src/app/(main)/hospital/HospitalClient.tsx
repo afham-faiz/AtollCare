@@ -9,7 +9,7 @@ import { twMerge } from "tailwind-merge";
 import Skeleton from "@/app/components/Skeleton";
 import type { TransferListItem } from "@/lib/api";
 import { news2Level, patientTitle } from "@/lib/clinical";
-import { fmtTime, minutesUntil, place } from "@/lib/format";
+import { fmtTime, minutesUntil, place, sentence } from "@/lib/format";
 import { useMeta, useTransfers } from "@/lib/swr";
 import { toast } from "@/lib/toast";
 
@@ -56,7 +56,7 @@ function Row({ t, selected, fresh, now, origin, tz }: { t: TransferListItem; sel
       aria-current={selected ? "page" : undefined}
     >
       <span className={styles.rowMain}>
-        <span className={styles.rowTitle}>{t.suspected_condition ?? t.complaint}</span>
+        <span className={styles.rowTitle}>{sentence(t.suspected_condition ?? t.complaint)}</span>
         <span className={styles.rowMeta}>
           {patientTitle(t.patient)} · {origin}
         </span>

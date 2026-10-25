@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { splitPlace } from "./format";
+import { sentence, splitPlace } from "./format";
 
 describe("splitPlace", () => {
   test("takes the atoll out of the brackets", () => {
@@ -9,5 +9,12 @@ describe("splitPlace", () => {
 
   test("leaves a plain name alone", () => {
     expect(splitPlace("IGMH")).toEqual({ name: "IGMH", area: null });
+  });
+});
+
+describe("sentence", () => {
+  test("capitalises the first letter only", () => {
+    expect(sentence("possible ACS")).toBe("Possible ACS");
+    expect(sentence("")).toBe("");
   });
 });

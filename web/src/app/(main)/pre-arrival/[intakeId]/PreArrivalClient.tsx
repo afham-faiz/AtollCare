@@ -226,6 +226,13 @@ export default function ({ intakeId }: { intakeId: string }) {
         <section className={twMerge(styles.step, styles.fullStep)} key="account">
           <h1 className={styles.stepTitle}>What happened?</h1>
           <p className={styles.stepLede}>What you saw, and when it started.</p>
+          {!intake.account && (
+            <ul className={styles.prompts} aria-label="Things to mention">
+              <li>When did it start?</li>
+              <li>What did they say or do?</li>
+              <li>Any medicines, drink or drugs?</li>
+            </ul>
+          )}
           <AccountCapture intake={intake} onSaved={refresh} />
           <footer className={styles.stepNav}>
             {intake.account ? (

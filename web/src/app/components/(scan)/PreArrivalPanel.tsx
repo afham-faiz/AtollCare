@@ -25,7 +25,7 @@ export default function ({ t, tz }: { t: Transfer; tz?: string }) {
       ] as const)
     : [];
   const read = rows.filter(([, v]) => v);
-  const unread = rows.filter(([, v]) => !v).map(([k]) => k.toLowerCase());
+  const unread = rows.filter(([, v]) => !v).map(([k]) => (k.startsWith("ID") ? k : k.toLowerCase()));
 
   return (
     <div className={styles.panel}>

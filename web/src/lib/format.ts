@@ -55,6 +55,11 @@ export function num(v: unknown): number | null {
   return typeof v === "number" ? v : null;
 }
 
+/** A title as shown: the first letter capitalised, whatever the data has ("possible ACS" → "Possible ACS"). */
+export function sentence(text: string): string {
+  return text ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
 /** "Dhangethi Health Centre (Alif Dhaalu)" → the place and its atoll, for a two-line label. */
 export function splitPlace(name: string): { name: string; area: string | null } {
   const m = name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);

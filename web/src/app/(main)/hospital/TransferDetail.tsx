@@ -34,7 +34,7 @@ import {
   type Source,
 } from "@/lib/clinical";
 import { contactless } from "@/lib/contactless";
-import { fmtMin, fmtTime, MODE_LABEL, minutesUntil, place } from "@/lib/format";
+import { fmtMin, fmtTime, MODE_LABEL, minutesUntil, place, sentence } from "@/lib/format";
 import { useMeta, useTransfer, useTrend } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
 
@@ -199,7 +199,7 @@ export default function ({ transferId }: { transferId: string }) {
           <p className={styles.eyebrow}>
             <span className="mono">{t.code}</span> · {MODE_LABEL[t.mode]} from {place(region, t.origin_id)}
           </p>
-          <h2 className={styles.heroTitle}>{t.briefing?.suspected_condition ?? t.complaint}</h2>
+          <h2 className={styles.heroTitle}>{sentence(t.briefing?.suspected_condition ?? t.complaint)}</h2>
           <p className={styles.heroPatient}>
             {patientTitle(t.patient)}
             {t.pre_arrival?.identity?.full_name && (
