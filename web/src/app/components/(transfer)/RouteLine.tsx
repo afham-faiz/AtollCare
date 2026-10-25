@@ -26,7 +26,7 @@ export default function ({
       <span className="flex min-w-0 items-center gap-[.5rem] text-[0.9375rem] text-ink-2">
         <ModeIcon mode={t.mode} size={16} className="shrink-0 text-ink-3" />
         <span className="truncate">
-          {place(region, t.origin_id)} <span className="text-ink-3">→</span> <span className="font-[600] text-ink">{place(region, t.destination_id)}</span>
+          {place(region, t.origin_id)} <span className="text-ink-3">→</span> <span className="font-[500] text-ink">{place(region, t.destination_id)}</span>
         </span>
       </span>
       <span className="tnum text-[0.875rem] text-ink-2">
@@ -34,7 +34,7 @@ export default function ({
           <>Arrived {fmtTime(t.arrived_at, region?.timezone)}</>
         ) : (
           <>
-            {MODE_LABEL[t.mode]} · ETA <span className="font-[600] text-ink">{fmtTime(t.eta, region?.timezone)}</span>
+            {MODE_LABEL[t.mode]} · ETA <span className="font-[500] text-ink">{fmtTime(t.eta, region?.timezone)}</span>
             {left !== null && <span> · {fmtMin(left)}</span>}
           </>
         )}

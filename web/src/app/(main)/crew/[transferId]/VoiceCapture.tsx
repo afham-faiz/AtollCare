@@ -116,11 +116,11 @@ export default function ({
           aria-label={listening ? "Stop recording" : replying ? `Answer ${askedBy}` : "Record a note"}
           className={twMerge(styles.record, listening && styles.recording, replying && !listening && styles.reply)}
         >
-          {saving ? <Loader2 size={22} className="animate-spin" /> : listening ? <Square size={18} fill="currentColor" /> : <Mic size={22} />}
+          {saving ? <Loader2 size={22} strokeWidth={1.75} className="animate-spin" /> : listening ? <Square size={18} strokeWidth={1.75} fill="currentColor" /> : <Mic size={22} strokeWidth={1.75} />}
         </button>
       ) : (
         <span className={twMerge(styles.record, styles.typeIcon)} aria-hidden>
-          <Keyboard size={20} />
+          <Keyboard size={20} strokeWidth={1.75} />
         </span>
       )}
 
@@ -141,7 +141,7 @@ export default function ({
               aria-label="Note"
             />
             <button type="submit" disabled={saving || !text.trim()} aria-label="Add note" className={styles.sendTyped}>
-              {saving ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+              {saving ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin" /> : <Send size={18} strokeWidth={1.75} />}
             </button>
           </form>
         ) : listening ? (
@@ -161,7 +161,7 @@ export default function ({
         ) : result ? (
           <div className={styles.result} key={result.id}>
             <p className={styles.primaryLine}>
-              <Check size={16} strokeWidth={2.6} className="text-teal" /> {result.kind === "answer" ? "Answer sent" : "Added to handoff"}
+              <Check size={16} strokeWidth={1.75} className="text-teal" /> {result.kind === "answer" ? "Answer sent" : "Added to handoff"}
             </p>
             {given.length + observed.length > 0 ? (
               <div className={styles.chips}>
@@ -172,7 +172,7 @@ export default function ({
                       {c}
                       {!gone && (
                         <button type="button" className={styles.chipRemove} onClick={() => strike(c)} aria-label={`Remove ${c} from the handoff`}>
-                          <X size={12} strokeWidth={2.6} />
+                          <X size={12} strokeWidth={1.75} />
                         </button>
                       )}
                     </span>
@@ -191,7 +191,7 @@ export default function ({
         ) : replying ? (
           <div className={styles.ask} key={question.id} role="status">
             <p className={styles.askFrom}>
-              <HelpCircle size={14} strokeWidth={2.4} className="shrink-0" />
+              <HelpCircle size={14} strokeWidth={1.75} className="shrink-0" />
               <span className="truncate">
                 {askedBy} asks<span className="max-lg:hidden"> · tap to answer</span>
               </span>
@@ -200,16 +200,16 @@ export default function ({
             {dictation.error && <p className={styles.secondaryLine}>{dictation.error}</p>}
           </div>
         ) : (
-          <>
+          <div className={dictation.error ? undefined : styles.idleText}>
             <p className={styles.primaryLine}>Speak a note</p>
             <p className={styles.secondaryLine}>{dictation.error ?? "Drugs given and findings are added to the handoff."}</p>
-          </>
+          </div>
         )}
       </div>
 
       {dictation.supported && !listening && (
         <button type="button" className={styles.toggle} onClick={() => setTyping((v) => !v)} aria-label={typing ? "Use voice" : "Type instead"} title={typing ? "Use voice" : "Type instead"}>
-          {typing ? <Mic size={18} /> : <Keyboard size={18} />}
+          {typing ? <Mic size={18} strokeWidth={1.75} /> : <Keyboard size={18} strokeWidth={1.75} />}
         </button>
       )}
     </div>

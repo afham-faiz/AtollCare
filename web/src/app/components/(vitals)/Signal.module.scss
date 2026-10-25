@@ -1,0 +1,182 @@
+// ── heartbeat ────────────────────────────────────────────────────────────────
+.heart {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  --size: 4rem;
+  width: var(--size);
+  height: var(--size);
+}
+
+.sm {
+  --size: 2.75rem;
+}
+
+.md {
+  --size: 4rem;
+}
+
+.lg {
+  --size: 7rem;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.ring:nth-child(2) {
+  inset: 15%;
+}
+
+.core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46%;
+  height: 46%;
+  border-radius: 999px;
+
+  svg {
+    width: 50%;
+    height: 50%;
+  }
+}
+
+// over the camera or the stage gradient
+.camera {
+  .ring {
+    background: color-mix(in srgb, var(--teal-glow) 14%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal-glow) 34%, transparent);
+  }
+
+  .core {
+    background: var(--white);
+    box-shadow: 0 6px 18px -6px rgba(10, 30, 26, 0.45);
+
+    svg {
+      fill: var(--teal);
+    }
+  }
+}
+
+// on a light card: soft fills only, no outlines
+.card {
+  .ring {
+    background: color-mix(in srgb, var(--sage-500) 9%, transparent);
+  }
+
+  .core {
+    background: var(--white);
+    box-shadow: var(--edge), 0 6px 16px -8px rgba(18, 32, 27, 0.3);
+
+    svg {
+      fill: var(--sage-700);
+    }
+  }
+}
+
+// steady: the core beats once per measured pulse and the outer ring ripples out with it
+.beating {
+  .core {
+    animation: beat var(--beat, 1s) var(--ease-out) infinite;
+  }
+
+  .ring:first-child {
+    animation: ripple var(--beat, 1s) var(--ease-out) infinite;
+  }
+}
+
+// acquiring: a slow, neutral breath; it never pretends to be a pulse
+.waiting .core {
+  animation: idle-breath 2.4s var(--ease-in-out) infinite;
+}
+
+// ── trace ────────────────────────────────────────────────────────────────────
+.trace {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 3rem;
+}
+
+.traceSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.area {
+  stroke: none;
+  opacity: 0.12;
+}
+
+.dot {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--white);
+  transform: translate(-50%, -50%);
+}
+
+.hr {
+  .line { stroke: var(--series-hr); }
+  .dot { background: var(--series-hr); }
+}
+
+.rr {
+  .line { stroke: var(--series-rr); }
+  .dot { background: var(--series-rr); }
+}
+
+.spo2 {
+  .line { stroke: var(--series-spo2); }
+  .dot { background: var(--series-spo2); }
+}
+
+.sage {
+  .line { stroke: var(--sage-500); }
+  .dot { background: var(--sage-500); }
+}
+
+.camera {
+  .line { stroke: rgba(255, 255, 255, 0.92); }
+  .area { fill: #fff; }
+  .dot { background: var(--teal-glow); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9); }
+}
+
+// ── bars ─────────────────────────────────────────────────────────────────────
+.bars {
+  display: block;
+  width: 100%;
+  height: 2.5rem;
+}
+
+.bar {
+  stroke: var(--sage-300);
+  stroke-width: 4;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.barSim {
+  opacity: 0.45;
+}
+
+.hr .barNow { stroke: var(--series-hr); }
+.rr .barNow { stroke: var(--series-rr); }
+.spo2 .barNow { stroke: var(--series-spo2); }
+.sage .barNow { stroke: var(--sage-700); }

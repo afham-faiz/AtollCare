@@ -26,3 +26,4 @@ Thumbs.db
 
 # Pre-demo check clip (a face on video: kept off git)
 presage-bridge/fixtures/
+.gstack/

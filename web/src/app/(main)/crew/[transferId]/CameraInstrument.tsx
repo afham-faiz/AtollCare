@@ -1,4 +1,4 @@
-// The contactless instrument: a framed camera viewport with face + upper-chest guidance (what Presage needs),
+// The contactless instrument: a framed camera viewport with face-and-chest guidance (what Presage needs),
 // honest sensor state, and an acquisition hairline tied to the real 30 s breathing window.
 "use client";
 
@@ -84,19 +84,18 @@ export default function ({
             <path d="M28 86 V92 Q28 96 32 96 H38" />
             <path d="M72 86 V92 Q72 96 68 96 H62" />
           </svg>
-          {instrument.phase === "acquiring" && <div className={styles.sweep} aria-hidden />}
         </>
       )}
 
       {camera !== "on" && (
         <div className={styles.empty}>
-          <span className={styles.emptyIcon}>{camera === "starting" ? <Camera size={22} /> : <CameraOff size={22} />}</span>
+          <span className={styles.emptyIcon}>{camera === "starting" ? <Camera size={22} strokeWidth={1.75} /> : <CameraOff size={22} strokeWidth={1.75} />}</span>
           <p className={styles.emptyTitle}>{EMPTY[camera]?.title ?? "Opening camera…"}</p>
           {camera !== "starting" && (
             <>
               <p className={styles.emptyText}>{EMPTY[camera]?.text} Until then, heart rate and breathing are simulated.</p>
               <button type="button" onClick={onRetry} className={styles.retry}>
-                <RefreshCw size={14} /> Try again
+                <RefreshCw size={16} strokeWidth={1.75} /> Try again
               </button>
             </>
           )}

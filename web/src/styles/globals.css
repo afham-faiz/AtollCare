@@ -1,48 +1,89 @@
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────────────────────────────────────────
-   AtollCare design tokens — light, clinical, calm. 90% calm, 10% extraordinary.
-   Colour is never the only carrier of meaning: every status also has text/icon.
+   AtollCare — sage, pine, teal and clinical blue on a mist canvas. Cards are lit, not blurred; frosted glass is only
+   for things that float over moving content (dock, nav, sheets, the camera). Numerals are the hero. Red is reserved
+   for genuine clinical urgency (NEWS2 ≥ 7, a parameter scoring 3, apnoea, the emergency call), never decoration.
    ─────────────────────────────────────────────────────────────────────────────── */
 :root {
+  /* canvas */
+  --canvas: #e6ede9;
+
   /* surfaces */
-  --canvas: #f7f9fb;
-  --surface: #ffffff;
-  --well: #f1f5f8; /* recessed fills: inputs, segmented tracks */
-  --line: #e7edf2; /* hairlines */
-  --line-strong: #d5dee6;
+  --surface: rgba(250, 252, 251, 0.72); /* cards: lit, translucent, no blur */
+  --surface-solid: #f5f8f6;
+  --white: #ffffff;
+  --well: rgba(18, 32, 27, 0.045); /* recessed fills: inputs, segmented tracks */
+  --line: rgba(18, 32, 27, 0.07);
+  --line-strong: rgba(18, 32, 27, 0.13);
 
-  /* ink */
-  --ink: #172a3a;
-  --ink-2: #4f6377; /* secondary text */
-  --ink-3: #8a9aaa; /* tertiary, meta */
+  /* ink: never lighter than --ink-3 for text (about 4.5:1 on the canvas) */
+  --ink: #12201b;
+  --ink-2: #3e4f48;
+  --ink-3: #5f6f68;
+  --ink-4: #8d9b95; /* strokes and placeholders only, never text */
 
-  /* accents — used sparingly */
-  --accent: #2579ce; /* actions, links, the hospital */
-  --accent-strong: #1b62ad;
-  --accent-soft: #eaf2fb;
-  --teal: #0f9286; /* live sensor, accepted, healthy */
-  --teal-strong: #0b766c;
-  --teal-soft: #e5f4f2;
-  --caution: #a8620a; /* text-safe amber */
-  --caution-fill: #f2a33a;
-  --caution-soft: #fff4e3;
-  --critical: #c8322a; /* genuine clinical urgency only */
-  --critical-soft: #fdeceb;
-  --viewport: #0e1922; /* the camera instrument */
+  /* green: the brand and the patient */
+  --sage-100: #dce7df;
+  --sage-300: #a9c0af;
+  --sage-500: #6e907a;
+  --sage-700: #3f6450;
+  --pine: #1e3a2f; /* primary actions */
+  --pine-strong: #142a22;
+
+  /* teal: the live Presage signal */
+  --teal: #2a8a84; /* strokes and fills */
+  --teal-ink: #1f6f6a; /* teal text */
+  --teal-glow: #7fd6c8; /* on the camera */
+  --teal-soft: #d8ece8;
+
+  /* blue: clinical data, the hospital, links, selection */
+  --blue-100: #dce8f2;
+  --blue-300: #9cbbd6;
+  --blue-500: #36668f;
+  --blue-700: #24496b;
+
+  /* states */
+  --caution: #9a5b0c;
+  --caution-fill: #e3a548;
+  --caution-soft: #f4e7cf;
+  --critical: #c0262d;
+  --critical-soft: #f6dedc;
+
+  /* chart series, bedside-monitor convention */
+  --series-hr: #4e7d5b;
+  --series-rr: #2e8e9a;
+  --series-spo2: #36668f;
+
+  /* legacy names every module reads, mapped onto the palette */
+  --accent: var(--blue-500);
+  --accent-strong: var(--blue-700);
+  --accent-soft: var(--blue-100);
+  --teal-strong: var(--teal-ink);
+  --viewport: #1b3a36;
+
+  /* the camera stage before there's a picture */
+  --stage: radial-gradient(120% 90% at 30% 20%, #5e8c78 0%, #2f5a4e 45%, #1b3a36 100%);
+
+  /* shape */
+  --r-sm: 0.75rem;
+  --r-md: 1.125rem;
+  --r-lg: 1.75rem;
+  --r-xl: 2.5rem;
 
   /* elevation */
-  --shadow-1: 0 1px 2px rgba(23, 42, 58, 0.04);
-  --shadow-2: 0 1px 2px rgba(23, 42, 58, 0.04), 0 8px 24px -8px rgba(23, 42, 58, 0.1);
-  --shadow-3: 0 2px 6px rgba(23, 42, 58, 0.06), 0 24px 60px -12px rgba(23, 42, 58, 0.22);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-1: 0 1px 1px rgba(18, 32, 27, 0.03);
+  --shadow-2: 0 1px 1px rgba(18, 32, 27, 0.03), 0 8px 20px -12px rgba(18, 32, 27, 0.14);
+  --shadow-3: 0 2px 6px rgba(18, 32, 27, 0.05), 0 18px 40px -18px rgba(18, 32, 27, 0.28);
 
   /* motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --dur-1: 140ms;
   --dur-2: 240ms;
-  --dur-3: 420ms;
-  --dur-4: 700ms;
+  --dur-3: 360ms;
+  --dur-4: 600ms;
 
   color-scheme: light;
 }
@@ -59,8 +100,10 @@
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
+  --color-sage: var(--sage-500);
+  --color-pine: var(--pine);
   --color-teal: var(--teal);
-  --color-teal-strong: var(--teal-strong);
+  --color-teal-strong: var(--teal-ink);
   --color-teal-soft: var(--teal-soft);
   --color-caution: var(--caution);
   --color-caution-fill: var(--caution-fill);
@@ -68,8 +111,9 @@
   --color-critical: var(--critical);
   --color-critical-soft: var(--critical-soft);
   --color-viewport: var(--viewport);
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-text), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-display-face), var(--font-text), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
   --shadow-1: var(--shadow-1);
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
@@ -83,14 +127,33 @@ body {
 }
 
 body {
+  /* a near-invisible wash, fixed, so lit cards have something to sit on */
+  background:
+    radial-gradient(120% 80% at 0 0, #f2f6f2 0, transparent 60%),
+    radial-gradient(100% 70% at 100% 100%, #dce7ec 0, transparent 60%),
+    var(--canvas);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01", "cv11";
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+
+/* emphasis is a step up in weight, never bold */
+strong,
+b {
+  font-weight: 500;
 }
 
 input,
@@ -102,17 +165,55 @@ button {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--blue-500) 20%, transparent);
 }
 
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--blue-500) 60%, transparent);
   outline-offset: 2px;
 }
 
 .tnum {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum", "ss01";
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+}
+
+/* a card: lit, translucent, no blur, no grey hairline */
+.card {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge), var(--shadow-2);
+}
+
+/* floating glass: only where something moves underneath (dock, nav, sheets) */
+.glass {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(246, 249, 247, 0.62);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), var(--shadow-3);
+}
+
+/* a measured number: light, tight, tabular */
+.numeral {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+/* the unit beside a numeral */
+.unit {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0;
 }
 
 /* ─── motion primitives ──────────────────────────────────────────────────────── */
@@ -132,14 +233,33 @@ button {
 }
 
 @keyframes value-in {
-  from { opacity: 0.25; transform: translateY(0.25rem); filter: blur(2px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }
 
 @keyframes live-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal) 45%, transparent); }
   70% { box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--teal) 0%, transparent); }
   100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* one beat per measured pulse (the element sets --beat) */
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.12); }
+  28% { transform: scale(0.98); }
+  42% { transform: scale(1.05); }
+}
+
+@keyframes ripple {
+  from { transform: scale(0.7); opacity: 0.6; }
+  to { transform: scale(1.7); opacity: 0; }
+}
+
+/* waiting for a reading: a slow neutral breath */
+@keyframes idle-breath {
+  0%, 100% { transform: scale(0.96); opacity: 0.85; }
+  50% { transform: scale(1.04); opacity: 1; }
 }
 
 .rise-in {
@@ -152,7 +272,7 @@ button {
 
 .value-in {
   display: inline-block;
-  animation: value-in var(--dur-3) var(--ease-out) both;
+  animation: value-in 160ms linear both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -169,13 +289,13 @@ button {
 /* ─── third party ────────────────────────────────────────────────────────────── */
 .leaflet-container {
   font-family: var(--font-sans);
-  background: var(--well);
+  background: var(--sage-100);
 }
 
 .leaflet-tooltip {
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  box-shadow: var(--shadow-2);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-3);
   color: var(--ink);
   font-size: 0.8125rem;
   font-weight: 500;

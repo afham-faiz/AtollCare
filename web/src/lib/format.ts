@@ -54,3 +54,9 @@ export const NEWS2_LABEL: Record<string, string> = {
 export function num(v: unknown): number | null {
   return typeof v === "number" ? v : null;
 }
+
+/** "Dhangethi Health Centre (Alif Dhaalu)" → the place and its atoll, for a two-line label. */
+export function splitPlace(name: string): { name: string; area: string | null } {
+  const m = name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  return m ? { name: m[1], area: m[2] } : { name, area: null };
+}

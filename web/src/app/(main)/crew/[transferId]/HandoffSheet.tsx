@@ -100,7 +100,7 @@ export default function ({
               Not yet
             </ButtonBase>
             <ButtonPrimary onClick={send} disabled={sending}>
-              {sending ? <Loader2 size={18} className="animate-spin" /> : <ArrowUpRight size={18} />}
+              {sending ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin" /> : <ArrowUpRight size={18} strokeWidth={1.75} />}
               Send to {dest}
             </ButtonPrimary>
           </>
@@ -117,7 +117,7 @@ export default function ({
             return (
               <div key={k}>
                 <dt className="text-[0.8125rem] text-ink-3">{label}</dt>
-                <dd className="tnum text-[1.25rem] font-[600] tracking-[-0.02em]">
+                <dd className="tnum text-[1.25rem] font-[500] tracking-[-0.02em]">
                   {v ?? "—"}
                   {v !== null && <span className="ml-[.125rem] text-[0.8125rem] font-[500] text-ink-3">{unit}</span>}
                 </dd>

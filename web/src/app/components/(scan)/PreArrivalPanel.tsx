@@ -24,6 +24,8 @@ export default function ({ t, tz }: { t: Transfer; tz?: string }) {
         ["Document", id.document_type],
       ] as const)
     : [];
+  const read = rows.filter(([, v]) => v);
+  const unread = rows.filter(([, v]) => !v).map(([k]) => k.toLowerCase());
 
   return (
     <div className={styles.panel}>
@@ -32,7 +34,7 @@ export default function ({ t, tz }: { t: Transfer; tz?: string }) {
           <header className={styles.head}>
             <h3 className={styles.title}>Sent ahead by the companion</h3>
             <span className={styles.meta}>
-              <span className="font-mono">{p.code}</span>
+              <span className="mono">{p.code}</span>
               {p.sent_at ? ` · sent ${fmtTime(p.sent_at, tz)}` : ""}
             </span>
           </header>
@@ -49,23 +51,26 @@ export default function ({ t, tz }: { t: Transfer; tz?: string }) {
           {id && (
             <div className={styles.id}>
               <p className={id.needs_review ? styles.review : styles.clear}>
-                {id.needs_review ? <ShieldAlert size={16} /> : <ShieldCheck size={16} />}
+                {id.needs_review ? <ShieldAlert size={16} strokeWidth={1.75} /> : <ShieldCheck size={16} strokeWidth={1.75} />}
                 {id.needs_review ? "ID photo · check by eye" : "ID photo · read clearly"}
               </p>
-              <dl>
-                {rows.map(([k, v]) => (
-                  <div key={k}>
-                    <dt>{k}</dt>
-                    <dd className={v ? "" : "text-ink-3"}>{v ?? "Not read"}</dd>
-                  </div>
-                ))}
-              </dl>
+              {read.length > 0 && (
+                <dl>
+                  {read.map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              {unread.length > 0 && <p className={styles.unread}>Not read: {unread.join(", ")}</p>}
             </div>
           )}
 
           {p.scans.map((s) => (
             <div key={s.id} className={styles.scan}>
-              <ScanResult scan={s} tz={tz} title="Companion’s video" bystander />
+              <ScanResult scan={s} tz={tz} title="Companion’s video" bystander numbers={false} />
             </div>
           ))}
         </section>

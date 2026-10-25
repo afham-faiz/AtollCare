@@ -9,6 +9,7 @@ import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMa
 
 import type { Region, Transfer } from "@/lib/api";
 import { place } from "@/lib/format";
+import { PALETTE } from "@/lib/palette";
 
 const BASE = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const LABELS = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
@@ -32,7 +33,7 @@ export default function ({ t, region, height = "16rem" }: { t: Transfer; region?
     () =>
       L.divIcon({
         className: "",
-        html: '<div style="width:16px;height:16px;border-radius:50%;background:#0f9286;border:3px solid #fff;box-shadow:0 0 0 2px #0f9286"></div>',
+        html: `<div style="width:16px;height:16px;border-radius:50%;background:${PALETTE.teal};border:3px solid ${PALETTE.white};box-shadow:0 0 0 2px ${PALETTE.teal}"></div>`,
         iconSize: [16, 16],
         iconAnchor: [8, 8],
       }),
@@ -42,17 +43,17 @@ export default function ({ t, region, height = "16rem" }: { t: Transfer; region?
   const d: [number, number] = [t.destination_point.lat, t.destination_point.lng];
   const p: [number, number] = [t.position.lat, t.position.lng];
   return (
-    <div style={{ height }} className="w-full overflow-hidden rounded-[1.25rem] border-[1px] border-line">
+    <div style={{ height }} className="card w-full overflow-hidden">
       <MapContainer center={o} zoom={8} scrollWheelZoom={false} zoomControl={false} style={{ height: "100%", width: "100%" }}>
         <TileLayer url={BASE} attribution="Tiles &copy; Esri — Esri, HERE, Garmin, &copy; OpenStreetMap contributors" maxZoom={16} />
         <TileLayer url={LABELS} maxZoom={16} />
         <Fit t={t} />
-        <Polyline positions={[o, d]} pathOptions={{ color: "#8a9aaa", weight: 2, dashArray: "6 6" }} />
-        <Polyline positions={[o, p]} pathOptions={{ color: "#0f9286", weight: 3 }} />
-        <CircleMarker center={o} radius={6} pathOptions={{ color: "#4f6377", fillColor: "#fff", fillOpacity: 1, weight: 2 }}>
+        <Polyline positions={[o, d]} pathOptions={{ color: PALETTE.ink4, weight: 1.5, dashArray: "2 6", lineCap: "round" }} />
+        <Polyline positions={[o, p]} pathOptions={{ color: PALETTE.teal, weight: 3, lineCap: "round" }} />
+        <CircleMarker center={o} radius={6} pathOptions={{ color: PALETTE.ink2, fillColor: PALETTE.white, fillOpacity: 1, weight: 2 }}>
           <Tooltip>{place(region, t.origin_id)}</Tooltip>
         </CircleMarker>
-        <CircleMarker center={d} radius={7} pathOptions={{ color: "#0b766c", fillColor: "#0f9286", fillOpacity: 1, weight: 2 }}>
+        <CircleMarker center={d} radius={7} pathOptions={{ color: PALETTE.white, fillColor: PALETTE.pine, fillOpacity: 1, weight: 2 }}>
           <Tooltip permanent direction="top" offset={[0, -6]}>
             {place(region, t.destination_id)}
           </Tooltip>

@@ -7,9 +7,8 @@
 }
 
 .label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--ink-2);
 }
 
@@ -17,16 +16,18 @@
 .select,
 .textarea {
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.25rem;
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: var(--r-sm);
   background: var(--surface);
-  padding: 0 0.875rem;
+  padding: 0 1rem;
   font-size: 1rem;
   color: var(--ink);
+  box-shadow: var(--edge);
   transition:
     border-color var(--dur-1) var(--ease-out),
-    box-shadow var(--dur-2) var(--ease-out);
+    box-shadow var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out);
 
   &::placeholder {
     color: var(--ink-3);
@@ -38,22 +39,23 @@
 
   &:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--blue-500) 70%, transparent);
+    background: var(--surface-solid);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue-500) 14%, transparent);
   }
 }
 
 .select {
   appearance: none;
-  padding-right: 2.25rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a9aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2384958f' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 0.875rem center;
 }
 
 .textarea {
   min-height: 7rem;
-  padding: 0.75rem 0.875rem;
+  padding: 0.875rem 1rem;
   line-height: 1.5;
   resize: vertical;
 }

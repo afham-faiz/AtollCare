@@ -12,7 +12,7 @@
 }
 
 .title {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -27,9 +27,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 0.875rem;
-  border-radius: 0.875rem;
+  border-radius: var(--r-md);
   font-size: 0.9375rem;
-  font-weight: 550;
+  font-weight: 500;
 }
 
 .stage {
@@ -37,9 +37,10 @@
   color: var(--accent-strong);
 }
 
+// a scan that didn't work is a problem with the video, not with the patient: caution, not red
 .failed {
-  background: var(--critical-soft);
-  color: var(--critical);
+  background: var(--caution-soft);
+  color: var(--caution);
 }
 
 .block {
@@ -64,9 +65,8 @@
 
   h4 {
     font-size: 0.8125rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0;
     color: var(--ink-3);
   }
 }
@@ -94,10 +94,7 @@
 }
 
 .vitalValue {
-  font-size: 2.25rem;
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-size: 2.75rem;
   color: var(--ink);
 }
 
@@ -121,12 +118,12 @@
   padding: 0.0625rem 0.5rem;
   border-radius: 999px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .good {
-  background: var(--teal-soft);
-  color: var(--teal-strong);
+  background: var(--sage-100);
+  color: var(--sage-700);
 }
 
 .weak {
@@ -154,7 +151,7 @@
   display: flex;
   gap: 0.5rem;
   padding: 0.625rem 0.875rem;
-  border-radius: 0.875rem;
+  border-radius: var(--r-md);
   background: var(--caution-soft);
   color: var(--caution);
   font-size: 0.9375rem;
@@ -216,7 +213,7 @@
     width: 100%;
     aspect-ratio: 3 / 4;
     object-fit: cover;
-    border-radius: 0.625rem;
+    border-radius: var(--r-sm);
     box-shadow: 0 0 0 1px var(--line);
     transition: box-shadow var(--dur-1) var(--ease-out);
   }
@@ -230,7 +227,7 @@
 .large {
   width: 100%;
   max-width: 28rem;
-  border-radius: 1rem;
+  border-radius: var(--r-md);
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -240,7 +237,7 @@
 }
 
 .absentLabel {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -253,7 +250,7 @@
     align-items: center;
     gap: 0.25rem;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ink-2);
     list-style: none;
 
@@ -294,7 +291,7 @@
   width: 100%;
   height: 2.5rem;
 
-  polyline {
+  path {
     fill: none;
     stroke-width: 1.5;
     stroke-linecap: round;
@@ -303,12 +300,12 @@
   }
 }
 
-.pulse polyline {
-  stroke: var(--critical);
+.pulse path {
+  stroke: var(--series-hr);
 }
 
-.breath polyline {
-  stroke: var(--teal);
+.breath path {
+  stroke: var(--series-rr);
 }
 
 .framing {
@@ -340,5 +337,5 @@
   background: color-mix(in srgb, var(--critical) 10%, transparent);
   color: var(--critical);
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
 }

@@ -110,34 +110,36 @@ export default function ({ intake, onSaved }: { intake: Intake; onSaved: (i: Int
           <span className={styles.accountMeta}>{intake.account_source === "voice" ? "Transcribed from your voice" : "Typed"}</span>
         </blockquote>
       )}
-      <div className={styles.voiceRow}>
+      <div className={styles.voice}>
         <button
           type="button"
-          className={twMerge(styles.mic, mode === "recording" && styles.micLive)}
+          className={twMerge(styles.mic, intake.account && mode === "idle" && styles.micQuiet, mode === "recording" && styles.micLive)}
           onClick={mode === "recording" ? () => recorder.current?.stop() : record}
           disabled={mode === "sending"}
           aria-label={mode === "recording" ? "Stop recording" : "Record what happened"}
+          // the halo follows the voice while recording
+          style={mode === "recording" ? ({ "--level": Math.max(...levels, 0) } as React.CSSProperties) : undefined}
         >
-          {mode === "sending" ? <Loader2 size={22} className="animate-spin" /> : mode === "recording" ? <Square size={18} fill="currentColor" /> : <Mic size={22} />}
+          {mode === "sending" ? <Loader2 size={28} strokeWidth={1.75} className="animate-spin" /> : mode === "recording" ? <Square size={24} strokeWidth={1.75} fill="currentColor" /> : <Mic size={32} strokeWidth={1.75} />}
         </button>
-        <div className="min-w-0 flex-1">
-          {mode === "recording" ? (
-            <div className={styles.levels} aria-hidden>
-              {levels.map((l, i) => (
-                <span key={i} style={{ transform: `scaleY(${0.12 + l * 0.88})` }} />
-              ))}
-              <span className="tnum ml-[.5rem] text-[0.875rem] font-[600] text-critical">
-                {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
-              </span>
-            </div>
+        <p className={styles.voiceLabel}>
+          {mode === "sending" ? (
+            "Writing it down"
+          ) : mode === "recording" ? (
+            <>
+              Listening · <span className="tnum">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span> · tap to finish
+            </>
+          ) : intake.account ? (
+            "Tap to say it again"
           ) : (
-            <p className="font-[600]">{mode === "sending" ? "Writing it down…" : intake.account ? "Say it again" : "Tap and tell us what happened"}</p>
+            "Tap and speak"
           )}
-          {mode !== "recording" && <p className="text-[0.875rem] text-ink-2">What you saw, and when it started. Tap again to finish.</p>}
-        </div>
-        <button type="button" className={styles.iconBtn} onClick={() => setMode("typing")} aria-label="Type instead" title="Type instead">
-          <Keyboard size={18} />
-        </button>
+        </p>
+        {mode === "idle" && (
+          <button type="button" className={styles.typeLink} onClick={() => setMode("typing")}>
+            <Keyboard size={16} strokeWidth={1.75} /> {intake.account ? "Edit" : "or type it"}
+          </button>
+        )}
       </div>
     </div>
   );

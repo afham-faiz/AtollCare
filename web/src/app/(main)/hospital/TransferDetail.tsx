@@ -13,11 +13,9 @@ import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
 import Segmented from "@/app/components/(controls)/Segmented";
 import PreArrivalPanel from "@/app/components/(scan)/PreArrivalPanel";
 import SbarDocument from "@/app/components/(transfer)/SbarDocument";
-import StatusChip from "@/app/components/(transfer)/StatusChip";
 import Timeline from "@/app/components/(transfer)/Timeline";
 import TransferMapLazy from "@/app/components/(transfer)/TransferMapLazy";
 import TrendChart from "@/app/components/(transfer)/TrendChart";
-import UrgencyBadge from "@/app/components/(transfer)/UrgencyBadge";
 import Skeleton from "@/app/components/Skeleton";
 import { post, type CueFinding, type LatestValue, type Scan, type Transfer } from "@/lib/api";
 import {
@@ -27,12 +25,15 @@ import {
   assessSpo2,
   assessTemp,
   freshness,
+  NEWS2_WORD,
+  news2Level,
   numeric,
   patientTitle,
   SOURCE_LABEL,
   type Assessment,
   type Source,
 } from "@/lib/clinical";
+import { contactless } from "@/lib/contactless";
 import { fmtMin, fmtTime, MODE_LABEL, minutesUntil, place } from "@/lib/format";
 import { useMeta, useTransfer, useTrend } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
@@ -41,12 +42,12 @@ import AcceptModal from "./AcceptModal";
 import ContactlessTile from "./ContactlessTile";
 import styles from "./Hospital.module.scss";
 
-const VITALS: { k: string; label: string; unit: string; a: (v: number) => Assessment }[] = [
-  { k: "heart_rate", label: "Heart rate", unit: "bpm", a: assessHr },
-  { k: "resp_rate", label: "Respiration", unit: "/min", a: assessRr },
-  { k: "spo2", label: "SpO₂", unit: "%", a: assessSpo2 },
-  { k: "systolic_bp", label: "Blood pressure", unit: "sys", a: assessSbp },
-  { k: "temperature_c", label: "Temperature", unit: "°C", a: assessTemp },
+const VITALS: { k: string; label: string; short: string; unit: string; a: (v: number) => Assessment }[] = [
+  { k: "heart_rate", label: "Heart rate", short: "Heart rate", unit: "bpm", a: assessHr },
+  { k: "resp_rate", label: "Breathing", short: "Breathing", unit: "/min", a: assessRr },
+  { k: "spo2", label: "SpO₂", short: "SpO₂", unit: "%", a: assessSpo2 },
+  { k: "systolic_bp", label: "Blood pressure", short: "BP", unit: "sys", a: assessSbp },
+  { k: "temperature_c", label: "Temperature", short: "Temp", unit: "°C", a: assessTemp },
 ];
 
 const SUGGESTIONS = ["Any allergies?", "On blood thinners?", "Time of onset?", "Current pain score?"];
@@ -56,25 +57,19 @@ function Vital({ label, unit, lv, assess, now }: { label: string; unit: string; 
   const simulated = lv?.source === "simulated";
   const a = v !== null && !simulated ? assess(v) : null; // no clinical status for a number nobody measured
   return (
-    <div className={styles.vital}>
-      <span className={styles.vitalHead}>
-        <span className={styles.vitalLabel}>{label}</span>
-        {a && a.level !== "normal" && <strong className={twMerge(styles.vitalWord, styles[a.level])}>{a.word}</strong>}
-      </span>
-      <span className={twMerge("tnum", styles.vitalValue, a && styles[a.level], simulated && styles.simulated)}>
+    <div className={twMerge("card", styles.vital)}>
+      <span className={styles.vitalLabel}>{label}</span>
+      <span className={twMerge("numeral", styles.vitalValue, simulated && styles.simulated)}>
         {v ?? "—"}
-        {v !== null && <span className={styles.vitalUnit}>{unit}</span>}
+        {v !== null && <span className="unit">{unit}</span>}
       </span>
+      {a && a.level !== "normal" && (
+        <span className={twMerge(styles.vitalWord, styles[a.level])}>
+          <span className={styles.vitalDot} aria-hidden /> {a.word}
+        </span>
+      )}
       <span className={styles.vitalMeta}>
-        {lv ? (
-          lv.source === "simulated" ? (
-            <span className={styles.demoTag}>Simulated</span>
-          ) : (
-            `${SOURCE_LABEL[lv.source as Source]} · ${freshness(lv.at, now)}`
-          )
-        ) : (
-          "Not recorded"
-        )}
+        {lv ? (lv.source === "simulated" ? "Simulated, not measured" : `${SOURCE_LABEL[lv.source as Source]} · ${freshness(lv.at, now)}`) : "Not recorded"}
       </span>
       {lv?.flag && <span className={styles.vitalFlag}>Confirm — outside sensor range</span>}
     </div>
@@ -94,7 +89,7 @@ function SeenOnVideo({ t, onOpen }: { t: Transfer; onOpen: () => void }) {
   const checking = scans.some(({ scan }) => scan.status === "processing");
   const checked = scans.some(({ scan }) => scan.signs?.findings.some((f) => f.finding === "absent"));
   return (
-    <section className={styles.surface}>
+    <section className={twMerge("card", styles.surface)}>
       <h3 className={styles.sectionTitle}>Seen on video</h3>
       {seen.length ? (
         <ul className={styles.seen}>
@@ -103,9 +98,9 @@ function SeenOnVideo({ t, onOpen }: { t: Transfer; onOpen: () => void }) {
             return (
               <li key={`${scan.id}-${f.cue_id}`}>
                 <button type="button" onClick={onOpen} className={styles.seenRow}>
-                  {frame != null ? <img src={scan.evidence[String(frame)]} alt="" className={styles.seenThumb} /> : <Eye size={18} className="shrink-0 text-ink-3" />}
+                  {frame != null ? <img src={scan.evidence[String(frame)]} alt="" className={styles.seenThumb} /> : <Eye size={18} strokeWidth={1.75} className="shrink-0 text-ink-3" />}
                   <span className="min-w-0">
-                    <span className="block font-[600]">{f.label}</span>
+                    <span className="block font-[500]">{f.label}</span>
                     <span className="block text-[0.8125rem] text-ink-3">
                       {who} · seen in {f.evidence_frames.length} of {scan.signs?.frames.length ?? 0} frames
                     </span>
@@ -118,7 +113,7 @@ function SeenOnVideo({ t, onOpen }: { t: Transfer; onOpen: () => void }) {
       ) : (
         <p className="text-[0.9375rem] text-ink-2">
           {checking ? "Checking the video…" : checked ? "No checklist signs were seen." : "The video didn’t show enough to check for signs."}{" "}
-          <button type="button" onClick={onOpen} className="font-[600] text-accent">
+          <button type="button" onClick={onOpen} className="font-[500] text-accent">
             Details
           </button>
         </p>
@@ -139,9 +134,9 @@ export default function ({ transferId }: { transferId: string }) {
   if (error && !t) {
     return (
       <div className={styles.missing}>
-        <p className="text-[1.0625rem] font-[600]">This transfer isn’t available.</p>
+        <p className="text-[1.0625rem] font-[500]">This transfer isn’t available.</p>
         <p className="text-[0.9375rem] text-ink-2">It may have been closed, or the demo was reset.</p>
-        <Link href="/hospital" className="mt-[.5rem] font-[600] text-accent">
+        <Link href="/hospital" className="mt-[.5rem] font-[500] text-accent">
           Show incoming transfers
         </Link>
       </div>
@@ -150,9 +145,9 @@ export default function ({ transferId }: { transferId: string }) {
   if (!t || !meta) {
     return (
       <div className="flex flex-col gap-[1.25rem]">
-        <Skeleton className="h-[7rem] rounded-[1.25rem]" />
-        <Skeleton className="h-[6rem] rounded-[1.25rem]" />
-        <Skeleton className="h-[20rem] rounded-[1.25rem]" />
+        <Skeleton className="h-[7rem] rounded-[1.75rem]" />
+        <Skeleton className="h-[6rem] rounded-[1.75rem]" />
+        <Skeleton className="h-[20rem] rounded-[1.75rem]" />
       </div>
     );
   }
@@ -165,6 +160,13 @@ export default function ({ transferId }: { transferId: string }) {
   const answers = new Map(t.notes.filter((n) => n.reply_to).map((n) => [n.reply_to, n]));
   const questions = t.notes.filter((n) => n.kind === "question");
   const crewNotes = t.notes.filter((n) => n.author === "crew" && (n.kind === "voice" || n.kind === "text")).slice(-3).reverse();
+  // the Presage card already shows heart and breathing rate; the strip doesn't repeat them
+  const hero = contactless(t).latest;
+  const heroShown = !!hero || [...(t.pre_arrival?.scans ?? []), ...t.scans].some((s) => s.status === "processing");
+  const recorded = VITALS.filter((v) => t.latest[v.k] && !(hero && (v.k === "heart_rate" || v.k === "resp_rate")));
+  const newsLevel = news2Level(t.news2?.total, t.news2?.any_single_3);
+  const otherAlerts = t.alerts.filter((a) => !a.code.startsWith("news2"));
+  const notRecorded = [...VITALS.filter((v) => !t.latest[v.k] && !(hero && (v.k === "heart_rate" || v.k === "resp_rate"))).map((v) => v.short), ...(t.latest.consciousness ? [] : ["ACVPU"])];
   const refresh = (next: Transfer) => {
     mutate(`/transfers/${transferId}`, next, { revalidate: false });
     mutate((k) => typeof k === "string" && k.startsWith("/transfers?"));
@@ -195,7 +197,7 @@ export default function ({ transferId }: { transferId: string }) {
       <header className={styles.hero}>
         <div className="min-w-0">
           <p className={styles.eyebrow}>
-            <span className="font-mono">{t.code}</span> · {MODE_LABEL[t.mode]} from {place(region, t.origin_id)}
+            <span className="mono">{t.code}</span> · {MODE_LABEL[t.mode]} from {place(region, t.origin_id)}
           </p>
           <h2 className={styles.heroTitle}>{t.briefing?.suspected_condition ?? t.complaint}</h2>
           <p className={styles.heroPatient}>
@@ -210,38 +212,51 @@ export default function ({ transferId }: { transferId: string }) {
           </p>
           {t.briefing?.suspected_condition && (
             // a working impression, not a diagnosis — say where it came from and show the crew's own words
-            <p className={styles.impression}>
-              {t.briefing.generated_by === "gemini" ? "Impression suggested by Gemini from" : "Impression matched from"}{" "}
-              {t.pre_arrival?.account ? "the companion’s account" : "the crew’s words"}:{" "}
-              <q className="text-ink">{t.complaint}</q>
+            <p className={styles.impression} title={t.briefing.generated_by === "gemini" ? "Working impression suggested by Gemini" : "Working impression matched from keywords"}>
+              From {t.pre_arrival?.account ? "the companion’s account" : "the crew’s words"}: <q className="text-ink-2">{t.complaint}</q>
             </p>
           )}
-          <div className="mt-[.875rem] flex flex-wrap items-center gap-[.5rem]">
-            <UrgencyBadge news2={t.news2} size="lg" />
-            <StatusChip status={t.status} view="hospital" />
-          </div>
-          {t.alerts.length > 0 && (
-            <p className={twMerge(styles.alertLine, t.alerts.some((a) => a.level === "critical") ? "text-critical" : "text-caution")}>
-              {t.alerts.map((a) => a.text).join(" · ")}
+          {/* NEWS2 lives in its own block on the right; these are the other alerts (trend, apnoea, a single parameter) */}
+          {otherAlerts.length > 0 && (
+            <p className={twMerge(styles.alertLine, otherAlerts.some((a) => a.level === "critical") ? "text-critical" : "text-caution")}>
+              {otherAlerts.map((a) => a.text).join(" · ")}
             </p>
           )}
         </div>
 
         <div className={styles.decision}>
-          <p className={styles.arrivalLabel}>{arrived ? "Arrived" : "Arriving"}</p>
-          <p className={twMerge("tnum", styles.arrivalTime)}>{fmtTime(arrived ? t.arrived_at : t.eta, tz)}</p>
-          {!arrived && left !== null && <p className="tnum text-[0.9375rem] text-ink-2">in {fmtMin(left)} · {dest}</p>}
+          <div className={styles.decisionNumbers}>
+            <div>
+              <p className={styles.arrivalLabel}>NEWS2</p>
+              {t.news2 && newsLevel !== null ? (
+                <>
+                  <p className={twMerge("numeral", styles.newsValue, styles[newsLevel])}>{t.news2.total}</p>
+                  <p className={styles.newsMeta}>
+                    {t.news2.band ? NEWS2_WORD[t.news2.band] : ""}
+                    {t.news2.complete ? "" : " · partial"}
+                  </p>
+                </>
+              ) : (
+                <p className={styles.newsMeta}>Not scored yet</p>
+              )}
+            </div>
+            <div>
+              <p className={styles.arrivalLabel}>{arrived ? "Arrived" : "Arriving"}</p>
+              <p className={twMerge("numeral", styles.arrivalTime)}>{fmtTime(arrived ? t.arrived_at : t.eta, tz)}</p>
+              <p className={styles.newsMeta}>{!arrived && left !== null ? `in ${fmtMin(left)} · ${dest}` : dest}</p>
+            </div>
+          </div>
           <div className={styles.progress}>
             <span style={{ transform: `scaleX(${t.progress})` }} />
           </div>
           {t.status === "pending" && (
             <ButtonPrimary size="lg" className={styles.accept} onClick={() => setAccepting(true)}>
-              <Check size={18} /> Accept transfer
+              <Check size={18} strokeWidth={1.75} /> Accept transfer
             </ButtonPrimary>
           )}
           {t.acceptance && (
             <p className={styles.accepted}>
-              <CheckCircle2 size={18} className="shrink-0" />
+              <CheckCircle2 size={18} strokeWidth={1.75} className="shrink-0" />
               <span>
                 Accepted by {t.acceptance.by}
                 {t.acceptance.prepare.length ? ` · ${t.acceptance.prepare.join(", ")}` : ""}
@@ -251,21 +266,27 @@ export default function ({ transferId }: { transferId: string }) {
         </div>
       </header>
 
-      {/* Presage: what the camera measured, and how long before arrival the team knew */}
+      {/* Presage (what the camera measured, how long before arrival the team knew) beside the other measurements */}
+      <div className={twMerge(styles.measures, heroShown && (recorded.length > 0 || !!t.latest.consciousness) && styles.measuresWithHero)}>
       <ContactlessTile t={t} tz={tz} now={meta.now} />
 
-      {/* measurements, with provenance */}
-      <div className={styles.vitals}>
-        {VITALS.map((v) => (
-          <Vital key={v.k} label={v.label} unit={v.unit} lv={t.latest[v.k]} assess={v.a} now={meta.now} />
-        ))}
-        <div className={styles.vital}>
-          <span className={styles.vitalLabel}>Consciousness</span>
-          <span className={twMerge(styles.vitalValue, t.latest.consciousness && t.latest.consciousness.value !== "A" && styles.urgent)}>
-            {t.latest.consciousness ? String(t.latest.consciousness.value) : "—"}
-          </span>
-          <span className={styles.vitalMeta}>{t.latest.consciousness ? `ACVPU · ${freshness(t.latest.consciousness.at, meta.now)}` : "Not recorded"}</span>
+      <div className={styles.measuresSide}>
+      {(recorded.length > 0 || t.latest.consciousness) && (
+        <div className={styles.vitals}>
+          {recorded.map((v) => (
+            <Vital key={v.k} label={v.label} unit={v.unit} lv={t.latest[v.k]} assess={v.a} now={meta.now} />
+          ))}
+          {t.latest.consciousness && (
+            <div className={twMerge("card", styles.vital)}>
+              <span className={styles.vitalLabel}>Consciousness</span>
+              <span className={twMerge("numeral", styles.vitalValue, t.latest.consciousness.value !== "A" && styles.urgent)}>{String(t.latest.consciousness.value)}</span>
+              <span className={styles.vitalMeta}>ACVPU · {freshness(t.latest.consciousness.at, meta.now)}</span>
+            </div>
+          )}
         </div>
+      )}
+      {notRecorded.length > 0 && <p className={styles.notYet}>Not yet recorded: {notRecorded.join(" · ")}</p>}
+      </div>
       </div>
 
       {/* progressive disclosure */}
@@ -286,12 +307,13 @@ export default function ({ transferId }: { transferId: string }) {
 
       {tab === "handoff" && (
         <div className={twMerge(styles.columns, "fade-in")}>
-          <div className={styles.surface}>
+          <div className={twMerge("card", styles.surface)}>
             <SbarDocument briefing={t.briefing} interventions={t.interventions} now={meta.now} tz={tz} />
           </div>
-          <div className="flex min-w-0 flex-col gap-[1.25rem]">
+          <div className="flex min-w-0 flex-col gap-[.75rem]">
             <SeenOnVideo t={t} onOpen={() => setTab("video")} />
-            <section className={styles.surface}>
+            {(!arrived || questions.length > 0) && (
+            <section className={twMerge("card", styles.surface)}>
               <h3 className={styles.sectionTitle}>Ask the crew</h3>
               {!arrived && (
                 <form
@@ -303,7 +325,7 @@ export default function ({ transferId }: { transferId: string }) {
                 >
                   <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Read aloud in the vehicle" aria-label="Question for the crew" />
                   <button type="submit" disabled={asking || !question.trim()} aria-label="Send question">
-                    <Send size={16} />
+                    <Send size={16} strokeWidth={1.75} />
                   </button>
                 </form>
               )}
@@ -323,10 +345,10 @@ export default function ({ transferId }: { transferId: string }) {
                     return (
                       <li key={q.id}>
                         <p className="flex items-start gap-[.5rem] text-[0.9375rem] text-ink-2">
-                          <MessageCircleQuestion size={16} className="mt-[.1875rem] shrink-0 text-accent" />
+                          <MessageCircleQuestion size={16} strokeWidth={1.75} className="mt-[.1875rem] shrink-0 text-accent" />
                           {q.text.split(": ").slice(1).join(": ") || q.text}
                         </p>
-                        <p className={twMerge("ml-[1.5rem] mt-[.125rem] text-[0.9375rem]", a ? "rise-in font-[550] text-ink" : "text-ink-3")}>
+                        <p className={twMerge("ml-[1.5rem] mt-[.125rem] text-[0.9375rem]", a ? "rise-in font-[500] text-ink" : "text-ink-3")}>
                           {a ? a.text : "Waiting for the crew…"}
                         </p>
                       </li>
@@ -335,8 +357,9 @@ export default function ({ transferId }: { transferId: string }) {
                 </ul>
               )}
             </section>
+            )}
             {crewNotes.length > 0 && (
-              <section className={styles.surface}>
+              <section className={twMerge("card", styles.surface)}>
                 <h3 className={styles.sectionTitle}>Latest from the crew</h3>
                 <Timeline notes={crewNotes} tz={tz} newestFirst={false} />
               </section>
@@ -345,24 +368,24 @@ export default function ({ transferId }: { transferId: string }) {
         </div>
       )}
       {tab === "video" && (
-        <div className={twMerge(styles.surface, "fade-in")}>
+        <div className={twMerge("card", styles.surface, "fade-in")}>
           <PreArrivalPanel t={t} tz={tz} />
         </div>
       )}
       {tab === "trend" && (
-        <div className={twMerge(styles.surface, "fade-in")}>
+        <div className={twMerge("card", styles.surface, "fade-in")}>
           <TrendChart trend={trend} tz={tz} />
         </div>
       )}
       {tab === "timeline" && (
-        <div className={twMerge(styles.surface, "fade-in")}>
+        <div className={twMerge("card", styles.surface, "fade-in")}>
           <Timeline notes={t.notes} tz={tz} />
         </div>
       )}
       {tab === "transport" && (
         <div className={twMerge(styles.columns, "fade-in")}>
           <TransferMapLazy t={t} region={region} height="22rem" />
-          <dl className={twMerge(styles.surface, styles.facts)}>
+          <dl className={twMerge("card", styles.surface, styles.facts)}>
             <div><dt>From</dt><dd>{place(region, t.origin_id)}</dd></div>
             <div><dt>To</dt><dd>{dest}</dd></div>
             <div><dt>Transport</dt><dd>{MODE_LABEL[t.mode]}</dd></div>
@@ -378,7 +401,7 @@ export default function ({ transferId }: { transferId: string }) {
         <div className={styles.mobileDecision}>
           <ButtonBase onClick={() => setTab("handoff")}>Ask crew</ButtonBase>
           <ButtonPrimary className="flex-1" onClick={() => setAccepting(true)}>
-            <Check size={18} /> Accept transfer
+            <Check size={18} strokeWidth={1.75} /> Accept transfer
           </ButtonPrimary>
         </div>
       )}

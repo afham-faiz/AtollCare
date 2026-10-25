@@ -1,33 +1,17 @@
-// Pre-arrival: phone-first, one calm column even on a desktop.
+// Pre-arrival: phone-first, one calm column even on a desktop. One thing per screen; big light type; lit cards.
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   width: 100%;
-  max-width: 36rem;
+  max-width: 34rem;
   margin: 0 auto;
-  padding-bottom: 6rem; // room for the sticky send bar
-}
-
-.intro {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.eyebrow {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
 }
 
 .title {
-  font-size: clamp(1.625rem, 1.3rem + 1vw, 2.125rem);
-  font-weight: 650;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.125rem);
+  line-height: 1.12;
 }
 
 .lede {
@@ -35,168 +19,473 @@
   color: var(--ink-2);
 }
 
-.fine {
+.note {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.quietLink {
+  align-self: center;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  color: var(--blue-500);
+  font-weight: 500;
+}
+
+// ── start ───────────────────────────────────────────────────────────────────
+.call {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--edge), var(--shadow-2);
+  color: var(--critical);
+  font-size: 0.9375rem;
+  font-weight: 500;
+
+  strong {
+    font-weight: 500;
+  }
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.display {
+  font-size: clamp(2.25rem, 1.6rem + 3vw, 3rem);
+  font-weight: 350;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.destination {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label change"
+    "name change"
+    "area change";
+  align-items: center;
+  column-gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge), var(--shadow-2);
+  text-align: left;
+  transition: transform var(--dur-2) var(--ease-out);
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.destinationLabel {
+  grid-area: label;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.destinationName {
+  grid-area: name;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 450;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.destinationArea {
+  grid-area: area;
   font-size: 0.875rem;
   color: var(--ink-3);
 }
 
-.emergency {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem;
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--critical) 9%, transparent);
-  color: var(--critical);
-  font-weight: 550;
-}
-
-.going {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  background: var(--surface);
-  font-size: 1rem;
-}
-
-.patientHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
-}
-
-.patientSummary {
-  flex: 1;
+.destinationChange {
+  grid-area: change;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 999px;
+  background: var(--well);
   color: var(--ink-2);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  font-size: 0.9375rem;
-  color: var(--ink-2);
-
-  input {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-top: 0.125rem;
-    flex-shrink: 0;
-    accent-color: var(--accent);
-  }
-}
-
-.preview {
+.plan {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
-  background: var(--surface);
+  gap: 1rem;
+  padding: 0.25rem 0.25rem 0;
 
   li {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 550;
-  }
+    align-items: flex-start;
+    gap: 0.875rem;
+    color: var(--ink-3);
+    font-size: 0.9375rem;
+    line-height: 1.4;
 
-  span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    flex-shrink: 0;
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent-strong);
-    font-size: 0.875rem;
-    font-weight: 700;
+    strong {
+      display: block;
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 500;
+    }
   }
+}
+
+.planNo {
+  flex-shrink: 0;
+  width: 1.5rem;
+  padding-top: 0.0625rem;
+  color: var(--sage-700);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.go {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+}
+
+.consentLine {
+  padding: 0 0.25rem;
+  color: var(--ink-3);
+  font-size: 0.875rem;
+}
+
+.privacy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: var(--ink-2);
+}
+
+// ── the wizard ──────────────────────────────────────────────────────────────
+.wizardBar {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 1rem 0.375rem 0.375rem;
+  border-radius: 999px;
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: var(--ink-2);
+
+  &:hover {
+    background: var(--well);
+  }
+}
+
+.wizardMark {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: var(--sage-500);
+  color: var(--white);
+}
+
+.wizardTo {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pips {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.pip {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 999px;
+  background: var(--line-strong);
+  transition:
+    width var(--dur-3) var(--ease-out),
+    background-color var(--dur-3) var(--ease-out);
+}
+
+.pipDone {
+  background: var(--sage-500);
+}
+
+.pipNow {
+  width: 1.25rem;
+  background: var(--pine);
 }
 
 .step {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 1.5rem;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
-}
-
-.stepHead {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.stepNo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--well);
-  color: var(--ink-2);
-  font-size: 0.875rem;
-  font-weight: 700;
-  transition: background-color var(--dur-2) var(--ease-out);
-}
-
-.stepDone {
-  background: var(--teal);
-  color: #fff;
+  animation: rise-in var(--dur-3) var(--ease-out) both;
 }
 
 .stepTitle {
-  font-size: 1.125rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  line-height: 1.75rem;
+  font-size: clamp(1.875rem, 1.5rem + 1.5vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
-.stepHint {
+.stepLede {
+  margin-top: -0.5rem;
+  color: var(--ink-3);
+}
+
+.stepNav {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+}
+
+// a step that fills the screen: its action and the way on sit low, where a thumb reaches
+.fullStep {
+  min-height: calc(100dvh - 7rem);
+
+  .stepNav {
+    margin-top: auto;
+  }
+}
+
+// above the stage: page padding, the wizard bar, the title; below it: the skip link (keeps the shutter above the fold)
+.filmStep {
+  --stage-chrome: 14.5rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.inlineAction {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: var(--well);
+  color: var(--ink-2);
   font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.summaryLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--ink-2);
 }
 
-.card {
+.vitals {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  :global(.numeral) {
+    font-size: 3.5rem;
+  }
+}
+
+// ── review ──────────────────────────────────────────────────────────────────
+.reviewGrid {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 1.125rem;
-  background: var(--canvas);
 }
 
-.link {
-  align-self: flex-start;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--accent-strong);
+.reviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem 1.25rem;
+  text-align: left;
+  transition: transform var(--dur-2) var(--ease-out);
+
+  &:is(button):active {
+    transform: scale(0.99);
+  }
 }
 
-.uploading {
+.reviewLabel {
+  color: var(--ink-3);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.reviewEmpty {
+  color: var(--blue-500);
+  font-weight: 500;
+}
+
+.reviewQuote {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  font-size: 1.0625rem;
+  line-height: 1.45;
+}
+
+.reviewValue {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 450;
+}
+
+.reviewMeta {
+  color: var(--ink-3);
+}
+
+.patient {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+
+  // one row, one shape: the age field is a pill like the control beside it
+  input {
+    border-radius: 999px;
+    text-align: center;
+  }
+}
+
+.sendDock {
+  position: sticky;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 30;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-weight: 550;
-  color: var(--accent-strong);
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  border-radius: 999px;
 }
 
+.sendText {
+  min-width: 0;
+  color: var(--ink-2);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+// ── sent ────────────────────────────────────────────────────────────────────
+.sent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.5rem 1.5rem 1.75rem;
+  animation: rise-in var(--dur-3) var(--ease-out) both;
+}
+
+.sentMark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: var(--sage-700);
+  color: var(--white);
+}
+
+.code {
+  margin-top: 0.5rem;
+
+  :global(.numeral) {
+    font-size: 3.5rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 1.25rem;
+
+  li {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+
+    & + li {
+      border-top: 1px solid var(--line);
+    }
+  }
+}
+
+.checkMark {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--sage-100);
+  color: var(--sage-700);
+}
+
+.checkMissing .checkMark {
+  background: var(--well);
+}
+
+.checkLabel {
+  font-weight: 500;
+}
+
+.checkDetail {
+  overflow: hidden;
+  color: var(--ink-3);
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// ── step 2: what happened ───────────────────────────────────────────────────
 .stack {
   display: flex;
   flex-direction: column;
@@ -206,115 +495,141 @@
 .account {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  padding: 0.875rem 1rem;
-  border-left: 3px solid var(--accent);
-  border-radius: 0 0.875rem 0.875rem 0;
-  background: var(--canvas);
-  font-size: 1rem;
-  line-height: 1.5;
+  gap: 0.5rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge), var(--shadow-2);
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 
 .accountMeta {
+  font-family: var(--font-sans);
   font-size: 0.8125rem;
   color: var(--ink-3);
+  letter-spacing: 0;
 }
 
-.voiceRow {
+// one big mic, low on the screen: the obvious thing to do here
+.voice {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+  padding: 2.5rem 0 0.5rem;
+}
+
+// the account step's stack fills the space: their words stay under the title, the mic sinks to the lower half
+.fullStep > .stack {
+  flex: 1;
+
+  .voice {
+    margin-top: auto;
+  }
 }
 
 .mic {
-  display: inline-flex;
+  display: grid;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 3.75rem;
-  height: 3.75rem;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
   border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
-  box-shadow: 0 6px 16px -6px rgba(23, 42, 58, 0.5);
+  background: var(--pine);
+  color: var(--white);
+  box-shadow:
+    0 0 0 0.75rem color-mix(in srgb, var(--sage-500) 12%, transparent),
+    0 0 0 1.5rem color-mix(in srgb, var(--sage-500) 6%, transparent),
+    0 14px 30px -14px rgba(18, 32, 27, 0.6);
   transition:
     background-color var(--dur-2) var(--ease-out),
-    transform var(--dur-1) var(--ease-out);
+    transform var(--dur-2) var(--ease-out),
+    box-shadow 120ms linear;
 
   &:active:not(:disabled) {
     transform: scale(0.96);
   }
 
   &:disabled {
-    opacity: 0.6;
+    background: var(--sage-500);
   }
 }
 
+// there's an account already: saying it again is the secondary move, Next is the primary one
+.micQuiet {
+  background: var(--sage-100);
+  color: var(--pine);
+  box-shadow: none;
+}
+
+// listening: teal, and the rings swell with the voice (red stays for clinical urgency)
 .micLive {
-  background: var(--critical);
-  box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--critical) 16%, transparent);
+  --level: 0;
+  background: var(--teal);
+  box-shadow:
+    0 0 0 calc(0.75rem + var(--level) * 0.75rem) color-mix(in srgb, var(--teal) 18%, transparent),
+    0 0 0 calc(1.5rem + var(--level) * 1.25rem) color-mix(in srgb, var(--teal) 8%, transparent),
+    0 14px 30px -14px rgba(18, 32, 27, 0.6);
 }
 
-.levels {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 2rem;
-
-  > span:not(:last-child) {
-    width: 3px;
-    height: 100%;
-    border-radius: 2px;
-    background: var(--critical);
-    transform-origin: center;
-    transition: transform 80ms linear;
-  }
+.voiceLabel {
+  margin-top: 1rem;
+  color: var(--ink);
+  font-weight: 500;
 }
 
-.iconBtn {
+.typeLink {
   display: inline-flex;
-  flex-shrink: 0;
   align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.875rem;
-  color: var(--ink-3);
-
-  &:hover {
-    background: var(--well);
-    color: var(--ink);
-  }
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  color: var(--blue-500);
+  font-weight: 500;
 }
 
+
+
+// ── step 3: ID ──────────────────────────────────────────────────────────────
 .idCard {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 1.125rem;
-  background: var(--canvas);
+  gap: 0.875rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge), var(--shadow-2);
 
   dl {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
 
     > div {
       display: flex;
       justify-content: space-between;
       gap: 1rem;
+      padding: 0.625rem 0;
+
+      & + div {
+        border-top: 1px solid var(--line);
+      }
     }
   }
 
   dt {
-    color: var(--ink-2);
+    color: var(--ink-3);
   }
 
   dd {
     min-width: 0;
-    font-weight: 600;
+    font-weight: 500;
     text-align: right;
     overflow-wrap: anywhere;
   }
@@ -326,7 +641,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .review {
@@ -334,65 +649,100 @@
 }
 
 .clear {
-  color: var(--teal-strong);
+  color: var(--teal-ink);
 }
 
+// no ID yet: a card-shaped frame (85.6 × 54 mm), a small sibling of the camera stage, is the button
+.idFrame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  width: 100%;
+  aspect-ratio: 85.6 / 54;
+  margin-top: 1rem;
+  border-radius: var(--r-lg);
+  background: var(--stage);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 24px 48px -28px rgba(18, 32, 27, 0.6);
+  transition: transform var(--dur-2) var(--ease-out);
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+.idGuide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+
+  path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.7);
+    stroke-width: 2;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.idShutter {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--pine);
+  box-shadow: 0 0 0 0.375rem rgba(255, 255, 255, 0.18);
+}
+
+.idFrameText {
+  font-weight: 500;
+}
+
+// no ID yet: the photo is the primary action on this screen
 .photoBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 3rem;
-  border: 1px dashed var(--line-strong);
-  border-radius: 1rem;
-  font-weight: 600;
-  color: var(--ink);
+  gap: 0.625rem;
+  min-height: 3.625rem;
+  border-radius: 999px;
+  background: var(--pine);
+  color: var(--white);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 24px -12px rgba(21, 48, 42, 0.55);
+  transition: background-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
 
   &:hover {
-    background: var(--well);
+    background: var(--pine-strong);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   &:disabled {
-    opacity: 0.6;
+    background: var(--sage-500);
   }
 }
 
-.patient {
-  display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-  gap: 0.75rem;
-}
-
-.sendBar {
-  position: sticky;
-  bottom: 1rem;
-  z-index: 40;
-  display: flex;
+// read already: retaking is secondary
+.photoAgain {
+  display: inline-flex;
+  align-self: flex-start;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 0.75rem 0.75rem 1.125rem;
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: saturate(1.4) blur(16px);
-  box-shadow: var(--shadow-2);
-}
-
-.sendText {
-  min-width: 0;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.125rem;
+  border-radius: 999px;
+  background: var(--well);
   color: var(--ink-2);
-}
-
-.sent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 2rem 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 1.5rem;
-  background: var(--surface);
-  text-align: center;
+  font-weight: 500;
 }

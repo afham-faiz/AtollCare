@@ -6,7 +6,7 @@ export const metadata = { title: "Presenter" };
 export default async function () {
   return (
     <div className="mx-auto w-full max-w-[34rem]">
-      <h1 className="mb-[1rem] text-[1.5rem] font-[650] tracking-[-0.02em]">Presenter</h1>
+      <h1 className="mb-[1rem] text-[1.5rem] font-[500] tracking-[-0.02em]">Presenter</h1>
       <PresenterTools />
     </div>
   );

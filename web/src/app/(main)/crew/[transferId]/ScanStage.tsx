@@ -5,6 +5,7 @@
 
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 import ScanRecorder from "@/app/components/(scan)/ScanRecorder";
 import ScanResult from "@/app/components/(scan)/ScanResult";
@@ -29,15 +30,15 @@ export default function ({ t, tz, now, onSaved }: { t: Transfer; tz?: string; no
 
   if ((!latest || recording) && !finished) {
     return (
-      <section className={styles.stage} aria-label="Scan">
-        <header className={styles.head}>
-          <h2 className={styles.title}>{latest ? "Measure again" : "Measure with the phone camera"}</h2>
-          {latest && (
+      <section className={styles.recording} aria-label="Scan">
+        {latest && (
+          <header className={styles.head}>
+            <h2 className={styles.title}>Measure again</h2>
             <button type="button" className={styles.link} onClick={() => setRecording(false)}>
               Cancel
             </button>
-          )}
-        </header>
+          </header>
+        )}
         <ScanRecorder<Transfer>
           endpoint={`/transfers/${t.id}/scans`}
           onSent={(next) => {
@@ -50,7 +51,7 @@ export default function ({ t, tz, now, onSaved }: { t: Transfer; tz?: string; no
   }
 
   return (
-    <section className={styles.stage} aria-label="Scans">
+    <section className={twMerge("card", styles.stage)} aria-label="Scans">
       {latest ? (
         <ScanResult scan={latest} tz={tz} title={t.scans.length > 1 ? `Scan ${t.scans.length}` : "Scan"} coach />
       ) : (
@@ -59,7 +60,7 @@ export default function ({ t, tz, now, onSaved }: { t: Transfer; tz?: string; no
       {!finished && (
         <div className={styles.againRow}>
           <button type="button" className={styles.again} onClick={() => setRecording(true)} disabled={latest?.status === "processing"}>
-            <RotateCcw size={16} /> Measure again
+            <RotateCcw size={16} strokeWidth={1.75} /> Measure again
           </button>
           {dueIn !== null && (
             <span className={dueIn <= 0 ? styles.due : styles.dueLater}>
@@ -71,7 +72,7 @@ export default function ({ t, tz, now, onSaved }: { t: Transfer; tz?: string; no
       {earlier.length > 0 && (
         <details className={styles.earlier}>
           <summary>
-            Earlier scans ({earlier.length}) <ChevronDown size={14} />
+            Earlier scans ({earlier.length}) <ChevronDown size={14} strokeWidth={1.75} />
           </summary>
           <div className={styles.earlierList}>
             {earlier.map((s, i) => (

@@ -128,13 +128,13 @@ export default function ({ transferId }: { transferId: string }) {
     };
     return (
       <div className="m-auto flex max-w-[26rem] flex-col items-center gap-[.5rem] text-center">
-        <p className="text-[1.125rem] font-[600]">This transfer isn’t available.</p>
+        <p className="text-[1.125rem] font-[500]">This transfer isn’t available.</p>
         <p className="text-[0.9375rem] text-ink-2">It may have been closed, or the demo was reset.</p>
         <div className="mt-[.75rem] flex gap-[.5rem]">
           <ButtonPrimary onClick={startDemo} disabled={startingDemo}>
             {startingDemo ? "Starting…" : "Start a demo case"}
           </ButtonPrimary>
-          <Link href="/crew" className="inline-flex items-center rounded-[.75rem] px-[1rem] font-[600] text-accent hover:bg-accent-soft">
+          <Link href="/crew" className="inline-flex items-center rounded-[.75rem] px-[1rem] font-[500] text-accent hover:bg-accent-soft">
             All transfers
           </Link>
         </div>
@@ -146,8 +146,8 @@ export default function ({ transferId }: { transferId: string }) {
       <div className="flex flex-col gap-[1.5rem]">
         <Skeleton className="h-[4.5rem] w-[50%]" />
         <div className="grid gap-[1.5rem] md:grid-cols-[minmax(0,1.55fr)_minmax(21rem,1fr)]">
-          <Skeleton className="aspect-[16/10] w-full rounded-[1.5rem]" />
-          <Skeleton className="h-[26rem] rounded-[1.5rem]" />
+          <Skeleton className="aspect-[16/10] w-full rounded-[1.75rem]" />
+          <Skeleton className="h-[26rem] rounded-[1.75rem]" />
         </div>
       </div>
     );
@@ -171,7 +171,7 @@ export default function ({ transferId }: { transferId: string }) {
       <header className={styles.header}>
         <div className={styles.who}>
           <div className="flex flex-wrap items-center gap-[.625rem]">
-            <span className="font-mono text-[0.8125rem] font-[500] tracking-[0.02em] text-ink-3">{t.code}</span>
+            <span className="mono text-[0.875rem] text-ink-3">{t.code}</span>
             <span id="handoff-target" className={twMerge("inline-flex rounded-full", justSent && styles.arrived)}>
               <StatusChip status={t.status} view="crew" />
             </span>
@@ -182,26 +182,28 @@ export default function ({ transferId }: { transferId: string }) {
           </p>
         </div>
         <div className={styles.headerEnd}>
-          <RouteLine t={t} region={region} now={meta.now} align="right" className="max-md:items-start max-md:text-left" />
-          <div className="flex gap-[.25rem] max-md:ml-[-0.75rem]">
+          <RouteLine t={t} region={region} now={meta.now} align="right" className={styles.route} />
+          <div className={styles.actions}>
             {t.pre_arrival && (
-              <ButtonGhost size="sm" onClick={() => setSheet("packet")} title="What the companion sent ahead">
-                <Smartphone size={16} /> Sent ahead
+              <ButtonGhost size="sm" className={styles.action} onClick={() => setSheet("packet")} title="What the companion sent ahead" aria-label="Sent ahead">
+                <Smartphone size={16} strokeWidth={1.75} /> <span className={styles.actionLabel}>Sent ahead</span>
               </ButtonGhost>
             )}
-            <ButtonGhost size="sm" onClick={() => setSheet("notes")}>
-              <ListChecks size={16} /> Notes{conversation.length ? ` · ${conversation.length}` : ""}
+            <ButtonGhost size="sm" className={styles.action} onClick={() => setSheet("notes")} aria-label="Notes">
+              <ListChecks size={16} strokeWidth={1.75} /> <span className={styles.actionLabel}>Notes{conversation.length ? ` · ${conversation.length}` : ""}</span>
             </ButtonGhost>
             <ButtonGhost
               size="sm"
+              className={styles.action}
               aria-pressed={voiceOn}
+              aria-label={voiceOn ? "Voice on" : "Muted"}
               title="Read hospital messages and alerts aloud"
               onClick={() => {
                 if (voiceOn) stopSpeaking();
                 setVoiceOn(!voiceOn);
               }}
             >
-              {voiceOn ? <Volume2 size={16} /> : <VolumeX size={16} />} {voiceOn ? "Voice on" : "Muted"}
+              {voiceOn ? <Volume2 size={16} strokeWidth={1.75} /> : <VolumeX size={16} strokeWidth={1.75} />} <span className={styles.actionLabel}>{voiceOn ? "Voice on" : "Muted"}</span>
             </ButtonGhost>
           </div>
         </div>
@@ -261,20 +263,20 @@ export default function ({ transferId }: { transferId: string }) {
               onSaved={(next) => refresh(next)}
             />
           ) : (
-            <p className="flex items-center gap-[.5rem] px-[.25rem] text-[1rem] font-[600]">
-              <Check size={18} className="text-teal" /> Handed over at {dest}
+            <p className="flex items-center gap-[.5rem] px-[.75rem] text-[1rem] font-[500]">
+              <Check size={18} strokeWidth={1.75} className="text-teal" /> Handed over at {dest}
             </p>
           )}
           <div className={styles.next}>
             {t.status === "preparing" && (
               <ButtonPrimary size="lg" onClick={() => setSheet("handoff")}>
-                Send handoff <ArrowUpRight size={18} />
+                Send handoff <ArrowUpRight size={18} strokeWidth={1.75} />
               </ButtonPrimary>
             )}
             {t.status === "pending" && (
               <>
                 <span className={styles.waiting}>
-                  <Clock3 size={16} /> <span className="max-sm:hidden">Waiting for {dest}</span>
+                  <Clock3 size={16} strokeWidth={1.75} /> <span className="max-sm:hidden">Waiting for {dest}</span>
                   <span className="sm:hidden">Waiting</span>
                 </span>
                 <ButtonBase onClick={() => setSheet("handoff")}>View handoff</ButtonBase>
@@ -283,9 +285,9 @@ export default function ({ transferId }: { transferId: string }) {
             {t.status === "accepted" && t.acceptance && (
               <>
                 <button type="button" className={styles.accepted} onClick={() => setSheet("notes")} title={t.acceptance.message ?? "Notes and messages"}>
-                  <CheckCircle2 size={18} className="shrink-0" />
+                  <CheckCircle2 size={18} strokeWidth={1.75} className="shrink-0" />
                   <span className="min-w-0 text-left">
-                    <span className="block truncate font-[600]">Accepted · {t.acceptance.by}</span>
+                    <span className="block truncate font-[500]">Accepted · {t.acceptance.by}</span>
                     {/* the hospital's own words come first: they're what the crew acts on */}
                     <span className="block truncate text-[0.8125rem] opacity-80">
                       {t.acceptance.message
@@ -297,7 +299,7 @@ export default function ({ transferId }: { transferId: string }) {
                   </span>
                 </button>
                 <ButtonBase size="lg" onClick={() => act("arrive")}>
-                  <Flag size={18} /> Arrived
+                  <Flag size={18} strokeWidth={1.75} /> Arrived
                 </ButtonBase>
               </>
             )}

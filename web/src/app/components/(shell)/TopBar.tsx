@@ -1,7 +1,8 @@
-// Quiet top bar: product mark, the three moments (pre-arrival, crew, hospital), active region, presenter entry.
+// Top bar: the mark on a sage disc, the three moments (pre-arrival, crew, hospital) in a floating pill, the active
+// region and the presenter entry. Transparent: it sits on the canvas, not over it.
 "use client";
 
-import { SlidersHorizontal } from "lucide-react";
+import { Building2, Ship, Smartphone, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { twMerge } from "tailwind-merge";
@@ -13,16 +14,15 @@ import { useMeta } from "@/lib/swr";
 import styles from "./TopBar.module.scss";
 
 const ROLES = [
-  { href: "/pre-arrival", label: "Pre-arrival" },
-  { href: "/crew", label: "Crew" },
-  { href: "/hospital", label: "Hospital" },
+  { href: "/pre-arrival", label: "Pre-arrival", icon: Smartphone },
+  { href: "/crew", label: "Crew", icon: Ship },
+  { href: "/hospital", label: "Hospital", icon: Building2 },
 ];
 
 export function Mark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.25" opacity="0.28" />
-      <path d="M3 12h4.2l2.1-4.6 3.6 9.2 2.4-4.6H21" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 12h4.2l2.1-4.6 3.6 9.2 2.4-4.6H21" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -30,20 +30,29 @@ export function Mark({ className }: { className?: string }) {
 export default function () {
   const pathname = usePathname();
   const { data: meta } = useMeta();
+  const companion = pathname.startsWith("/pre-arrival");
+  // inside a packet, the wizard bar is the only chrome (it carries the mark), so the camera gets the room
+  if (/^\/pre-arrival\/[^/]+/.test(pathname)) return null;
   return (
     // on a phone, the companion sees only their own screen: no crew or hospital tabs, no presenter tools
-    <header className={twMerge(styles.bar, pathname.startsWith("/pre-arrival") && styles.companion)}>
+    <header className={twMerge(styles.bar, companion && styles.companion)}>
       <div className={styles.inner}>
-        <Link href="/crew" className={styles.brand}>
-          <Mark className="h-[1.375rem] w-[1.375rem] text-teal" />
+        <Link href={companion ? "/pre-arrival" : "/crew"} className={styles.brand} aria-label={APP_NAME}>
+          <span className={styles.disc}>
+            <Mark className="h-[1.125rem] w-[1.125rem]" />
+          </span>
           <span className={styles.brandText}>{APP_NAME}</span>
         </Link>
-        <nav className={styles.roles} aria-label="Role">
-          {ROLES.map((r) => (
-            <Link key={r.href} href={r.href} className={twMerge(styles.role, pathname.startsWith(r.href) && styles.active)}>
-              {r.label}
-            </Link>
-          ))}
+        <nav className={twMerge("glass", styles.roles)} aria-label="Role">
+          {ROLES.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href);
+            return (
+              <Link key={href} href={href} className={twMerge(styles.role, active && styles.active)} aria-current={active ? "page" : undefined}>
+                <Icon size={17} strokeWidth={1.75} />
+                <span className={styles.roleLabel}>{label}</span>
+              </Link>
+            );
+          })}
         </nav>
         <div className={styles.end}>
           {meta && <span className={styles.region}>{meta.region.name}</span>}
@@ -54,7 +63,7 @@ export default function () {
             title="Presenter tools (Ctrl + .)"
             aria-label="Presenter tools"
           >
-            <SlidersHorizontal size={16} />
+            <SlidersHorizontal size={17} strokeWidth={1.75} />
           </button>
         </div>
       </div>

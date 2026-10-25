@@ -1,3 +1,4 @@
+// A frosted sheet: from the right on a laptop, up from the bottom on a phone.
 .root {
   position: fixed;
   inset: 0;
@@ -7,7 +8,7 @@
 .backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(23, 42, 58, 0.22);
+  background: rgba(18, 32, 27, 0.24);
   animation: fade-in var(--dur-2) var(--ease-out) both;
 }
 
@@ -19,17 +20,39 @@
   display: flex;
   flex-direction: column;
   width: min(32rem, calc(100vw - 1.5rem));
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
-  background: var(--surface);
-  box-shadow: var(--shadow-3);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: var(--r-lg);
+  background: rgba(246, 249, 247, 0.86);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), var(--shadow-3);
   animation: sheet-in var(--dur-3) var(--ease-out) both;
+
+  @media (max-width: 39.99rem) {
+    top: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    width: auto;
+    max-height: 88dvh;
+    animation-name: sheet-up;
+  }
 }
 
 @keyframes sheet-in {
   from {
     opacity: 0;
     transform: translateX(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
   }
   to {
     opacity: 1;
@@ -46,28 +69,26 @@
 }
 
 .title {
-  font-size: 1.1875rem;
-  font-weight: 650;
-  letter-spacing: -0.015em;
+  font-size: 1.375rem;
+  font-weight: 450;
 }
 
 .subtitle {
   margin-top: 0.125rem;
   font-size: 0.875rem;
-  color: var(--ink-2);
+  color: var(--ink-3);
 }
 
 .close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.625rem;
-  color: var(--ink-3);
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: var(--well);
+  color: var(--ink-2);
 
   &:hover {
-    background: var(--well);
     color: var(--ink);
   }
 }
@@ -82,6 +103,5 @@
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--line);
+  padding: 1rem 1.25rem 1.25rem;
 }

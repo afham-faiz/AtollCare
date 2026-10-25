@@ -7,6 +7,7 @@ import { useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 import type { CueFinding, Scan } from "@/lib/api";
+import { smoothPath } from "@/lib/curves";
 import { fmtTime } from "@/lib/format";
 
 import styles from "./ScanResult.module.scss";
@@ -25,7 +26,7 @@ function Vital({ label, value, unit, q, stable, bystander }: { label: string; va
   return (
     <div className={styles.vital}>
       <span className={styles.vitalLabel}>{label}</span>
-      <span className={twMerge("tnum", styles.vitalValue, value == null && styles.muted, qual.tone !== "good" && styles.weakValue)}>
+      <span className={twMerge("numeral", styles.vitalValue, value == null && styles.muted, qual.tone !== "good" && styles.weakValue)}>
         {value ?? "—"}
         {value != null && <span className={styles.unit}>{unit}</span>}
       </span>
@@ -52,11 +53,12 @@ function Trace({ points, label, tone }: { points: TracePoint[]; label: string; t
   const vs = points.map((p) => p.v);
   const lo = Math.min(...vs);
   const range = Math.max(...vs) - lo || 1;
-  const pts = points.map((p) => `${(((p.t_s - t0) / span) * 300).toFixed(1)},${(38 - ((p.v - lo) / range) * 34).toFixed(1)}`).join(" ");
+  // placed by time, drawn as a smooth curve
+  const pts: [number, number][] = points.map((p) => [((p.t_s - t0) / span) * 300, 38 - ((p.v - lo) / range) * 34]);
   return (
     <figure className={styles.trace}>
       <svg viewBox="0 0 300 40" preserveAspectRatio="none" className={twMerge(styles.traceSvg, styles[tone])} role="img" aria-label={label}>
-        <polyline points={pts} />
+        <path d={smoothPath(pts)} />
       </svg>
       <figcaption>{label}</figcaption>
     </figure>
@@ -130,7 +132,22 @@ function Frames({ finding, scan }: { finding: CueFinding; scan: Scan }) {
 
 // coach: the person who recorded is looking, so say how to get a better clip
 // bystander: the companion recorded it (not trained staff with a mounted phone), so its numbers are an estimate
-export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz?: string; title?: string; coach?: boolean; bystander?: boolean }) {
+// numbers: false where the page already shows the reading (the hospital's Presage card): just the signal and the signs
+export default function ({
+  scan,
+  tz,
+  title,
+  coach,
+  bystander,
+  numbers = true,
+}: {
+  scan: Scan;
+  tz?: string;
+  title?: string;
+  coach?: boolean;
+  bystander?: boolean;
+  numbers?: boolean;
+}) {
   const signs = scan.signs;
   const failure = signs?.issues.find((i) => i.startsWith("inspection_failed"));
   const notChecked = !!failure;
@@ -167,12 +184,12 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
 
       {processing && (
         <p className={styles.stage} role="status">
-          <Loader2 size={15} className="animate-spin" /> {scan.stage ?? "Working…"}
+          <Loader2 size={15} strokeWidth={1.75} className="animate-spin" /> {scan.stage ?? "Working…"}
         </p>
       )}
       {scan.status === "failed" && (
         <p className={styles.failed}>
-          <AlertCircle size={15} /> This scan couldn&apos;t be analysed. {scan.error}
+          <AlertCircle size={15} strokeWidth={1.75} /> This scan couldn&apos;t be analysed. {scan.error}
         </p>
       )}
 
@@ -184,7 +201,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
             {bystander ? "Presage · bystander video" : diagnostics.path === "live" ? "Presage · measured live" : "Presage · from the video"}
           </span>
         </div>
-        {measured ? (
+        {measured && !numbers ? null : measured ? (
           <div className={styles.vitals}>
             <Vital label="Heart rate" value={v?.heart_rate_bpm} unit="bpm" q={v?.heart_rate_quality} stable={v?.heart_rate_stable} bystander={bystander} />
             <Vital label="Breathing" value={v?.respiration_rate_bpm} unit="/min" q={v?.respiration_quality} stable={v?.respiration_stable} bystander={bystander} />
@@ -212,7 +229,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
           <>
             {contradicted.length > 0 && (
               <p className={styles.mismatch}>
-                <MessageSquareQuote size={16} className="shrink-0" />
+                <MessageSquareQuote size={16} strokeWidth={1.75} className="shrink-0" />
                 <span>
                   <strong>Described by the companion, not visible in this clip:</strong> {contradicted.map((f) => f.label).join(", ")}.
                   Symptoms can come and go.
@@ -229,7 +246,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
                 {present.map((f) => (
                   <li key={f.cue_id}>
                     <p className={styles.presentHead}>
-                      <Eye size={15} className="shrink-0" />
+                      <Eye size={15} strokeWidth={1.75} className="shrink-0" />
                       <strong>{f.label}</strong>
                       <span className={styles.conf}>
                         seen in {f.evidence_frames.length} of {signs.frames.length} frames
@@ -255,7 +272,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
             {unclear.length > 0 && (
               <details className={styles.unclear}>
                 <summary>
-                  Couldn&apos;t tell ({unclear.length}) <ChevronDown size={14} />
+                  Couldn&apos;t tell ({unclear.length}) <ChevronDown size={14} strokeWidth={1.75} />
                 </summary>
                 <ul>
                   {unclear.map((f) => (

@@ -5,12 +5,14 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 
 import type { TrendResponse } from "@/lib/api";
 import { fmtTime } from "@/lib/format";
+import { CHART, PALETTE } from "@/lib/palette";
 
+// bedside-monitor colours; NEWS2 in ink, as a step line (it changes in steps, not smoothly)
 const SERIES = [
-  { key: "HR", color: "#c8322a", axis: "v", label: "Heart rate" },
-  { key: "RR", color: "#0f9286", axis: "v", label: "Respiration" },
-  { key: "SpO₂", color: "#2579ce", axis: "v", label: "SpO₂" },
-  { key: "NEWS2", color: "#a8620a", axis: "n", label: "NEWS2" },
+  { key: "HR", color: PALETTE.seriesHr, axis: "v", label: "Heart rate", step: false },
+  { key: "RR", color: PALETTE.seriesRr, axis: "v", label: "Breathing", step: false },
+  { key: "SpO₂", color: PALETTE.seriesSpo2, axis: "v", label: "SpO₂", step: false },
+  { key: "NEWS2", color: PALETTE.ink, axis: "n", label: "NEWS2", step: true },
 ];
 
 type Row = { t: string; HR?: number | null; RR?: number | null; "SpO₂"?: number | null; NEWS2?: number | null };
@@ -27,10 +29,10 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
   const fc = trend?.forecast;
   return (
     <div className={className}>
-      <div className="mb-[.75rem] flex flex-wrap gap-x-[1rem] gap-y-[.25rem] text-[0.8125rem] text-ink-2">
+      <div className="mb-[1rem] flex flex-wrap gap-x-[1.25rem] gap-y-[.25rem] text-[0.8125rem] text-ink-3">
         {SERIES.map((s) => (
-          <span key={s.key} className="flex items-center gap-[.375rem]">
-            <span className="h-[.125rem] w-[.875rem] rounded-full" style={{ background: s.color }} />
+          <span key={s.key} className="flex items-center gap-[.5rem]">
+            <span className="h-[.5rem] w-[.5rem] rounded-full" style={{ background: s.color }} />
             {s.label}
           </span>
         ))}
@@ -38,16 +40,27 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
       {data.length < 2 ? (
         <p className="py-[2rem] text-center text-ink-3">The trend appears after a few minutes of measured readings (Presage or crew).</p>
       ) : (
-        <div className="h-[12rem] w-full">
+        <div className="h-[13rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -22 }}>
-              <CartesianGrid stroke="#eef2f6" vertical={false} />
-              <XAxis dataKey="t" tick={{ fontSize: 12, fill: "#8a9aaa" }} tickLine={false} axisLine={false} minTickGap={28} />
-              <YAxis yAxisId="v" tick={{ fontSize: 12, fill: "#8a9aaa" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+              <CartesianGrid {...CHART.grid} />
+              <XAxis dataKey="t" tick={CHART.tick} tickLine={false} axisLine={false} minTickGap={36} />
+              <YAxis yAxisId="v" tick={CHART.tick} tickLine={false} axisLine={false} domain={["auto", "auto"]} tickCount={3} />
               <YAxis yAxisId="n" orientation="right" domain={[0, 20]} hide />
-              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e7edf2", fontSize: 13, boxShadow: "0 8px 24px -8px rgba(23,42,58,.15)" }} />
+              <Tooltip contentStyle={CHART.tooltip} cursor={CHART.cursor} />
               {SERIES.map((s) => (
-                <Line key={s.key} yAxisId={s.axis} dataKey={s.key} stroke={s.color} strokeWidth={1.75} dot={false} connectNulls isAnimationActive={false} />
+                <Line
+                  key={s.key}
+                  yAxisId={s.axis}
+                  dataKey={s.key}
+                  type={s.step ? "stepAfter" : "monotone"}
+                  stroke={s.color}
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={{ r: 4, stroke: PALETTE.white, strokeWidth: 2 }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
               ))}
             </LineChart>
           </ResponsiveContainer>
@@ -65,7 +78,7 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
       )}
       {fc && (
         <p className="mt-[.75rem] text-[0.875rem] text-ink-2">
-          NEWS2 is <span className="font-[600] text-ink">{fc.trend}</span>.{" "}
+          NEWS2 is <span className="font-[500] text-ink">{fc.trend}</span>.{" "}
           <span className="text-ink-3">
             {fc.points_used} one-minute points, {fc.confidence} confidence.
           </span>

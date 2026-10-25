@@ -67,11 +67,11 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
     <li>
       <button type="button" className={twMerge(styles.row, "w-full text-left")} onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className={twMerge(styles.rowIcon, styles.rowIconAccent)}>
-          <Smartphone size={18} />
+          <Smartphone size={18} strokeWidth={1.75} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-[.625rem]">
-            <span className="font-[600]">{patientTitle(intake.patient)}</span>
+            <span className="font-[500]">{patientTitle(intake.patient)}</span>
             <span className="font-mono text-[0.8125rem] text-ink-3">{intake.code}</span>
             <span className="ml-auto shrink-0 text-[0.8125rem] text-ink-3">{intake.sent_at ? ago(intake.sent_at, meta.now) : ""}</span>
           </span>
@@ -86,13 +86,13 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
             ))}
           </span>
         </span>
-        <ChevronDown size={18} className={twMerge("shrink-0 text-ink-3 transition-transform", open && "rotate-180")} />
+        <ChevronDown size={18} strokeWidth={1.75} className={twMerge("shrink-0 text-ink-3 transition-transform", open && "rotate-180")} />
       </button>
 
       {open && !changing && (
         <div className={styles.packetForm}>
           <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={busy || !chosenDest || !chosenMode || !chosenOrigin}>
-            {busy && <Loader2 size={18} className="animate-spin" />} Start transfer <ArrowRight size={18} />
+            {busy && <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />} Start transfer <ArrowRight size={18} strokeWidth={1.75} />
           </ButtonPrimary>
           <p className={styles.startTo}>
             <span>
@@ -141,7 +141,7 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
             />
           </div>
           <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={busy || !chosenDest || !chosenMode || !chosenOrigin}>
-            {busy && <Loader2 size={18} className="animate-spin" />} Start transfer <ArrowRight size={18} />
+            {busy && <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />} Start transfer <ArrowRight size={18} strokeWidth={1.75} />
           </ButtonPrimary>
         </div>
       )}

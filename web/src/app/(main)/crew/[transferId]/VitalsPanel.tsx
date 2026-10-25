@@ -6,8 +6,8 @@ import { useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 import LiveDot from "@/app/components/(controls)/LiveDot";
-import Sparkline from "@/app/components/(transfer)/Sparkline";
 import UrgencyBadge from "@/app/components/(transfer)/UrgencyBadge";
+import { Bars, Heartbeat, Trace } from "@/app/components/(vitals)/Signal";
 import type { Transfer } from "@/lib/api";
 import {
   assessHr,
@@ -21,7 +21,6 @@ import {
   type Assessment,
 } from "@/lib/clinical";
 
-import BreathingWave from "./BreathingWave";
 import styles from "./VitalsPanel.module.scss";
 
 export type LiveReading = { value: number | null; stable: boolean } | null;
@@ -39,7 +38,7 @@ function Status({ a }: { a: Assessment | null }) {
 function Source({ kind, at, now }: { kind: "live" | "acquiring" | "presage" | "manual" | "simulated" | "none"; at?: string; now?: string }) {
   if (kind === "live") return <span className={styles.source}><LiveDot tone="live" /> Presage · live</span>;
   if (kind === "acquiring") return <span className={styles.source}><LiveDot tone="accent" /> Presage · acquiring</span>;
-  if (kind === "simulated") return <span className={twMerge(styles.source, styles.demo)}>Simulated</span>;
+  if (kind === "simulated") return <span className={styles.source}>Simulated, not measured</span>;
   if (kind === "none") return <span className={styles.source}>Not recorded</span>;
   return <span className={styles.source}>{kind === "presage" ? "Presage" : "Crew"} · {at ? freshness(at, now) : ""}</span>;
 }
@@ -51,6 +50,7 @@ function Metric({
   assessment,
   source,
   flag,
+  mark,
   aside,
   simulated,
 }: {
@@ -60,32 +60,32 @@ function Metric({
   assessment: Assessment | null;
   source: React.ReactNode;
   flag?: string | null;
+  mark?: React.ReactNode;
   aside?: React.ReactNode;
   simulated?: boolean;
 }) {
   return (
     <div className={styles.metric}>
       <div className={styles.metricHead}>
-        <span className="flex min-w-0 items-center gap-[.5rem]">
-          <span className={styles.label}>{label}</span>
-          {/* no clinical status for a simulated number: "In range" would assert something that wasn't measured */}
-          {value !== null && !simulated && <Status a={assessment} />}
-        </span>
+        <span className={styles.label}>{label}</span>
         {source}
       </div>
       <div className={styles.metricBody}>
-        <div className={styles.valueRow}>
+        {mark}
+        <p className={styles.valueRow}>
           {value === null ? (
-            <span className={twMerge(styles.value, styles.pending)}>—</span>
+            <span className={styles.notYet}>Not measured yet</span>
           ) : (
-            <span className={twMerge(styles.value, "tnum value-in", simulated && styles.simulated)} key={Math.round(value)}>
+            <span className={twMerge("numeral value-in", styles.value, simulated && styles.simulated)} key={Math.round(value)}>
               {Math.round(value)}
             </span>
           )}
-          <span className={styles.unit}>{unit}</span>
-        </div>
-        <div className={styles.aside}>{aside}</div>
+          {value !== null && <span className="unit">{unit}</span>}
+        </p>
+        {/* no clinical status for a simulated number: "In range" would assert something that wasn't measured */}
+        {value !== null && !simulated && <Status a={assessment} />}
       </div>
+      {aside && <div className={styles.aside}>{aside}</div>}
       {flag && <p className={styles.flag}>{flag}</p>}
     </div>
   );
@@ -137,8 +137,10 @@ export default function ({
     .sort()
     .at(-1);
 
+  const bars = (pts: ReturnType<typeof series>) => pts.map((p) => ({ v: p.v, simulated: p.source === "simulated" }));
+
   return (
-    <section className={styles.panel} aria-label="Vital signs">
+    <section className={twMerge("card", styles.panel)} aria-label="Vital signs">
       <header className={styles.header}>
         <h2 className={styles.title}>Vital signs</h2>
         <UrgencyBadge news2={t.news2} />
@@ -146,7 +148,7 @@ export default function ({
 
       {alerts.length > 0 && (
         <div className={twMerge(styles.alert, urgent.length ? styles.alertUrgent : styles.alertWatch)} role="alert">
-          <AlertTriangle size={16} strokeWidth={2.4} className="mt-[.125rem] shrink-0" />
+          <AlertTriangle size={16} strokeWidth={1.75} className="mt-[.125rem] shrink-0" />
           <ul className={styles.alertList}>
             {shown.map((a) => (
               <li key={a.code}>{a.text}</li>
@@ -160,63 +162,80 @@ export default function ({
         </div>
       )}
 
-      <Metric
-        label="Heart rate"
-        value={hrValue}
-        unit="bpm"
-        assessment={hrValue !== null ? assessHr(hrValue) : null}
-        source={<Source kind={contact("heart_rate", hr)} at={L.heart_rate?.at} now={now} />}
-        simulated={contact("heart_rate", hr) === "simulated"}
-        flag={(live && outside(hrValue, PRESAGE_HR)) || L.heart_rate?.flag ? "Outside Presage’s cleared range (50–150) — confirm with a monitor" : null}
-        aside={<Sparkline points={hrSeries} color="#c8322a" className={styles.spark} />}
-      />
-      <Metric
-        label="Respiration"
-        value={rrValue}
-        unit="/min"
-        assessment={rrValue !== null ? assessRr(rrValue) : null}
-        source={<Source kind={contact("resp_rate", rr)} at={L.resp_rate?.at} now={now} />}
-        simulated={contact("resp_rate", rr) === "simulated"}
-        flag={(live && outside(rrValue, PRESAGE_RR)) || L.resp_rate?.flag ? "Outside Presage’s cleared range (8–26) — count it by hand" : null}
-        aside={
-          live && trace.length > 4 ? (
-            <BreathingWave trace={trace} className={styles.spark} />
-          ) : (
-            <Sparkline points={rrSeries} color="#0f9286" className={styles.spark} />
-          )
-        }
-      />
-      {live && acquiring && <p className={styles.settle}>Contactless readings appear once the signal is stable.</p>}
+      {!live && hrValue === null && rrValue === null ? (
+        // nothing measured yet: one quiet line, not two empty tiles
+        <p className={styles.nothingYet}>Heart rate and breathing appear here once the camera measures.</p>
+      ) : (
+      <div className={styles.metrics}>
+        <Metric
+          label="Heart rate"
+          value={hrValue}
+          unit="bpm"
+          assessment={hrValue !== null ? assessHr(hrValue) : null}
+          source={<Source kind={contact("heart_rate", hr)} at={L.heart_rate?.at} now={now} />}
+          simulated={contact("heart_rate", hr) === "simulated"}
+          mark={live ? <Heartbeat bpm={hr?.stable ? hr.value : null} waiting={!hr?.stable} tone="card" size="sm" /> : undefined}
+          flag={(live && outside(hrValue, PRESAGE_HR)) || L.heart_rate?.flag ? "Outside Presage’s cleared range (50–150): confirm with a monitor" : null}
+          aside={<Bars values={bars(hrSeries)} tone="hr" label="Recent heart rate readings" />}
+        />
+        <Metric
+          label="Breathing"
+          value={rrValue}
+          unit="/min"
+          assessment={rrValue !== null ? assessRr(rrValue) : null}
+          source={<Source kind={contact("resp_rate", rr)} at={L.resp_rate?.at} now={now} />}
+          simulated={contact("resp_rate", rr) === "simulated"}
+          flag={(live && outside(rrValue, PRESAGE_RR)) || L.resp_rate?.flag ? "Outside Presage’s cleared range (8–26): count it by hand" : null}
+          aside={
+            live && trace.length > 4 ? (
+              <Trace values={trace} tone="rr" dot label="Live breathing wave" className={styles.wave} />
+            ) : (
+              <Bars values={bars(rrSeries)} tone="rr" label="Recent breathing readings" />
+            )
+          }
+        />
+      </div>
+      )}
+      {live && acquiring && <p className={styles.settle}>Readings appear once Presage calls them steady.</p>}
 
-      <div className={styles.crew}>
-        <div className={styles.crewGrid}>
-          {crew.map((c) => {
-            const v = numeric(L[c.k]);
-            const a = v !== null ? c.a(v) : null;
-            return (
-              <div key={c.k} className={styles.crewItem}>
-                <span className={styles.crewLabel}>{c.label}</span>
-                <span className={twMerge("tnum", styles.crewValue, a && a.level !== "normal" && styles[a.level])}>
-                  {v ?? "—"}
-                  {v !== null && <span className={styles.crewUnit}>{c.unit}</span>}
-                </span>
-              </div>
-            );
-          })}
-          <div className={styles.crewItem}>
+      <div className={styles.crewGrid}>
+        {crew.map((c) => {
+          const v = numeric(L[c.k]);
+          const a = v !== null ? c.a(v) : null;
+          return v === null ? (
+            <button key={c.k} type="button" className={twMerge(styles.crewItem, styles.crewAdd)} onClick={onAddVitals}>
+              <span className={styles.crewLabel}>{c.label}</span>
+              <span className={styles.crewAddText}>
+                <Plus size={15} strokeWidth={1.75} /> Add
+              </span>
+            </button>
+          ) : (
+            <button key={c.k} type="button" className={styles.crewItem} onClick={onAddVitals} title={`Update ${c.label}`}>
+              <span className={styles.crewLabel}>{c.label}</span>
+              <span className={twMerge("numeral", styles.crewValue, a && a.level !== "normal" && styles[a.level])}>
+                {v}
+                <span className="unit">{c.unit}</span>
+              </span>
+            </button>
+          );
+        })}
+        {acvpu ? (
+          <button type="button" className={styles.crewItem} onClick={onAddVitals} title="Update ACVPU">
             <span className={styles.crewLabel}>ACVPU</span>
-            <span className={twMerge(styles.crewValue, acvpu && acvpu !== "A" && styles.urgent)}>{acvpu ? String(acvpu) : "—"}</span>
-          </div>
-        </div>
+            <span className={twMerge("numeral", styles.crewValue, acvpu !== "A" && styles.urgent)}>{String(acvpu)}</span>
+          </button>
+        ) : (
+          <button type="button" className={twMerge(styles.crewItem, styles.crewAdd)} onClick={onAddVitals}>
+            <span className={styles.crewLabel}>ACVPU</span>
+            <span className={styles.crewAddText}>
+              <Plus size={15} strokeWidth={1.75} /> Add
+            </span>
+          </button>
+        )}
       </div>
-      <div className={styles.footnote}>
-        <p className="min-w-0 truncate">
-          {crewAt ? `Crew-entered ${freshness(crewAt, now)}` : ""}
-        </p>
-        <button type="button" onClick={onAddVitals} className={twMerge(styles.add, missing && styles.addDue)}>
-          <Plus size={16} /> {missing ? "Complete NEWS2" : "Update"}
-        </button>
-      </div>
+      {(crewAt || missing) && (
+        <p className={styles.footnote}>{crewAt ? `Crew-entered ${freshness(crewAt, now)} · tap a reading to update` : "NEWS2 needs SpO₂, BP, temperature and ACVPU"}</p>
+      )}
     </section>
   );
 }

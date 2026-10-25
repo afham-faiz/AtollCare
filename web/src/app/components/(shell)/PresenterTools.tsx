@@ -28,7 +28,7 @@ const useOrigin = () => useSyncExternalStore(noop, () => window.location.origin,
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border-t-[1px] border-line py-[1.25rem] first:border-t-0 first:pt-[.5rem]">
-      <h3 className="mb-[.75rem] text-[0.8125rem] font-[600] uppercase tracking-[0.06em] text-ink-3">{title}</h3>
+      <h3 className="mb-[.75rem] text-[0.875rem] font-[500] text-ink-3">{title}</h3>
       {children}
     </section>
   );
@@ -127,41 +127,41 @@ export default function ({ onDone }: { onDone?: () => void }) {
                   type="button"
                   disabled={busy !== null}
                   onClick={() => start(c)}
-                  className="group flex w-full items-center gap-[1rem] rounded-[.875rem] border-[1px] border-line p-[.875rem] text-left transition-colors hover:border-accent/40 hover:bg-accent-soft/40 disabled:opacity-60"
+                  className="card group flex w-full items-center gap-[1rem] !rounded-[1.125rem] p-[.875rem] text-left transition-colors hover:bg-white disabled:bg-well"
                 >
-                  <span className="flex h-[2.5rem] w-[2.5rem] shrink-0 items-center justify-center rounded-[.75rem] bg-well text-ink-2">
+                  <span className="flex h-[2.5rem] w-[2.5rem] shrink-0 items-center justify-center rounded-full bg-[var(--sage-100)] text-[var(--sage-700)]">
                     <ModeIcon mode={c.mode} size={18} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-[600]">{c.title}</span>
+                    <span className="block font-[500]">{c.title}</span>
                     <span className="block truncate text-[0.8125rem] text-ink-2">
                       {patientTitle(c.patient)} · {place(region, c.origin_id)} → {place(region, c.destination_id)}
                     </span>
                   </span>
-                  {busy === c.id ? <Loader2 size={18} className="animate-spin text-ink-3" /> : <ArrowRight size={18} className="text-ink-3 transition-transform group-hover:translate-x-[.125rem]" />}
+                  {busy === c.id ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin text-ink-3" /> : <ArrowRight size={18} strokeWidth={1.75} className="text-ink-3 transition-transform group-hover:translate-x-[.125rem]" />}
                 </button>
               </li>
             );
           })}
         </ul>
         {picked && (line || picked.suggested_vitals) && (
-          <div className="rise-in mt-[.875rem] flex flex-col gap-[.75rem] rounded-[.875rem] bg-accent-soft p-[.875rem]">
+          <div className="rise-in mt-[.875rem] flex flex-col gap-[.75rem] rounded-[1.125rem] bg-[var(--blue-100)] p-[1rem]">
             {line && (
               <div>
-                <p className="text-[0.8125rem] font-[600] text-accent-strong">Suggested note to speak</p>
+                <p className="text-[0.8125rem] font-[500] text-accent-strong">Suggested note to speak</p>
                 <p className="mt-[.25rem] text-[0.9375rem]">“{line}”</p>
                 <button
                   type="button"
-                  className="mt-[.5rem] inline-flex items-center gap-[.375rem] text-[0.8125rem] font-[550] text-accent-strong"
+                  className="mt-[.5rem] inline-flex items-center gap-[.375rem] text-[0.8125rem] font-[500] text-accent-strong"
                   onClick={() => navigator.clipboard.writeText(line).then(() => toast("Copied"))}
                 >
-                  <Copy size={14} /> Copy
+                  <Copy size={14} strokeWidth={1.75} /> Copy
                 </button>
               </div>
             )}
             {picked.suggested_vitals && (
               <div>
-                <p className="text-[0.8125rem] font-[600] text-accent-strong">Then tap “Complete NEWS2” and enter</p>
+                <p className="text-[0.8125rem] font-[500] text-accent-strong">Then tap “Complete NEWS2” and enter</p>
                 <p className="tnum mt-[.25rem] text-[0.9375rem]">{picked.suggested_vitals}</p>
                 <p className="mt-[.25rem] text-[0.8125rem] text-ink-2">Nothing is pre-filled: every value on screen is one somebody entered or measured.</p>
               </div>
@@ -196,7 +196,7 @@ export default function ({ onDone }: { onDone?: () => void }) {
           {services.map((s) => (
             <li key={s.name} className="flex items-center gap-[.625rem]">
               <LiveDot tone={s.live ? "teal" : "idle"} />
-              <span className="w-[5.5rem] shrink-0 font-[600]">{s.name}</span>
+              <span className="w-[5.5rem] shrink-0 font-[500]">{s.name}</span>
               <span className={twMerge("text-ink-2", !s.live && "text-ink-3")}>{s.text}</span>
             </li>
           ))}
@@ -216,7 +216,7 @@ export default function ({ onDone }: { onDone?: () => void }) {
               router.push("/insights");
             }}
           >
-            <BarChart3 size={15} /> Open insights
+            <BarChart3 size={15} strokeWidth={1.75} /> Open insights
           </ButtonGhost>
           {tiger && (
             <ButtonGhost
@@ -229,7 +229,7 @@ export default function ({ onDone }: { onDone?: () => void }) {
                 })
               }
             >
-              {busy === "history" ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />} Seed 60 days of history
+              {busy === "history" ? <Loader2 size={15} strokeWidth={1.75} className="animate-spin" /> : <Database size={15} strokeWidth={1.75} />} Seed 60 days of history
             </ButtonGhost>
           )}
         </div>
@@ -249,7 +249,7 @@ export default function ({ onDone }: { onDone?: () => void }) {
           }
           className="text-critical hover:text-critical"
         >
-          <RotateCcw size={15} /> Clear live transfers
+          <RotateCcw size={15} strokeWidth={1.75} /> Clear live transfers
         </ButtonGhost>
       </Section>
     </div>

@@ -15,18 +15,18 @@ export default function ({ news2, size = "md", className }: { news2?: News2Resul
       ? "bg-critical text-white"
       : level === "watch"
         ? "bg-caution-soft text-caution"
-        : "bg-teal-soft text-teal-strong";
+        : "bg-[var(--sage-100)] text-[var(--sage-700)]";
   const Icon = level === "normal" ? Activity : AlertTriangle;
   return (
     <span
       className={twMerge(
-        "inline-flex items-center gap-[.5rem] whitespace-nowrap rounded-full font-[600]",
+        "inline-flex items-center gap-[.5rem] whitespace-nowrap rounded-full font-[500]",
         size === "lg" ? "py-[.375rem] pl-[.625rem] pr-[.875rem] text-[0.9375rem]" : "py-[.25rem] pl-[.5rem] pr-[.75rem] text-[0.8125rem]",
         cls,
         className,
       )}
     >
-      <Icon size={size === "lg" ? 16 : 14} strokeWidth={2.4} />
+      <Icon size={size === "lg" ? 16 : 14} strokeWidth={1.75} />
       <span className="tnum">NEWS2 {news2.total}</span>
       <span className="opacity-80">· {news2.band ? NEWS2_WORD[news2.band] : ""}{news2.complete ? "" : " (partial)"}</span>
     </span>

@@ -6,16 +6,17 @@
 // and Presage measures the uploaded clip instead.
 "use client";
 
-import { Camera, CameraOff, Loader2, RefreshCw, RotateCcw, Send, SwitchCamera, Upload } from "lucide-react";
+import { Camera, Loader2, RotateCcw, Send, SwitchCamera, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
+import { Heartbeat, Trace } from "@/app/components/(vitals)/Signal";
 import { ApiError, uploadForm } from "@/lib/api";
 import { autoCamera, cameraConstraints, cameraError, usePresageScan, type CameraState, type PresageSummary } from "@/lib/presage";
 
 import styles from "./ScanRecorder.module.scss";
 
-const RING = 2 * Math.PI * 34;
+const RING = 2 * Math.PI * 35;
 
 // with the microphone on, ask for a format that names an audio codec too (some phones refuse otherwise)
 function pickType(withAudio: boolean): string {
@@ -34,18 +35,6 @@ function measured(summary: PresageSummary | null, key: "pulse_series" | "breathi
   if (series.length < 3) return null;
   const vs = series.map((s) => s.value).sort((a, b) => a - b);
   return Math.round(vs[Math.floor(vs.length / 2)]);
-}
-
-function Wave({ trace, label, pulse }: { trace: number[]; label: string; pulse?: boolean }) {
-  if (trace.length < 4) return <span className={styles.wave} />;
-  const min = Math.min(...trace);
-  const span = Math.max(...trace) - min || 1;
-  const pts = trace.map((v, i) => `${(i / (trace.length - 1)) * 120},${30 - ((v - min) / span) * 26}`).join(" ");
-  return (
-    <svg viewBox="0 0 120 32" preserveAspectRatio="none" className={twMerge(styles.wave, pulse && styles.wavePulse)} aria-label={label}>
-      <polyline points={pts} />
-    </svg>
-  );
 }
 
 type Handoff = { clip: Blob; filename: string; summary: PresageSummary | null };
@@ -86,6 +75,19 @@ export default function <T,>({
   const live = presage.state === "running";
   const hr = live ? presage.metrics.hr : null;
   const rr = live ? presage.metrics.rr : null;
+
+  // a small tap when the heart rate first steadies, so whoever is filming knows without looking
+  const steadied = useRef(false);
+  useEffect(() => {
+    if (!recording) {
+      steadied.current = false;
+      return;
+    }
+    if (hr?.stable && !steadied.current) {
+      steadied.current = true;
+      navigator.vibrate?.(30);
+    }
+  }, [recording, hr?.stable]);
 
   const stopCamera = useCallback(() => {
     stream.current?.getTracks().forEach((t) => t.stop());
@@ -195,203 +197,208 @@ export default function <T,>({
   const left = Math.max(0, Math.ceil(maxSeconds - elapsed));
   const ring = Math.min(1, elapsed / maxSeconds);
   const settling = recording && elapsed < windowSeconds;
+  const talk = withAudio ? " · say what happened" : "";
   const capsule = recording
     ? live
-      ? `Measuring · ${settling ? `${Math.ceil(windowSeconds - elapsed)} s to a reading` : `${left} s left`}`
-      : `Recording · ${left} s left`
+      ? settling
+        ? `Measuring · ${Math.ceil(windowSeconds - elapsed)} s${talk}`
+        : `Measuring · ${left} s left${talk}`
+      : `Recording · ${left} s left${talk}`
     : live
-      ? "Presage is watching · face and chest down to the belly"
-      : "Face and chest down to the belly inside the corners";
+      ? "Presage is watching"
+      : "Line them up inside the corners";
   const handing = phase !== "camera";
   const heart = measured(handoff?.summary ?? null, "pulse_series");
   const breaths = measured(handoff?.summary ?? null, "breathing_series");
+  const hrValue = hr?.value ? Math.round(hr.value) : null;
+  const rrValue = rr?.value ? Math.round(rr.value) : null;
+  const blocked = camera === "denied" || camera === "unavailable" || camera === "busy";
+  // one line above the shutter that follows the moment, instead of a list of rules
+  const coach =
+    camera === "off"
+      ? "Tap to start the camera"
+      : camera === "starting"
+        ? "Opening the camera"
+        : camera === "denied"
+          ? "Camera blocked. Allow it in the address bar, or upload a video"
+          : blocked
+            ? "Camera unavailable. Upload a video instead"
+            : recording
+              ? null
+              : "Arm's length away, face and chest inside the corners";
+  const upload = () => fileInput.current?.click();
+  const shutter = blocked ? upload : camera === "on" ? (recording ? finish : record) : () => startCamera(facing);
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.viewport}>
+      <div className={twMerge(styles.stage, recording && styles.stageLive, live && camera === "on" && styles.stageReading)}>
         <video ref={setVideoEl} playsInline muted className={twMerge(styles.video, (camera !== "on" || handing) && styles.hidden, facing === "user" && styles.mirror)} />
         {handing ? (
-          <div className={styles.handoff} role="status" aria-live="polite">
-            {handoff?.summary && (
-              <div className={styles.handoffNumbers}>
-                <span className={styles.readoutSource}>Presage · measured live</span>
-                {heart !== null || breaths !== null ? (
-                  <div className={styles.readoutRow}>
-                    <span className={styles.reading}>
-                      <span className={styles.readingValue}>{heart ?? "—"}</span>
-                      <span className={styles.readingUnit}>bpm</span>
-                    </span>
-                    <span className={styles.reading}>
-                      <span className={styles.readingValue}>{breaths ?? "—"}</span>
-                      <span className={styles.readingUnit}>/min</span>
-                    </span>
-                  </div>
-                ) : (
-                  <p className={styles.handoffNote}>No steady reading this time. The video still goes; try again with more light and less movement.</p>
-                )}
+          <div className={styles.result} role="status" aria-live="polite">
+            {handoff?.summary && (heart !== null || breaths !== null) ? (
+              <div className={styles.resultNumbers}>
+                <Heartbeat bpm={heart} size="lg" />
+                <p className={styles.resultValue}>
+                  <span className="numeral">{heart ?? "—"}</span>
+                  <span className={styles.unit}>bpm</span>
+                </p>
+                <p className={styles.resultSecond}>
+                  Breathing <strong className="tnum">{breaths ?? "—"}</strong> a minute
+                </p>
               </div>
-            )}
+            ) : handoff?.summary ? (
+              <p className={styles.resultNote}>No steady reading this time. The video still goes, and Presage measures it after you send.</p>
+            ) : null}
             {phase === "finishing" && (
-              <p className={styles.handoffLine}>
-                <Loader2 size={16} className="animate-spin" /> Getting Presage&apos;s result…
+              <p className={styles.resultLine}>
+                <Loader2 size={16} strokeWidth={1.75} className="animate-spin" /> Getting the result
               </p>
             )}
             {phase === "sending" && (
-              <>
+              <div className={styles.progress}>
                 <div className={styles.bar} aria-hidden>
                   <span style={{ transform: `scaleX(${progress})` }} />
                 </div>
-                <p className={styles.handoffLine}>
-                  <Loader2 size={16} className="animate-spin" />
-                  {progress < 1 ? `Sending the video · ${Math.round(progress * 100)}%` : "Sent · checking it…"}
-                </p>
-              </>
+                <p className={styles.resultLine}>{progress < 1 ? `Sending the video · ${Math.round(progress * 100)}%` : "Sent · checking it"}</p>
+              </div>
             )}
             {phase === "failed" && handoff && (
               <>
-                <p className={styles.handoffFailed}>The video didn&apos;t send: {error}</p>
-                <div className={styles.handoffActions}>
-                  <button type="button" className={styles.startCam} onClick={() => send(handoff)}>
-                    <Send size={16} /> Send again
+                <p className={styles.resultFailed}>The video didn&apos;t send: {error}</p>
+                <div className={styles.resultActions}>
+                  <button type="button" className={styles.pillLight} onClick={() => send(handoff)}>
+                    <Send size={16} strokeWidth={1.75} /> Send again
                   </button>
                   <button
                     type="button"
-                    className={styles.ghost}
+                    className={styles.pillGhost}
                     onClick={() => {
                       setHandoff(null);
                       setPhase("camera");
                     }}
                   >
-                    <RotateCcw size={16} /> Record again
+                    <RotateCcw size={16} strokeWidth={1.75} /> Record again
                   </button>
                 </div>
               </>
             )}
           </div>
-        ) : camera === "on" ? (
+        ) : (
           <>
-            <svg className={twMerge(styles.guide, recording && styles.guideLive, live && presage.hint && styles.guideHint)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-              <path d="M24 16 V8 Q24 4 28 4 H36" />
-              <path d="M76 16 V8 Q76 4 72 4 H64" />
-              <path d="M24 84 V92 Q24 96 28 96 H36" />
-              <path d="M76 84 V92 Q76 96 72 96 H64" />
-            </svg>
-            <span className={styles.capsule}>
-              <span className={twMerge(styles.dot, recording && styles.dotLive, !recording && live && styles.dotPresage)} />
-              {capsule}
-            </span>
-            {live && presage.hint && (
-              <span className={styles.hint} role="status" key={presage.hint}>
-                {presage.hint}
-              </span>
-            )}
-            {live && (
-              <div className={styles.readout} aria-live="polite">
-                <span className={styles.readoutSource}>Presage · live</span>
-                <div className={styles.readoutRow}>
-                  <span className={twMerge(styles.reading, !hr?.stable && styles.readingSettling)}>
-                    <span className={styles.readingValue}>{hr?.stable ? Math.round(hr.value) : "—"}</span>
-                    <span className={styles.readingUnit}>bpm</span>
+            <div className={styles.scrim} aria-hidden />
+            {camera === "on" ? (
+              <>
+                <svg className={twMerge(styles.guide, recording && styles.guideLive, live && presage.hint && styles.guideHint)} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                  <path d="M14 10 V4 Q14 0 18 0 H28" />
+                  <path d="M86 10 V4 Q86 0 82 0 H72" />
+                  <path d="M14 90 V96 Q14 100 18 100 H28" />
+                  <path d="M86 90 V96 Q86 100 82 100 H72" />
+                </svg>
+                <span className={styles.capsule}>
+                  <span className={twMerge(styles.dot, recording && styles.dotLive, !recording && live && styles.dotPresage)} />
+                  <span className="tnum">{capsule}</span>
+                </span>
+                {live && presage.hint && (
+                  <span className={styles.hint} role="status" key={presage.hint}>
+                    {presage.hint}
                   </span>
-                  <Wave trace={presage.metrics.pulse} label="Live pulse waveform" pulse />
-                </div>
-                <div className={styles.readoutRow}>
-                  <span className={twMerge(styles.reading, !rr?.stable && styles.readingSettling)}>
-                    <span className={styles.readingValue}>{rr?.stable ? Math.round(rr.value) : "—"}</span>
-                    <span className={styles.readingUnit}>/min</span>
-                  </span>
-                  <Wave trace={presage.metrics.trace} label="Live breathing waveform" />
-                </div>
-                {presage.metrics.apnea && <span className={styles.apneaLive}>Presage sees a pause in breathing</span>}
+                )}
+              </>
+            ) : (
+              // before the camera: the instrument at rest, not an empty state
+              <div className={styles.idle} aria-hidden>
+                <p className={styles.idleReading}>
+                  <span className="numeral">—</span>
+                  <span className={styles.unit}>bpm</span>
+                </p>
+                <Heartbeat size="lg" waiting={camera === "off" || camera === "starting"} />
               </div>
             )}
+
+            <div className={styles.bottom}>
+              {camera === "on" && live && (
+                <div className={styles.readout} aria-live="polite">
+                  <div className={styles.readoutRow}>
+                    <Heartbeat bpm={hr?.stable ? hr.value : null} waiting={!hr?.stable} size="sm" />
+                    <p className={twMerge(styles.primary, !hr?.stable && styles.ghosted)}>
+                      <span className={twMerge("numeral", styles.hrValue)}>{hrValue ?? "—"}</span>
+                      <span className={styles.unit}>{hr?.stable ? "bpm · steady" : hrValue ? "bpm · settling" : "bpm"}</span>
+                    </p>
+                    <p className={twMerge(styles.secondary, !rr?.stable && styles.ghosted)}>
+                      <span className={twMerge("numeral", styles.rrValue)}>{rrValue ?? "—"}</span>
+                      <span className={styles.unit}>breaths</span>
+                    </p>
+                  </div>
+                  <Trace values={presage.metrics.trace} tone="camera" fade dot label="Live breathing wave" className={styles.readoutWave} />
+                  {presage.metrics.apnea && <span className={styles.apnea}>Presage sees a pause in breathing</span>}
+                </div>
+              )}
+              {coach && <p className={styles.coach}>{coach}</p>}
+
+              <div className={styles.controls}>
+                {!recording && !blocked ? (
+                  <button
+                    type="button"
+                    className={styles.roundButton}
+                    onClick={() => {
+                      const next = facing === "environment" ? "user" : "environment";
+                      setFacing(next);
+                      if (camera === "on") startCamera(next);
+                    }}
+                    aria-label="Switch camera"
+                    title="Switch camera"
+                  >
+                    <SwitchCamera size={20} strokeWidth={1.75} />
+                  </button>
+                ) : (
+                  <span />
+                )}
+
+                <button
+                  type="button"
+                  className={twMerge(styles.shutter, recording && styles.shutterLive, camera === "starting" && styles.shutterBusy)}
+                  onClick={shutter}
+                  disabled={camera === "starting" || disabled}
+                  aria-label={blocked ? "Upload a video" : recording ? "Stop" : camera === "on" ? "Start measuring" : "Start the camera"}
+                >
+                  <svg viewBox="0 0 76 76" className={styles.ring} aria-hidden>
+                    <circle cx="38" cy="38" r="35" className={styles.ringTrack} />
+                    <circle cx="38" cy="38" r="35" className={styles.ringFill} style={{ strokeDasharray: RING, strokeDashoffset: RING * (1 - ring), opacity: ring > 0 ? 1 : 0 }} />
+                  </svg>
+                  <span className={styles.shutterCore}>
+                    {blocked ? <Upload size={22} strokeWidth={1.75} /> : camera === "off" ? <Camera size={22} strokeWidth={1.75} /> : null}
+                  </span>
+                </button>
+
+                {!recording && !blocked ? (
+                  <button type="button" className={styles.roundButton} onClick={upload} disabled={disabled} aria-label="Upload a video" title="Upload a video">
+                    <Upload size={20} strokeWidth={1.75} />
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept="video/*"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) send({ clip: f, filename: f.name, summary: null });
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+            </div>
           </>
-        ) : (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon}>{camera === "denied" || camera === "unavailable" || camera === "busy" ? <CameraOff size={22} /> : <Camera size={22} />}</span>
-            <p className={styles.emptyTitle}>
-              {camera === "starting"
-                ? "Opening camera…"
-                : camera === "denied"
-                  ? "Camera access is blocked"
-                  : camera === "unavailable" || camera === "busy"
-                    ? "No camera available"
-                    : "Measure with the camera"}
-            </p>
-            {camera === "denied" && <p className={styles.emptyText}>Allow the camera from the icon in the address bar, or upload a video instead.</p>}
-            {camera === "off" && <p className={styles.emptyText}>Heart and breathing rate from the camera, no contact. About 30–60 seconds.</p>}
-            {camera !== "starting" && (
-              <button type="button" className={styles.startCam} onClick={() => startCamera(facing)} disabled={disabled}>
-                {camera === "off" ? <Camera size={16} /> : <RefreshCw size={16} />} {camera === "off" ? "Turn on camera" : "Try again"}
-              </button>
-            )}
-          </div>
         )}
       </div>
 
-      {!handing && (
-        <div className={styles.controls}>
-          <button
-            type="button"
-            className={styles.flip}
-            onClick={() => {
-              const next = facing === "environment" ? "user" : "environment";
-              setFacing(next);
-              if (camera === "on") startCamera(next);
-            }}
-            disabled={recording}
-            aria-label="Switch camera"
-            title="Switch camera"
-          >
-            <SwitchCamera size={20} />
-          </button>
-
-          <button
-            type="button"
-            className={twMerge(styles.record, recording && styles.recordLive)}
-            onClick={recording ? finish : record}
-            disabled={camera !== "on" || disabled}
-            aria-label={recording ? "Stop" : "Start measuring"}
-          >
-            <svg viewBox="0 0 76 76" className={styles.ring} aria-hidden>
-              <circle cx="38" cy="38" r="34" className={styles.ringTrack} />
-              <circle cx="38" cy="38" r="34" className={styles.ringFill} style={{ strokeDasharray: RING, strokeDashoffset: RING * (1 - ring) }} />
-            </svg>
-            <span className={styles.recordCore} />
-          </button>
-
-          <button type="button" className={styles.flip} onClick={() => fileInput.current?.click()} disabled={recording || disabled} aria-label="Upload a video" title="Upload a video">
-            <Upload size={20} />
-          </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="video/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) send({ clip: f, filename: f.name, summary: null });
-              e.target.value = "";
-            }}
-          />
-        </div>
-      )}
-
-      {!handing && (
-        <ul className={styles.coach}>
-          <li className={twMerge(recording && styles.coachDim)}>Prop the phone up about an arm&apos;s length or more away, so it doesn&apos;t move</li>
-          <li className={twMerge(recording && styles.coachDim)}>
-            Get their face <strong>and chest down to the belly</strong> in view, lit from the front: Presage won&apos;t measure without the chest
-          </li>
-          <li className={twMerge(settling && styles.coachNow)}>{settling ? "Keep them still and quiet until the numbers settle" : "Ask them to stay still and not talk"}</li>
-          {withAudio && <li className={twMerge(recording && styles.coachNow)}>You talk: say what happened and when it started</li>}
-        </ul>
-      )}
       {!handing && camera === "on" && !live && presage.state !== "starting" && (
         <p className={styles.fallback}>
           {presage.state === "paused"
-            ? "Presage is busy with another scan. Record anyway; it measures the video after you send it."
-            : "Presage isn't reachable live from here. Record anyway; it measures the video after you send it."}
+            ? "Presage is busy with another scan. Record anyway: it measures the video after you send it."
+            : "Presage isn't reachable live. Record anyway: it measures the video after you send it."}
         </p>
       )}
     </div>

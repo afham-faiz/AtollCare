@@ -1,4 +1,5 @@
-// Pre-arrival, first screen (the companion's phone): where are you taking them? Then the three steps.
+// Pre-arrival, first screen (the companion's phone): the emergency number first, where they're going, what happens,
+// and one button. Pressing it is the consent; the details of what happens to the video are one tap away.
 "use client";
 
 import { ArrowRight, Loader2, Phone } from "lucide-react";
@@ -7,7 +8,9 @@ import { useMemo, useState } from "react";
 
 import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
 import field from "@/app/components/(controls)/Field.module.scss";
+import Sheet from "@/app/components/(modals)/Sheet";
 import { post, type Intake } from "@/lib/api";
+import { splitPlace } from "@/lib/format";
 import { useMeta } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
 
@@ -18,11 +21,12 @@ export default function ({ centre: fromLink }: { centre?: string }) {
   const { data: meta } = useMeta();
   const [picked, setPicked] = useState("");
   const [changing, setChanging] = useState(false);
-  const [consent, setConsent] = useState(false);
+  const [privacy, setPrivacy] = useState(false);
   const [busy, setBusy] = useState(false);
   const emergency = meta?.region.emergency_number;
   const linked = meta?.region.facilities.find((f) => f.id === fromLink);
   const centre = picked || linked?.id || "";
+  const chosen = meta?.region.facilities.find((f) => f.id === centre);
   // health centres first: that's where a companion usually heads; hospitals after
   const places = useMemo(
     () => [...(meta?.region.facilities ?? [])].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "clinic" ? -1 : 1)),
@@ -40,41 +44,31 @@ export default function ({ centre: fromLink }: { centre?: string }) {
     }
   };
 
+  const where = chosen ? splitPlace(chosen.name) : null;
+
   return (
     <div className={styles.page}>
-      <header className={styles.intro}>
-        <p className={styles.eyebrow}>Before you arrive</p>
-        <h1 className={styles.title}>Let the health centre get ready for you</h1>
-        <p className={styles.lede}>Two quick steps, about two minutes. Everything you send goes with the patient, so nobody asks twice.</p>
-      </header>
-
       {emergency && (
-        <p className={styles.emergency}>
-          <Phone size={18} className="shrink-0" />
+        <a className={styles.call} href={`tel:${emergency}`}>
+          <Phone size={16} strokeWidth={1.75} />
           <span>
-            Emergency? Call <strong className="tnum">{emergency}</strong> first. This doesn&apos;t replace it.
+            Emergency? Call <strong className="tnum">{emergency}</strong> first
           </span>
-        </p>
+        </a>
       )}
 
-      <ol className={styles.preview}>
-        <li>
-          <span>1</span>Film the patient and say what happened: Presage reads heart and breathing rate
-        </li>
-        <li>
-          <span>2</span>Take a photo of their ID, if you have it
-        </li>
-      </ol>
+      <header className={styles.hero}>
+        <h1 className={styles.display}>Let the health centre get ready before you arrive</h1>
+        <p className={styles.lede}>Two minutes on this phone. It all goes with the patient, so nobody asks twice.</p>
+      </header>
 
-      {linked && !changing ? (
-        <p className={styles.going}>
-          <span>
-            Going to <strong>{meta?.region.facilities.find((f) => f.id === centre)?.name}</strong>
-          </span>
-          <button type="button" className={styles.link} onClick={() => setChanging(true)}>
-            Change
-          </button>
-        </p>
+      {where && !changing ? (
+        <button type="button" className={styles.destination} onClick={() => setChanging(true)}>
+          <span className={styles.destinationLabel}>Going to</span>
+          <span className={styles.destinationName}>{where.name}</span>
+          {where.area && <span className={styles.destinationArea}>{where.area}</span>}
+          <span className={styles.destinationChange}>Change</span>
+        </button>
       ) : (
         <label className={field.field}>
           <span className={field.label}>Where are you taking them?</span>
@@ -89,19 +83,48 @@ export default function ({ centre: fromLink }: { centre?: string }) {
         </label>
       )}
 
-      <label className={styles.consent}>
-        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-        <span>The patient agrees to be filmed, or can&apos;t be asked and this is for their care.</span>
-      </label>
+      <ol className={styles.plan}>
+        <li>
+          <span className={styles.planNo}>1</span>
+          <span>
+            <strong>Film them for 30 seconds</strong>
+            Heart and breathing rate, measured by Presage without touching
+          </span>
+        </li>
+        <li>
+          <span className={styles.planNo}>2</span>
+          <span>
+            <strong>Say what happened</strong>
+            While you film, or after
+          </span>
+        </li>
+        <li>
+          <span className={styles.planNo}>3</span>
+          <span>
+            <strong>Their ID</strong>
+            If you have it
+          </span>
+        </li>
+      </ol>
 
-      <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={!centre || !consent || busy}>
-        {busy ? <Loader2 size={18} className="animate-spin" /> : null} Start <ArrowRight size={18} />
-      </ButtonPrimary>
-      <p className={styles.fine}>
-        The camera&apos;s picture goes to our server while you measure: Presage reads heart and breathing rate from it, and Google&apos;s
-        Gemini checks still frames for visible signs. The video isn&apos;t stored; only frames that show a sign are kept, for the
-        hospital. The health centre sees nothing until you press Send.
-      </p>
+      <div className={styles.go}>
+        <p className={styles.consentLine}>Starting means the patient agrees to be filmed, or can&apos;t be asked and it&apos;s for their care.</p>
+        <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={!centre || busy}>
+          {busy ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin" /> : null} {centre ? "Start filming" : "Choose where you're going"} {centre && !busy && <ArrowRight size={18} strokeWidth={1.75} />}
+        </ButtonPrimary>
+        <button type="button" className={styles.quietLink} onClick={() => setPrivacy(true)}>
+          How the video is used
+        </button>
+      </div>
+
+      <Sheet open={privacy} onClose={() => setPrivacy(false)} title="How the video is used">
+        <div className={styles.privacy}>
+          <p>While you film, the picture goes to our server so Presage can measure heart and breathing rate from it.</p>
+          <p>Google&apos;s Gemini looks at still frames for visible signs, like a drooping face.</p>
+          <p>The video itself isn&apos;t kept. Only frames that show a sign are saved, for the hospital.</p>
+          <p>The health centre sees nothing until you press Send.</p>
+        </div>
+      </Sheet>
     </div>
   );
 }

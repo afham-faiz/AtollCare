@@ -43,7 +43,7 @@ export default function ({ intake, onSaved }: { intake: Intake; onSaved: (i: Int
       {id && (
         <div className={styles.idCard}>
           <p className={id.needs_review ? styles.review : styles.clear}>
-            {id.needs_review ? <ShieldAlert size={16} /> : <ShieldCheck size={16} />}
+            {id.needs_review ? <ShieldAlert size={16} strokeWidth={1.75} /> : <ShieldCheck size={16} strokeWidth={1.75} />}
             {id.needs_review ? "Check by eye at the health centre" : "Read clearly"}
           </p>
           <dl>
@@ -57,10 +57,23 @@ export default function ({ intake, onSaved }: { intake: Intake; onSaved: (i: Int
           {id.issues.length > 0 && <p className="text-[0.8125rem] text-ink-3">{id.issues.slice(0, 2).join(" · ")}</p>}
         </div>
       )}
-      <button type="button" className={styles.photoBtn} onClick={() => input.current?.click()} disabled={busy}>
-        {busy ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-        {busy ? "Reading the card…" : id ? "Take another photo" : "Take a photo of their ID"}
-      </button>
+      {id ? (
+        <button type="button" className={styles.photoAgain} onClick={() => input.current?.click()} disabled={busy}>
+          {busy ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin" /> : <CreditCard size={18} strokeWidth={1.75} />}
+          {busy ? "Reading the card" : "Take another photo"}
+        </button>
+      ) : (
+        <button type="button" className={styles.idFrame} onClick={() => input.current?.click()} disabled={busy}>
+          <svg className={styles.idGuide} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+            <path d="M6 22 V10 Q6 6 10 6 H22" />
+            <path d="M94 22 V10 Q94 6 90 6 H78" />
+            <path d="M6 78 V90 Q6 94 10 94 H22" />
+            <path d="M94 78 V90 Q94 94 90 94 H78" />
+          </svg>
+          <span className={styles.idShutter}>{busy ? <Loader2 size={22} strokeWidth={1.75} className="animate-spin" /> : <CreditCard size={22} strokeWidth={1.75} />}</span>
+          <span className={styles.idFrameText}>{busy ? "Reading the card" : "Tap to photograph their ID"}</span>
+        </button>
+      )}
       <input
         ref={input}
         type="file"

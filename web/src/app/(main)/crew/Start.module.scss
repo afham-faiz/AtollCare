@@ -9,10 +9,9 @@
 
 .eyebrow {
   margin-bottom: 0.625rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--ink-3);
 }
 
@@ -20,10 +19,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--edge), var(--shadow-2);
 
   li + li {
     border-top: 1px solid var(--line);
@@ -38,7 +37,7 @@
   transition: background-color var(--dur-1) var(--ease-out);
 
   &:hover {
-    background: #fbfcfd;
+    background: color-mix(in srgb, var(--white) 50%, transparent);
   }
 }
 
@@ -49,9 +48,9 @@
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.75rem;
-  background: var(--well);
-  color: var(--ink-2);
+  border-radius: 999px;
+  background: var(--sage-100);
+  color: var(--sage-700);
 }
 
 .composer {
@@ -59,10 +58,10 @@
   flex-direction: column;
   gap: 1.375rem;
   padding: 2rem;
-  border: 1px solid var(--line);
-  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--edge), var(--shadow-2);
   animation: rise-in var(--dur-3) var(--ease-out) both;
 
   @media (max-width: 40rem) {
@@ -71,9 +70,10 @@
 }
 
 .title {
-  font-size: 1.75rem;
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-size: clamp(2rem, 1.6rem + 1.4vw, 2.75rem);
+  font-weight: 350;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
 }
 
 .lede {
@@ -96,14 +96,35 @@
   transition: background-color var(--dur-1) var(--ease-out);
 
   &:hover {
-    background: #e7edf2;
+    background: var(--line-strong);
     color: var(--ink);
   }
 
   &[aria-pressed="true"] {
-    background: var(--critical);
-    color: #fff;
+    background: var(--teal);
+    color: var(--white);
   }
+}
+
+.rowEta {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: 0.1875rem;
+
+  :global(.numeral) {
+    font-size: 1.75rem;
+  }
+}
+
+// the composer's fields: no resize grip, and the age field is a pill like the control beside it
+.composer textarea {
+  resize: none;
+}
+
+.grid2 input {
+  border-radius: 999px;
+  text-align: center;
 }
 
 .grid2 {
@@ -154,7 +175,7 @@
   border-radius: 999px;
   background: var(--well);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-2);
 }
 
@@ -176,7 +197,7 @@
 .changeLink {
   align-self: center;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--accent-strong);
 }
 
@@ -189,5 +210,62 @@
 
   @media (max-width: 40rem) {
     padding-left: 1.125rem;
+  }
+}
+
+// transport: three tiles, one tap each
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.75rem, 1fr));
+  gap: 0.5rem;
+}
+
+.mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 5.5rem;
+  padding: 0.875rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--white) 45%, transparent);
+  color: var(--ink-2);
+  font-weight: 500;
+  text-align: left;
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+
+  svg {
+    color: var(--sage-500);
+  }
+
+  &:hover {
+    border-color: var(--line-strong);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  // a label on one line, never broken against the tile edge
+  span,
+  & {
+    white-space: nowrap;
+  }
+
+  &[aria-checked="true"] {
+    border-color: var(--pine);
+    background: var(--pine);
+    color: var(--white);
+
+    svg {
+      color: var(--teal-glow);
+    }
   }
 }

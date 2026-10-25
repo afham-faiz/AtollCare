@@ -10,7 +10,6 @@ import ButtonPrimary from "@/app/components/(buttons)/ButtonPrimary";
 import field from "@/app/components/(controls)/Field.module.scss";
 import Segmented from "@/app/components/(controls)/Segmented";
 import ModeIcon from "@/app/components/(transfer)/ModeIcon";
-import StatusChip from "@/app/components/(transfer)/StatusChip";
 import { post, type Transfer, type TransportMode } from "@/lib/api";
 import { patientTitle } from "@/lib/clinical";
 import { useDictation } from "@/lib/dictation";
@@ -74,23 +73,22 @@ export default function () {
               return (
                 <li key={t.id}>
                   <Link href={`/crew/${t.id}`} className={styles.row}>
-                    <span className={styles.rowIcon}>
-                      <ModeIcon mode={t.mode} size={18} />
-                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-[.625rem]">
-                        <span className="font-[600]">{patientTitle(t.patient)}</span>
-                        <span className="font-mono text-[0.8125rem] text-ink-3">{t.code}</span>
+                        <span className="font-[500]">{patientTitle(t.patient)}</span>
+                        <span className="mono text-[0.8125rem] text-ink-3">{t.code}</span>
                       </span>
-                      <span className="block truncate text-[0.875rem] text-ink-2">
-                        {t.suspected_condition ?? t.complaint} · {place(r, t.origin_id)} → {place(r, t.destination_id)}
+                      <span className="block truncate text-[0.875rem] text-ink-3">{t.suspected_condition ?? t.complaint}</span>
+                      <span className="block truncate text-[0.8125rem] text-ink-3">
+                        {place(r, t.origin_id)} → {place(r, t.destination_id)}
                       </span>
                     </span>
-                    <span className="hidden text-right sm:block">
-                      <StatusChip status={t.status} view="crew" />
-                      <span className="tnum mt-[.25rem] block text-[0.8125rem] text-ink-3">{left !== null ? `ETA ${fmtMin(left)}` : ""}</span>
-                    </span>
-                    <ArrowRight size={18} className="shrink-0 text-ink-3" />
+                    {left !== null && (
+                      <span className={styles.rowEta} title={`ETA ${fmtMin(left)}`}>
+                        <span className="numeral">{Math.max(0, Math.round(left))}</span>
+                        <span className="unit">min</span>
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
@@ -124,11 +122,11 @@ export default function () {
                 aria-label={dictation.state === "listening" ? "Stop dictation" : "Dictate"}
                 className={styles.dictate}
               >
-                {dictation.state === "listening" ? <Square size={14} fill="currentColor" /> : <Mic size={18} />}
+                {dictation.state === "listening" ? <Square size={14} strokeWidth={1.75} fill="currentColor" /> : <Mic size={18} strokeWidth={1.75} />}
               </button>
             )}
           </div>
-          {dictation.state === "listening" && <span className="text-[0.875rem] text-critical">{dictation.transcript || "Listening…"}</span>}
+          {dictation.state === "listening" && <span className="text-[0.875rem] text-teal-strong">{dictation.transcript || "Listening…"}</span>}
           {dictation.error && <span className="text-[0.875rem] text-ink-3">{dictation.error}</span>}
         </label>
 
@@ -164,7 +162,7 @@ export default function () {
               ))}
             </select>
           </label>
-          <ArrowRight size={18} className={styles.routeArrow} aria-hidden />
+          <ArrowRight size={18} strokeWidth={1.75} className={styles.routeArrow} aria-hidden />
           <label className={field.field}>
             <span className={field.label}>To</span>
             <select className={field.select} value={chosenDest} onChange={(e) => setDest(e.target.value)}>
@@ -179,18 +177,19 @@ export default function () {
 
         <div className={field.field}>
           <span className={field.label}>Transport</span>
-          <Segmented
-            label="Transport"
-            value={chosenMode || null}
-            onChange={(m) => setMode(m)}
-            className="w-full"
-            options={(region?.modes ?? []).map((m) => ({ value: m, label: <><ModeIcon mode={m} /> {MODE_LABEL[m]}</> }))}
-          />
+          <div className={styles.modes} role="radiogroup" aria-label="Transport">
+            {(region?.modes ?? []).map((m) => (
+              <button key={m} type="button" role="radio" aria-checked={chosenMode === m} className={styles.mode} onClick={() => setMode(m)}>
+                <ModeIcon mode={m} size={22} />
+                {MODE_LABEL[m]}
+              </button>
+            ))}
+          </div>
         </div>
 
         <ButtonPrimary size="lg" className="w-full" disabled={!ready || busy} onClick={start}>
-          {busy ? <Loader2 size={18} className="animate-spin" /> : null}
-          Begin assessment <ArrowRight size={18} />
+          {busy ? <Loader2 size={18} strokeWidth={1.75} className="animate-spin" /> : null}
+          Begin assessment <ArrowRight size={18} strokeWidth={1.75} />
         </ButtonPrimary>
       </section>
     </div>

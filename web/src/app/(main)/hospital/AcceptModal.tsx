@@ -75,7 +75,7 @@ export default function ({
         <>
           <ButtonBase onClick={onClose}>Cancel</ButtonBase>
           <ButtonPrimary onClick={submit} disabled={busy || !by.trim()}>
-            <Check size={18} /> Accept
+            <Check size={18} strokeWidth={1.75} /> Accept
           </ButtonPrimary>
         </>
       }

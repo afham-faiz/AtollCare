@@ -6,7 +6,7 @@ import { twMerge } from "tailwind-merge";
 import { dismiss, useToasts } from "@/lib/toast";
 
 const TONE = {
-  info: { icon: CheckCircle2, cls: "text-teal" },
+  info: { icon: CheckCircle2, cls: "text-sage" },
   warn: { icon: Info, cls: "text-caution" },
   error: { icon: AlertCircle, cls: "text-critical" },
 };
@@ -21,12 +21,12 @@ export default function () {
           <div
             key={t.id}
             role="status"
-            className="rise-in pointer-events-auto flex items-start gap-[.75rem] rounded-[1rem] border-[1px] border-line bg-surface px-[1rem] py-[.75rem] shadow-3"
+            className="glass rise-in pointer-events-auto flex items-center gap-[.75rem] rounded-full py-[.625rem] pl-[1rem] pr-[.75rem]"
           >
-            <Icon size={18} className={twMerge("mt-[.125rem] shrink-0", cls)} />
+            <Icon size={18} strokeWidth={1.75} className={twMerge("shrink-0", cls)} />
             <p className="flex-1 text-[0.9375rem]">{t.text}</p>
-            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="text-ink-3 hover:text-ink">
-              <X size={16} />
+            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="grid h-[2rem] w-[2rem] shrink-0 place-items-center rounded-full text-ink-3 hover:bg-well hover:text-ink">
+              <X size={16} strokeWidth={1.75} />
             </button>
           </div>
         );

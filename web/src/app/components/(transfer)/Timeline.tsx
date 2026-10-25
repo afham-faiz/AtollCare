@@ -55,16 +55,16 @@ export default function ({
                 Icon ? TONE[n.kind] : "bg-transparent",
               )}
             >
-              {Icon ? <Icon size={13} strokeWidth={2.4} /> : <span className="h-[.375rem] w-[.375rem] rounded-full bg-line-strong" />}
+              {Icon ? <Icon size={13} strokeWidth={1.75} /> : <span className="h-[.375rem] w-[.375rem] rounded-full bg-line-strong" />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className={twMerge("text-[0.9375rem] leading-[1.5]", n.kind === "event" && "text-ink-2", n.kind === "alert" && "font-[600] text-critical")}>
+              <p className={twMerge("text-[0.9375rem] leading-[1.5]", n.kind === "event" && "text-ink-2", n.kind === "alert" && "font-[500] text-critical")}>
                 {n.text}
               </p>
               {!!n.extraction?.interventions.length && (
                 <div className="mt-[.375rem] flex flex-wrap gap-[.375rem]">
                   {n.extraction.interventions.map((x) => (
-                    <span key={x} className="rounded-full bg-teal-soft px-[.625rem] py-[.125rem] text-[0.8125rem] font-[600] text-teal-strong">
+                    <span key={x} className="rounded-full bg-teal-soft px-[.625rem] py-[.125rem] text-[0.8125rem] font-[500] text-teal-strong">
                       {x}
                     </span>
                   ))}

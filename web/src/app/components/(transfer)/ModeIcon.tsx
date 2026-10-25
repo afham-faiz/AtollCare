@@ -11,5 +11,5 @@ const ICONS = { road: Ambulance, boat: Ship, helicopter: Helicopter, plane: Plan
 
 export default function ({ mode, ...props }: LucideProps & { mode: TransportMode }) {
   const Icon = ICONS[mode];
-  return <Icon size={16} aria-hidden {...props} />;
+  return <Icon size={16} strokeWidth={1.75} aria-hidden {...props} />;
 }
