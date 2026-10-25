@@ -38,6 +38,7 @@ import { useMeta, useTransfer, useTrend } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
 
 import AcceptModal from "./AcceptModal";
+import ContactlessTile from "./ContactlessTile";
 import styles from "./Hospital.module.scss";
 
 const VITALS: { k: string; label: string; unit: string; a: (v: number) => Assessment }[] = [
@@ -249,6 +250,9 @@ export default function ({ transferId }: { transferId: string }) {
           )}
         </div>
       </header>
+
+      {/* Presage: what the camera measured, and how long before arrival the team knew */}
+      <ContactlessTile t={t} tz={tz} now={meta.now} />
 
       {/* measurements, with provenance */}
       <div className={styles.vitals}>
