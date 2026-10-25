@@ -86,16 +86,25 @@ function readEnv() {
 async function findPublicUrl() {
   const given = opt("public", process.env.PUBLIC_URL);
   if (given) return given.replace(/\/$/, "");
-  // cloudflared's metrics server says which quick tunnel it opened
+  // cloudflared's metrics server says which quick tunnel it opened; a leftover cloudflared may still report an expired
+  // one, so the first address that answers wins
+  const found = [];
   for (let port = 20241; port <= 20245; port += 1) {
     try {
       const { body } = await get(`http://127.0.0.1:${port}/quicktunnel`, 1500);
-      if (body?.hostname) return `https://${body.hostname}`;
+      if (body?.hostname) found.push(`https://${body.hostname}`);
     } catch {
       // not this port
     }
   }
-  return null;
+  for (const url of found) {
+    try {
+      if ((await get(`${url}/api/health`, 5000)).status === 200) return url;
+    } catch {
+      // expired or not up yet
+    }
+  }
+  return found[0] ?? null;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -142,7 +151,11 @@ async function checkSite(name, base, page) {
       bad.length ? bad.join(" · ") : `page in ${secs(p.ms)}${p.ms > 5000 ? " (slow: restart the tunnel, or use our hotspot)" : ""} · /api and /presage reach the engine and bridge`);
     return !bad.length;
   } catch (err) {
-    report("fail", name, `${base} unreachable (${err.cause?.code ?? err.message})`);
+    const code = err.cause?.code ?? err.message;
+    // Cloudflare deletes quick tunnels after a while; cloudflared keeps running and reporting the dead address
+    const expired = code === "ENOTFOUND" && base.includes("trycloudflare.com")
+      ? " — the quick tunnel has expired: restart scripts/phone_tunnel.sh (the address changes)" : "";
+    report("fail", name, `${base} unreachable (${code})${expired}`);
     return false;
   }
 }

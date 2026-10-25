@@ -28,6 +28,16 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
   sit high in the frame with the chest below it. `scripts/predemo_check.mjs` now runs this end to end through the
   public link (see `PITCH.md`). Phone uploads over 10 MB were being cut off by the web app's proxy; the limit is now
   200 MB (`web/next.config.ts`).
+- **Sessions that come and go quickly (25 October).** A camera that restarts (turned off and on, flipped, a page
+  re-render) opens a new bridge session while the old one is closing. With frames still flowing, the old bridge let
+  the teardown overlap the new start: SmartSpectra answered `kInvalidState`, and screens whose session was ending,
+  including a crew monitor merely paused for a phone scan, were told "Presage unavailable" and never came back.
+  Reproduced with six overlapping sessions streaming a face, then fixed: session changes now run one at a time, a
+  session the SDK gives up on is rebuilt, and screens reconnect by themselves. The same storm now gives no errors,
+  and a measurement straight afterwards still reads HR 80.
+- **Dark webcam (25 October).** The removed exposure lock could leave a Windows webcam in manual exposure after the
+  page had gone, so the crew laptop's picture stayed near black. Every camera the app opens is now set back to
+  automatic exposure, white balance and focus.
 - **FDA clearance details** checked against the 510(k) summary K254169 (18 June 2026): pulse 50–150 bpm and
   respiratory rate 8–26 /min over a 30 s window, healthy adults 18–70, phone in a static mount, trained staff, not
   for critical care. Maldives ambulance 102 (two embassies and the CIA Factbook agree).
@@ -35,8 +45,8 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 ## Not verified yet
 
 - **A person in front of a real phone, live.** The most important open item. A recorded real face works on both
-  paths (above), but the first Android try on 25 October got no live numbers: the live session broke (see *Rough
-  edges*) and the uploaded clip was measured instead (HR 84, RR 12). Check (see `PITCH.md` → Hour 0):
+  paths (above), but the first Android try and the crew laptop on 25 October got no live numbers (fixed since; see
+  *Verified so far*), and the Android clip was measured instead (HR 84, RR 12). Check (see `PITCH.md` → Hour 0):
   `scripts/phone_tunnel.sh`, scan the presenter QR, prop the phone up, measure a teammate with a fingertip oximeter on.
 - **JPEG frames vs Presage's accuracy.** Each frame is a JPEG at quality 0.9, 640 px on the long side. Per-frame JPEG
   keeps each frame's colour (no inter-frame smoothing), but whether it costs accuracy against raw frames is untested.
@@ -100,10 +110,6 @@ What hasn't been verified, and what's deliberately simple. Log triage progress i
 
 ## Rough edges
 
-- **Restarting the camera quickly can break a live scan.** Each time the camera turns on or flips, the phone opens a
-  new SmartSpectra session. On 25 October the bridge started four in about two seconds, the SDK fell into an error
-  state (`SDK error 8: SmartSpectra processing failed`) and no live numbers came back; the uploaded clip was measured
-  instead. Until that's fixed: turn the camera on once and leave it.
 - The clinical trend window is 60 sim-minutes; after a long fast-forward the oldest readings drop off the chart.
 - Closing a transfer is crew-side only.
 - Gemini's sign check takes 20–50 s per clip with `GEMINI_VQA_THINKING=low` (up to two minutes with the model's

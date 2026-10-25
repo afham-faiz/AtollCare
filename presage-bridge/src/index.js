@@ -73,6 +73,34 @@ try {
 let active = null;
 let fileRunning = false;
 const paused = new Set();
+let sessionCount = 0;
+
+// Every session change (start, stop, a recorded clip) runs one at a time. The SDK's own rule: await destroy() before
+// building a replacement, since native state is process-global. A screen whose camera restarts opens a new socket
+// while the old one is still closing; letting that teardown overlap the new start left the SDK in kInvalidState and
+// the next session failing with kProcessingFailed (25 October: an Android phone and the crew laptop).
+let lifecycle = Promise.resolve();
+function serial(fn) {
+  const run = lifecycle.then(fn, fn);
+  lifecycle = run.catch(() => {});
+  return run;
+}
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const stamp = () => new Date().toISOString().slice(11, 19);
+const FATAL_ERRORS = new Set([2, 3, 4]); // authentication, configuration, credits: a new session won't help
+const DEAD_ERRORS = new Set([1, 8]); // kInvalidState, kProcessingFailed: the session has stopped measuring
+const MAX_RESTARTS = 2; // per start from the screen
+const RESTART_DELAY_MS = 750;
+const TEARDOWN_MS = 8000; // a stop or destroy that hangs must not hold every later session up
+
+// resolves when `promise` settles or after `ms`, whichever comes first; true if it settled
+function within(promise, ms) {
+  let timer;
+  return Promise.race([
+    promise.then(() => true, () => true),
+    new Promise((resolve) => (timer = setTimeout(() => resolve(false), ms))),
+  ]).finally(() => clearTimeout(timer));
+}
 
 const last = (arr) => (Array.isArray(arr) && arr.length ? arr[arr.length - 1] : null);
 const num = (x) => (typeof x === "number" ? x : x && typeof x.toNumber === "function" ? x.toNumber() : Number(x));
@@ -224,49 +252,64 @@ function noteValidation(rec, code, hint) {
   }
 }
 
-async function stopSession(session) {
-  if (!session) return;
-  clearInterval(session.postTimer);
-  try {
-    await session.sdk.stopAsync();
-  } catch {
-    // already stopped
-  }
-  try {
-    await session.sdk.destroy();
-  } catch {
-    // already destroyed
-  }
-  if (active === session) active = null;
+/** Tear a session down; idempotent. Only with the lifecycle held (inside `serial`). */
+function endLocked(session) {
+  if (!session) return Promise.resolve();
+  session.ending ??= (async () => {
+    clearInterval(session.postTimer);
+    if (active === session) active = null;
+    // errors here mean already stopped or destroyed
+    const stopped = await within(Promise.resolve().then(() => session.sdk.stopAsync()), TEARDOWN_MS);
+    const destroyed = await within(Promise.resolve().then(() => session.sdk.destroy()), TEARDOWN_MS);
+    const hung = !stopped || !destroyed ? ` (gave up waiting for ${!stopped ? "stop" : "destroy"})` : "";
+    console.log(`[bridge] ${stamp()} ${session.kind} session ${session.id} stopped${hung}`);
+  })();
+  return session.ending;
 }
 
 // A scan finished: monitor screens it paused can start again.
 function resumePaused() {
-  if (active || fileRunning) return;
+  if (active || fileRunning || fileJobs) return;
   for (const ws of paused) send(ws, { type: "status", state: "resume", message: "Presage is free again" });
   paused.clear();
 }
 
+// Lifecycle held: the session using Presage gives way. A monitor is paused for a scan; anything else is taken over.
 async function makeRoom(kind) {
-  if (!active) return;
   const victim = active;
+  if (!victim) return;
   const pauseIt = kind === "scan" && victim.kind === "monitor";
-  if (pauseIt) paused.add(victim.ws);
-  send(victim.ws, {
+  if (pauseIt) paused.add(victim.conn.ws);
+  send(victim.conn.ws, {
     type: "status",
     state: pauseIt ? "paused" : "taken_over",
     message: pauseIt ? "A scan is using Presage — this screen resumes when it's done" : "Another screen took over the camera session",
   });
-  await stopSession(victim);
+  if (victim.conn.session === victim) victim.conn.session = null;
+  await endLocked(victim);
 }
 
-async function startSession(ws, { transferId, kind }) {
+// Lifecycle held: start a session for this screen if it still wants one. After a restart the scan's recording carries
+// on, so the summary still covers the whole measured window.
+async function beginLocked(conn) {
+  const { ws, kind, transferId } = conn;
+  if (!conn.wanted || ws.readyState !== ws.OPEN) return null; // stopped or left while waiting its turn
+  if (fileRunning) {
+    paused.add(ws);
+    send(ws, { type: "status", state: "paused", message: "Presage is measuring a recorded scan — starting in a moment" });
+    return null;
+  }
+  await endLocked(conn.session); // the same screen starting again
+  conn.session = null;
   await makeRoom(kind);
-  const { SmartSpectraSDK, FrameTransform } = sdkModule;
+  if (!conn.wanted || ws.readyState !== ws.OPEN) return null; // stopped or left while the other session ended
+  const carried = conn.carry;
+  conn.carry = null;
+  const { SmartSpectraSDK, FrameTransform, ProcessingStatus } = sdkModule;
   const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: requestedMetrics(), enableTelemetry: false });
   const session = {
-    ws, sdk, kind, transferId, lastTs: 0, latest: {}, hint: null, frames: 0, postTimer: null, failed: false,
-    rec: newRecording(), markedAt: Date.now(),
+    id: ++sessionCount, conn, sdk, kind, transferId, lastTs: 0, latest: {}, hint: null, postTimer: null, failed: false,
+    ending: null, frames: carried?.frames ?? 0, rec: carried?.rec ?? newRecording(), markedAt: carried?.markedAt ?? Date.now(),
   };
 
   sdk.on("metrics", (buf, timestampUs) => {
@@ -304,20 +347,16 @@ async function startSession(ws, { transferId, kind }) {
     if (code !== 0) session.latest = {};
     send(ws, { type: "validation", code, ok: code === 0, hint: session.hint });
   });
-  sdk.on("processingStatus", (status) => send(ws, { type: "processing", status }));
-  sdk.on("error", (code, message, retryable) => {
-    console.warn(`[bridge] SDK error ${code}: ${message}`);
-    send(ws, { type: "error", code, message, retryable });
-    if (!retryable && !session.failed) {
-      // e.g. kAuthenticationFailed / kCreditExhausted: stop pushing frames; the screen says why
-      session.failed = true;
-      send(ws, { type: "status", state: "error", message });
-    }
+  sdk.on("processingStatus", (status) => {
+    send(ws, { type: "processing", status });
+    if (status === ProcessingStatus.kError) trouble(session, 8, "SmartSpectra processing stopped", false);
   });
+  sdk.on("error", (code, message, retryable) => trouble(session, code, message, retryable));
 
   sdk.useCustomInput(FrameTransform.kNone);
   sdk.start();
   active = session;
+  conn.session = session;
 
   // Monitor sessions post the latest stable, fresh values to the engine; scans hand back one summary instead.
   if (kind === "monitor" && transferId) {
@@ -338,12 +377,41 @@ async function startSession(ws, { transferId, kind }) {
   }
 
   send(ws, { type: "status", state: "running", message: sdkMessage });
-  console.log(`[bridge] ${kind} session started${transferId ? ` for transfer ${transferId}` : ""}`);
+  console.log(`[bridge] ${stamp()} ${kind} session ${session.id} started${transferId ? ` for transfer ${transferId}` : ""}${carried ? " (restart)" : ""}`);
   return session;
 }
 
+// The SDK reported a problem. One that stops the session (or any it calls not retryable) gets a fresh session, twice
+// at most per start from the screen, unless a new session can't help (key, configuration, credits). The screen is
+// told it's restarting, then running again; a scan keeps its recording across the restart.
+function trouble(session, code, message, retryable) {
+  console.warn(`[bridge] ${stamp()} ${session.kind} session ${session.id}: SDK error ${code}: ${message}`);
+  if (session.ending || session.failed) return; // a session on its way out may still complain
+  const { conn } = session;
+  if (!DEAD_ERRORS.has(code) && retryable) {
+    send(conn.ws, { type: "error", code, message, retryable: true }); // the SDK carries on
+    return;
+  }
+  session.failed = true;
+  if (!FATAL_ERRORS.has(code) && conn.restarts < MAX_RESTARTS && conn.session === session) {
+    conn.restarts += 1;
+    send(conn.ws, { type: "status", state: "restarting", message: "Presage hit a snag — restarting it" });
+    serial(async () => {
+      if (conn.session !== session) return; // stopped or replaced meanwhile
+      conn.carry = { kind: session.kind, rec: session.rec, markedAt: session.markedAt, frames: session.frames };
+      await endLocked(session);
+      conn.session = null;
+      await sleep(RESTART_DELAY_MS);
+      await beginLocked(conn);
+    }).catch((err) => send(conn.ws, { type: "status", state: "error", message: `Could not restart SmartSpectra: ${err.message}` }));
+    return;
+  }
+  send(conn.ws, { type: "error", code, message, retryable: !!retryable });
+  send(conn.ws, { type: "status", state: "error", message: FATAL_ERRORS.has(code) ? message : `Presage stopped: ${message}` });
+}
+
 function handleFrame(session, data) {
-  if (session.failed || data.length < HEADER_BYTES) return;
+  if (session.failed || session.ending || data.length < HEADER_BYTES) return;
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const magic = view.getUint32(0);
   const tsMs = view.getFloat64(8);
@@ -381,22 +449,14 @@ function handleFrame(session, data) {
     session.sdk.sendFrame(pixels, width, height, width * channels, format, tsUs);
     session.frames += 1;
   } catch (err) {
-    if (!err.retryable) session.failed = true;
-    send(session.ws, { type: "error", code: err.code ?? -1, message: err.message, retryable: !!err.retryable });
+    trouble(session, err.code ?? -1, err.message, !!err.retryable);
   }
 }
 
 // ── file mode: recorded clips the phone couldn't stream ──────────────────────────────────────────────────────────
 const FILE_TIMEOUT_MS = Number(process.env.PRESAGE_TIMEOUT_MS ?? 240_000);
 const MAX_UPLOAD_BYTES = 400 * 1024 * 1024; // 60 s of high-quality MJPEG at 960 px is ~150 MB
-let queue = Promise.resolve(); // one SDK at a time: clips wait their turn
-let fileJobs = 0;
-
-function exclusive(fn) {
-  const run = queue.then(fn, fn);
-  queue = run.catch(() => {});
-  return run;
-}
+let fileJobs = 0; // clips waiting or being measured: they take their turn in `serial` like any session
 
 async function fileVitals(clipPath) {
   const { SmartSpectraSDK, ProcessingStatus } = sdkModule;
@@ -467,14 +527,13 @@ async function handleFile(req, res) {
     if (!body.length) return json(res, 400, { error: "empty video body" });
     fs.writeFileSync(clip, body);
     fileJobs += 1;
-    const result = await exclusive(async () => {
+    const result = await serial(async () => {
       fileRunning = true;
       try {
         await makeRoom("scan");
         return await fileVitals(clip);
       } finally {
         fileRunning = false;
-        resumePaused();
       }
     });
     console.log("[bridge] clip measured: HR " + (result.heart_rate_bpm ?? "-") + " RR " + (result.respiration_rate_bpm ?? "-"));
@@ -483,6 +542,7 @@ async function handleFile(req, res) {
     return json(res, 500, { error: String(err.message || err) });
   } finally {
     fileJobs = Math.max(0, fileJobs - 1);
+    resumePaused();
     fs.rm(clip, { force: true }, () => {});
   }
 }
@@ -516,11 +576,12 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 wss.on("connection", (ws) => {
-  let session = null;
+  // one screen: what it asked for, and its session once it's had its turn
+  const conn = { ws, session: null, carry: null, kind: "monitor", transferId: undefined, wanted: false, restarts: 0 };
   send(ws, { type: "hello", sdk: sdkState, message: sdkMessage });
   ws.on("message", async (data, isBinary) => {
     if (isBinary) {
-      if (session && active === session) handleFrame(session, data);
+      if (conn.session && active === conn.session) handleFrame(conn.session, data);
       return;
     }
     let msg;
@@ -534,40 +595,49 @@ wss.on("connection", (ws) => {
         send(ws, { type: "status", state: sdkState, message: sdkMessage });
         return;
       }
-      const kind = msg.kind === "scan" ? "scan" : "monitor";
-      if (fileRunning) {
+      conn.kind = msg.kind === "scan" ? "scan" : "monitor";
+      conn.transferId = msg.transferId;
+      conn.wanted = true;
+      conn.restarts = 0;
+      paused.delete(ws);
+      if (fileRunning || fileJobs) {
         // a recorded clip is being measured: this screen starts as soon as it's done
         paused.add(ws);
         send(ws, { type: "status", state: "paused", message: "Presage is measuring a recorded scan — starting in a moment" });
         return;
       }
       try {
-        session = await startSession(ws, { transferId: msg.transferId, kind });
+        await serial(() => beginLocked(conn));
       } catch (err) {
         send(ws, { type: "status", state: "error", message: `Could not start SmartSpectra: ${err.message}` });
       }
     }
     // scan: the measured window starts now (Presage was already giving framing hints while the shot was lined up)
-    if (msg.type === "mark" && session) {
-      session.rec = newRecording();
-      session.markedAt = session.rec.startedAt;
+    if (msg.type === "mark" && conn.session) {
+      conn.session.rec = newRecording();
+      conn.session.markedAt = conn.session.rec.startedAt;
     }
     if (msg.type === "stop") {
-      const ending = session;
-      session = null;
-      if (ending?.kind === "scan" && msg.summary) {
-        const seconds = Math.round((Date.now() - ending.markedAt) / 100) / 10;
-        send(ws, { type: "summary", result: summary(ending.rec, { path: "live", frames: ending.frames, seconds }) });
+      const ending = conn.session;
+      const measured = ending ?? conn.carry; // mid-restart, the recording waits in `carry`
+      conn.session = null;
+      conn.carry = null;
+      conn.wanted = false;
+      if (measured?.kind === "scan" && msg.summary) {
+        const seconds = Math.round((Date.now() - measured.markedAt) / 100) / 10;
+        send(ws, { type: "summary", result: summary(measured.rec, { path: "live", frames: measured.frames, seconds }) });
       }
-      await stopSession(ending);
+      await serial(() => endLocked(ending));
       resumePaused();
     }
   });
   ws.on("close", async () => {
     paused.delete(ws);
-    const ending = session;
-    session = null;
-    await stopSession(ending);
+    const ending = conn.session;
+    conn.session = null;
+    conn.carry = null;
+    conn.wanted = false;
+    await serial(() => endLocked(ending));
     resumePaused();
   });
 });

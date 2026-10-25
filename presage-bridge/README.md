@@ -76,9 +76,16 @@ Text messages:
 
 - Client → bridge: `{"type":"start","kind":"scan"|"monitor","transferId":"…"}`, `{"type":"mark"}` (scan: the measured
   window starts now), `{"type":"stop","summary":true}` (scan: send the summary first).
-- Bridge → client: `hello`, `status` (`running`, `paused`, `resume`, `taken_over`, `error`), `metrics`
+- Bridge → client: `hello`, `status` (`running`, `restarting`, `paused`, `resume`, `taken_over`, `error`), `metrics`
   `{hr,rr,hrv:{value,conf,stable},trace:[…],pulse:[…],apnea}`, `validation` `{code,ok,hint}`, `summary` `{result}`,
   and `error`.
+
+Sessions start and stop one at a time (the SDK's native state is process-global; a replacement must wait for the
+old session's `destroy()`). A session the SDK gives up on (`kInvalidState`, `kProcessingFailed`, or any error it
+calls not retryable) is rebuilt up to twice per `start`: the screen gets `restarting`, then `running`, and a scan
+keeps its recording across the restart. The web app also reconnects by itself after a dropped connection or an
+`error` (four times in a row at most), and waits 300 ms before connecting so a camera that turns off and on again
+doesn't open a second session.
 
 Binary frames: a 16-byte big-endian header — `u32` magic, `u16` width, `u16` height, `f64` capture time in ms — then
 the payload. Magic `0x4143504a` ("ACPJ"): a JPEG (phones; the size comes from the JPEG). Magic `0x41435046`

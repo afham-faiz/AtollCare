@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 import { ApiError, uploadForm } from "@/lib/api";
-import { cameraConstraints, cameraError, usePresageScan, type CameraState, type PresageSummary } from "@/lib/presage";
+import { autoCamera, cameraConstraints, cameraError, usePresageScan, type CameraState, type PresageSummary } from "@/lib/presage";
 
 import styles from "./ScanRecorder.module.scss";
 
@@ -103,6 +103,7 @@ export default function <T,>({
           .getUserMedia({ ...cameraConstraints(mode), audio: withAudio })
           .catch((err) => (withAudio ? navigator.mediaDevices.getUserMedia(cameraConstraints(mode)) : Promise.reject(err)));
         stream.current = s;
+        autoCamera(s);
         if (videoEl) {
           videoEl.srcObject = s;
           await videoEl.play().catch(() => undefined);

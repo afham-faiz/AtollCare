@@ -74,8 +74,23 @@ export function cameraError(err: unknown): CameraState {
   return "unavailable";
 }
 
-// Exposure is left to the camera. Locking it (Presage's model cards prefer fixed exposure) froze many webcams and
-// Android phones at a wrong, near-black value they reported, and Presage then asked for more light.
+const RETRY_MS = 3000; // a dropped bridge connection or a Presage error: try again after this
+const MAX_RETRIES = 4; // in a row; a session that runs for a while resets the count
+const STEADY_MS = 20_000;
+const OPEN_DELAY_MS = 300; // a camera that turns off and on again within this never opens a second session
+
+/** Exposure, white balance and focus go back to the camera's automatic modes. Locking exposure (Presage's model cards
+ *  prefer it fixed) froze many webcams and Android phones near black, and on Windows a webcam keeps a manual setting
+ *  after the page that set it has gone: the crew laptop stayed dark until something set it back. */
+export function autoCamera(stream: MediaStream): void {
+  const track = stream.getVideoTracks()[0];
+  if (!track?.getCapabilities || !track.applyConstraints) return;
+  const caps = track.getCapabilities() as Record<string, unknown>;
+  const auto = (key: string) => (Array.isArray(caps[key]) && (caps[key] as string[]).includes("continuous") ? [{ [key]: "continuous" }] : []);
+  // one set per setting: a camera that refuses one still takes the others
+  const advanced = [...auto("exposureMode"), ...auto("whiteBalanceMode"), ...auto("focusMode")];
+  if (advanced.length) track.applyConstraints({ advanced } as MediaTrackConstraints).catch(() => undefined);
+}
 
 export function useCamera(enabled: boolean) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -102,6 +117,7 @@ export function useCamera(enabled: boolean) {
           opened.getTracks().forEach((t) => t.stop());
           return;
         }
+        autoCamera(opened);
         if (videoRef.current) {
           videoRef.current.srcObject = opened;
           await videoRef.current.play().catch(() => undefined);
@@ -186,23 +202,41 @@ function useBridge({ kind, transferId, video, enabled }: { kind: "monitor" | "sc
   const [since, setSince] = useState<number | null>(null); // when the measured window started
   const wsRef = useRef<WebSocket | null>(null);
   const summaryRef = useRef<((s: PresageSummary | null) => void) | null>(null);
+  const [attempt, setAttempt] = useState(0); // a new connection after a drop or an error
+  const retries = useRef(0);
 
   useEffect(() => {
     if (!enabled || !video) return;
     let stopFrames: (() => void) | null = null;
-    const start = () => ws.send(JSON.stringify({ type: "start", kind, transferId }));
-    // WebSocket only throws synchronously for a malformed URL; connection failures arrive via onerror/onclose
-    const ws = new WebSocket(presageBridgeUrl());
-    wsRef.current = ws;
-    ws.binaryType = "arraybuffer";
-    ws.onopen = () => setState("starting");
-    ws.onerror = () => setState((s) => (s === "running" ? "error" : "offline"));
-    ws.onclose = () => {
-      stopFrames?.();
-      summaryRef.current?.(null);
-      setState((s) => (s === "running" || s === "starting" ? "offline" : s));
+    let ws: WebSocket | null = null;
+    let leaving = false; // this effect is being cleaned up: a close now is ours, not a drop
+    let retryTimer = 0;
+    let steadyTimer = 0;
+    const start = () => ws?.send(JSON.stringify({ type: "start", kind, transferId }));
+    // the bridge dropped or Presage gave up: come back by ourselves a few times (a taken-over screen doesn't)
+    const retryLater = () => {
+      if (leaving || retryTimer || retries.current >= MAX_RETRIES) return;
+      retries.current += 1;
+      retryTimer = window.setTimeout(() => setAttempt((a) => a + 1), RETRY_MS);
     };
-    ws.onmessage = (ev) => {
+    const connect = () => {
+      setState("starting");
+      // WebSocket only throws synchronously for a malformed URL; connection failures arrive via onerror/onclose
+      const socket = new WebSocket(presageBridgeUrl());
+      ws = socket;
+      wsRef.current = socket;
+      socket.binaryType = "arraybuffer";
+      socket.onopen = () => setState("starting");
+      socket.onerror = () => setState((s) => (s === "running" ? "error" : "offline"));
+      socket.onclose = () => {
+        stopFrames?.();
+        summaryRef.current?.(null);
+        setState((s) => (s === "running" || s === "starting" ? "offline" : s));
+        retryLater();
+      };
+      socket.onmessage = onMessage(socket);
+    };
+    const onMessage = (ws: WebSocket) => (ev: MessageEvent) => {
       if (typeof ev.data !== "string") return;
       const msg = JSON.parse(ev.data);
       if (msg.type === "hello") {
@@ -220,6 +254,12 @@ function useBridge({ kind, transferId, video, enabled }: { kind: "monitor" | "sc
           setSince(Date.now());
           stopFrames?.();
           stopFrames = streamFrames(ws, video);
+          window.clearTimeout(steadyTimer);
+          steadyTimer = window.setTimeout(() => (retries.current = 0), STEADY_MS);
+        } else if (msg.state === "restarting") {
+          // the bridge is rebuilding a session Presage gave up on; frames resume when it says "running"
+          setState("starting");
+          stopFrames?.();
         } else if (msg.state === "paused") {
           setState("paused");
           stopFrames?.();
@@ -230,19 +270,25 @@ function useBridge({ kind, transferId, video, enabled }: { kind: "monitor" | "sc
         } else if (msg.state === "error" || msg.state === "unavailable" || msg.state === "taken_over") {
           setState("error");
           stopFrames?.();
+          if (msg.state !== "taken_over") retryLater();
         }
       }
       if (msg.type === "validation") setHint(msg.ok ? null : msg.hint);
       if (msg.type === "metrics") setMetrics({ hr: msg.hr, rr: msg.rr, hrv: msg.hrv, trace: msg.trace ?? [], pulse: msg.pulse ?? [], apnea: !!msg.apnea });
       if (msg.type === "summary") summaryRef.current?.(msg.result);
     };
+    const openTimer = window.setTimeout(connect, OPEN_DELAY_MS);
     return () => {
+      leaving = true;
+      window.clearTimeout(openTimer);
+      window.clearTimeout(retryTimer);
+      window.clearTimeout(steadyTimer);
       stopFrames?.();
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "stop" }));
-      ws.close();
+      if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "stop" }));
+      ws?.close();
       wsRef.current = null;
     };
-  }, [enabled, video, kind, transferId]);
+  }, [enabled, video, kind, transferId, attempt]);
 
   /** Scan: the measured window starts now (hints were already flowing while the shot was lined up). */
   const mark = useCallback(() => {
