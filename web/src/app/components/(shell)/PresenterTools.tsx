@@ -3,7 +3,8 @@
 
 import { ArrowRight, BarChart3, Copy, Database, Loader2, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { useState, useSyncExternalStore } from "react";
 import { mutate } from "swr";
 import { twMerge } from "tailwind-merge";
 
@@ -19,6 +20,10 @@ import { useDemoCases, useMeta } from "@/lib/swr";
 import { toast, toastError } from "@/lib/toast";
 
 const SPEEDS = ["1", "10", "30", "60"] as const;
+
+const noop = () => () => {};
+// the address this screen was opened on: through the HTTPS tunnel, that's the one phones need
+const useOrigin = () => useSyncExternalStore(noop, () => window.location.origin, () => "");
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -36,6 +41,8 @@ export default function ({ onDone }: { onDone?: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<DemoCase | null>(null);
   const line = picked?.suggested_note ?? null;
+  const origin = useOrigin();
+  const secure = origin.startsWith("https://");
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
@@ -77,6 +84,23 @@ export default function ({ onDone }: { onDone?: () => void }) {
 
   return (
     <div>
+      <Section title="On a phone">
+        <div className="flex items-start gap-[1rem]">
+          {origin && (
+            <div className="shrink-0 rounded-[.75rem] bg-white p-[.5rem]">
+              <QRCodeSVG value={`${origin}/pre-arrival`} size={112} marginSize={0} />
+            </div>
+          )}
+          <div className="min-w-0 text-[0.875rem] text-ink-2">
+            <p className="break-all font-mono text-[0.8125rem] text-ink">{origin}/pre-arrival</p>
+            <p className="mt-[.375rem]">
+              {secure
+                ? "Scan with the phone's camera. Presage measures live through this address."
+                : "Phones only allow the camera over HTTPS. Run scripts/phone_tunnel.sh, open this panel from the https address it prints, and scan that code."}
+            </p>
+          </div>
+        </div>
+      </Section>
       <Section title="Prepared cases">
         <ul className="flex flex-col gap-[.5rem]">
           {(cases ?? []).map((c) => {
