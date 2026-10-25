@@ -13,7 +13,8 @@ import styles from "./ScanResult.module.scss";
 
 const SCORED = 0.6; // the engine's scoring gate; a vital Presage calls stable always reports at least this
 
-// Presage's own verdict, in words: stable readings are scored; anything else is shown but never counted
+// Presage's own verdict, in words: stable (its accuracy standard: ±3 bpm, ±1 breath/min) is scored; anything else
+// is shown but never counted
 function quality(stable?: boolean | null, q?: number | null): { word: string; tone: "good" | "weak" } {
   return (stable ?? (q != null && q >= SCORED)) ? { word: "Stable · scored", tone: "good" } : { word: "Not stable · not scored", tone: "weak" };
 }
@@ -29,6 +30,75 @@ function Vital({ label, value, unit, q, stable, bystander }: { label: string; va
         {value != null && <span className={styles.unit}>{unit}</span>}
       </span>
       {value != null && <span className={twMerge(styles.quality, styles[qual.tone])}>{qual.word}</span>}
+    </div>
+  );
+}
+
+type TracePoint = { t_s: number; v: number };
+type Diagnostics = {
+  hints?: string[];
+  pulse_trace?: TracePoint[];
+  breathing_trace?: TracePoint[];
+  apnea_s?: number[];
+  talking_share?: number | null;
+  framing?: { from_s: number; to_s: number; hint: string }[];
+  seconds?: number;
+  path?: "live" | "file";
+};
+
+function Trace({ points, label, tone }: { points: TracePoint[]; label: string; tone: "pulse" | "breath" }) {
+  const t0 = points[0].t_s;
+  const span = points[points.length - 1].t_s - t0 || 1;
+  const vs = points.map((p) => p.v);
+  const lo = Math.min(...vs);
+  const range = Math.max(...vs) - lo || 1;
+  const pts = points.map((p) => `${(((p.t_s - t0) / span) * 300).toFixed(1)},${(38 - ((p.v - lo) / range) * 34).toFixed(1)}`).join(" ");
+  return (
+    <figure className={styles.trace}>
+      <svg viewBox="0 0 300 40" preserveAspectRatio="none" className={twMerge(styles.traceSvg, styles[tone])} role="img" aria-label={label}>
+        <polyline points={pts} />
+      </svg>
+      <figcaption>{label}</figcaption>
+    </figure>
+  );
+}
+
+// What Presage saw across the scan: the pulse and breathing waveforms it measured, when the shot wasn't usable and
+// why, a pause in breathing it detected, and how much the patient talked (talking throws the breathing rate off).
+function PresageReport({ d }: { d: Diagnostics }) {
+  const pulse = d.pulse_trace ?? [];
+  const breath = d.breathing_trace ?? [];
+  const framing = d.framing ?? [];
+  const apnea = d.apnea_s ?? [];
+  const total = Math.max(d.seconds ?? 0, ...framing.map((f) => f.to_s), 1);
+  if (pulse.length < 10 && breath.length < 10 && !framing.length && !apnea.length && d.talking_share == null) return null;
+  return (
+    <div className={styles.report}>
+      {pulse.length >= 10 && <Trace points={pulse} label="Pulse waveform, as Presage measured it" tone="pulse" />}
+      {breath.length >= 10 && <Trace points={breath} label="Chest movement (breathing)" tone="breath" />}
+      {framing.length > 0 && (
+        <div className={styles.framing}>
+          <div className={styles.framingBar} aria-hidden>
+            {framing.map((f) => (
+              <span key={`${f.from_s}-${f.hint}`} style={{ left: `${(f.from_s / total) * 100}%`, width: `${Math.max(1, ((f.to_s - f.from_s) / total) * 100)}%` }} />
+            ))}
+          </div>
+          <p>
+            {framing
+              .slice(0, 3)
+              .map((f) => `${f.hint.replace(/\.$/, "")} ${Math.round(f.from_s)}–${Math.round(f.to_s)} s`)
+              .join(" · ")}
+          </p>
+        </div>
+      )}
+      {apnea.length > 0 && (
+        <p className={styles.apnea}>
+          Presage detected a pause in breathing at {apnea.map((s) => `${Math.round(s)} s`).join(", ")}. Not scored: check the patient.
+        </p>
+      )}
+      {d.talking_share != null && d.talking_share >= 0.2 && (
+        <p className={styles.note}>Talking for {Math.round(d.talking_share * 100)}% of the scan, which throws the breathing rate off.</p>
+      )}
     </div>
   );
 }
@@ -62,7 +132,18 @@ function Frames({ finding, scan }: { finding: CueFinding; scan: Scan }) {
 // bystander: the companion recorded it (not trained staff with a mounted phone), so its numbers are an estimate
 export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz?: string; title?: string; coach?: boolean; bystander?: boolean }) {
   const signs = scan.signs;
-  const notChecked = signs?.issues.some((i) => i.startsWith("inspection_failed"));
+  const failure = signs?.issues.find((i) => i.startsWith("inspection_failed"));
+  const notChecked = !!failure;
+  // say why, in words: a missing key, a spent quota and a timeout need different fixes
+  const whyNot = !failure
+    ? ""
+    : /GEMINI_API_KEY/.test(failure)
+      ? "Gemini isn't connected"
+      : /429|RESOURCE_EXHAUSTED|quota/i.test(failure)
+        ? "Gemini's usage limit was reached"
+        : /timeout|timed out|deadline/i.test(failure)
+          ? "Gemini took too long"
+          : "Gemini couldn't be reached";
   const present = signs?.findings.filter((f) => f.finding === "present") ?? [];
   const absent = signs?.findings.filter((f) => f.finding === "absent") ?? [];
   const unclear = signs?.findings.filter((f) => f.finding === "cannot_assess") ?? [];
@@ -73,7 +154,8 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
   const v = scan.vitals;
   const measured = !!v && (v.heart_rate_bpm != null || v.respiration_rate_bpm != null);
   // with no reading the hints are already in vitals_note; beside a reading they explain its quality
-  const hints = measured ? ((v?.diagnostics as { hints?: string[] } | undefined)?.hints ?? []) : [];
+  const diagnostics = (v?.diagnostics ?? {}) as Diagnostics;
+  const hints = measured ? (diagnostics.hints ?? []) : [];
   const processing = scan.status === "processing";
 
   return (
@@ -98,7 +180,9 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
       <section className={styles.block}>
         <div className={styles.blockHead}>
           <h4>Heart and breathing</h4>
-          <span className={styles.source}>{bystander ? "Presage · bystander video" : "Presage · from the video"}</span>
+          <span className={styles.source}>
+            {bystander ? "Presage · bystander video" : diagnostics.path === "live" ? "Presage · measured live" : "Presage · from the video"}
+          </span>
         </div>
         {measured ? (
           <div className={styles.vitals}>
@@ -111,6 +195,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
           </p>
         )}
         {hints.length > 0 && <p className={styles.hints}>Presage noticed: {hints.join(" · ")}</p>}
+        {v?.source === "presage" && <PresageReport d={diagnostics} />}
       </section>
 
       {/* visible signs */}
@@ -122,7 +207,7 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
         {!signs ? (
           <p className={styles.note}>{processing ? "Checking the video…" : "Not checked."}</p>
         ) : notChecked ? (
-          <p className={styles.note}>Not checked — Gemini isn&apos;t connected, so nothing is claimed about what the video shows.</p>
+          <p className={styles.note}>Not checked: {whyNot}, so nothing is claimed about what the video shows.</p>
         ) : (
           <>
             {contradicted.length > 0 && (

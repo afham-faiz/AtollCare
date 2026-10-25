@@ -21,13 +21,13 @@ function pickType(): string {
   return TYPES.find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
 }
 
-function Wave({ trace }: { trace: number[] }) {
-  if (trace.length < 4) return null;
+function Wave({ trace, label, pulse }: { trace: number[]; label: string; pulse?: boolean }) {
+  if (trace.length < 4) return <span className={styles.wave} />;
   const min = Math.min(...trace);
   const span = Math.max(...trace) - min || 1;
   const pts = trace.map((v, i) => `${(i / (trace.length - 1)) * 120},${30 - ((v - min) / span) * 26}`).join(" ");
   return (
-    <svg viewBox="0 0 120 32" preserveAspectRatio="none" className={styles.wave} aria-label="Live breathing waveform">
+    <svg viewBox="0 0 120 32" preserveAspectRatio="none" className={twMerge(styles.wave, pulse && styles.wavePulse)} aria-label={label}>
       <polyline points={pts} />
     </svg>
   );
@@ -177,12 +177,16 @@ export default function ({
                     <span className={styles.readingValue}>{hr?.stable ? Math.round(hr.value) : "—"}</span>
                     <span className={styles.readingUnit}>bpm</span>
                   </span>
+                  <Wave trace={presage.metrics.pulse} label="Live pulse waveform" pulse />
+                </div>
+                <div className={styles.readoutRow}>
                   <span className={twMerge(styles.reading, !rr?.stable && styles.readingSettling)}>
                     <span className={styles.readingValue}>{rr?.stable ? Math.round(rr.value) : "—"}</span>
                     <span className={styles.readingUnit}>/min</span>
                   </span>
-                  <Wave trace={presage.metrics.trace} />
+                  <Wave trace={presage.metrics.trace} label="Live breathing waveform" />
                 </div>
+                {presage.metrics.apnea && <span className={styles.apneaLive}>Presage sees a pause in breathing</span>}
               </div>
             )}
           </>

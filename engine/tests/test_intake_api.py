@@ -232,3 +232,5 @@ def test_scan_summary_marks_weak_readings_and_contradictions():
                                      respiration_quality=0.3, source="presage"))
     assert scan_summary(scan) == ("heart rate 88 bpm; breathing 30/min (weak signal, not scored). "
                                   "Seen on video: Arm weakness. Described but not seen: Face droop.")
+    scan.vitals.diagnostics = {"apnea_s": [12.4]}
+    assert "Presage detected a pause in breathing at 12 s" in scan_summary(scan)

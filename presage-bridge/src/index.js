@@ -75,6 +75,14 @@ let fileRunning = false;
 const paused = new Set();
 
 const last = (arr) => (Array.isArray(arr) && arr.length ? arr[arr.length - 1] : null);
+const num = (x) => (typeof x === "number" ? x : x && typeof x.toNumber === "function" ? x.toNumber() : Number(x));
+
+// Breathing (with apnea), cardio (with the pulse waveform) and talking detection — talking is why a breathing rate
+// can be off, so the report says how much of the scan the patient spent talking.
+function requestedMetrics() {
+  const { breathingMetrics, cardioMetrics, MetricType } = sdkModule;
+  return [...breathingMetrics, ...cardioMetrics, MetricType.TALKING];
+}
 
 // Map Presage's own accuracy verdict (`stable`) onto the engine's 0.6 quality gate.
 const toConfidence = (m) => {
@@ -118,6 +126,11 @@ function summary(rec, extra = {}) {
   const pulse = last(rec.pulseSeries);
   const breathing = last(rec.breathingSeries);
   const confidences = [pulse, breathing].filter(Boolean).map((x) => x.confidence);
+  closeFraming(rec);
+  const trace = (points, max) => {
+    const t0 = points[0]?.t ?? 0;
+    return thin(points, max).map((p) => ({ t_s: Math.round((p.t - t0) / 1e4) / 100, v: Math.round(p.v * 1e4) / 1e4 }));
+  };
   return {
     mode: "sdk",
     heart_rate_bpm: pulse ? Math.round(pulse.value) : null,
@@ -129,13 +142,39 @@ function summary(rec, extra = {}) {
       validation_counts: rec.validationCounts,
       pulse_series: thin(rec.pulseSeries),
       breathing_series: thin(rec.breathingSeries),
+      pulse_trace: trace(rec.pulseTrace, 600), // arterial pressure waveform (uncalibrated): the pulse itself
+      breathing_trace: trace(rec.breathTrace, 300), // chest movement
+      apnea_s: rec.apnea, // seconds into the scan where Presage detected breathing stop (stable detections only)
+      talking_share: rec.faceSamples ? Math.round((rec.talking / rec.faceSamples) * 100) / 100 : null,
+      framing: rec.framing, // [{from_s, to_s, hint}]: when the shot wasn't usable, and why
       ...extra,
     },
   };
 }
 
 function newRecording() {
-  return { pulseSeries: [], breathingSeries: [], issues: new Set(), hints: new Set(), validationCounts: {}, firstTs: null };
+  return {
+    pulseSeries: [], breathingSeries: [], issues: new Set(), hints: new Set(), validationCounts: {}, firstTs: null,
+    pulseTrace: [], breathTrace: [], lastPulseTs: -1, lastBreathTs: -1, apnea: [], inApnea: false, talking: 0,
+    faceSamples: 0, framing: [], openFraming: null, startedAt: Date.now(),
+  };
+}
+
+const sinceStart = (rec) => Math.round((Date.now() - rec.startedAt) / 100) / 10;
+
+// framing problems as intervals of the recording (wall clock: the phone streams, and files play back, in real time)
+function trackFraming(rec, code, hint) {
+  const open = rec.openFraming;
+  if (open && (code === 0 || open.code !== code)) closeFraming(rec);
+  if (code !== 0 && !rec.openFraming) rec.openFraming = { code, hint, from_s: sinceStart(rec) };
+}
+
+function closeFraming(rec) {
+  const open = rec.openFraming;
+  if (!open) return;
+  rec.openFraming = null;
+  const to_s = sinceStart(rec);
+  if (to_s - open.from_s >= 0.5) rec.framing.push({ from_s: open.from_s, to_s, hint: open.hint });
 }
 
 function codeName(code) {
@@ -150,11 +189,35 @@ function record(rec, m, timestampUs) {
   const b = sample(last(m.breathing?.rate));
   if (p) rec.pulseSeries.push({ t_s, ...p });
   if (b) rec.breathingSeries.push({ t_s, ...b });
+  // waveforms arrive as overlapping windows: keep each point once, in order
+  for (const pt of m.cardio?.arterialPressureTrace ?? []) {
+    const ts = num(pt.timestamp);
+    if (pt.value != null && ts > rec.lastPulseTs) {
+      rec.pulseTrace.push({ t: ts, v: pt.value });
+      rec.lastPulseTs = ts;
+    }
+  }
+  for (const pt of m.breathing?.upperTrace ?? []) {
+    const ts = num(pt.timestamp);
+    if (pt.value != null && ts > rec.lastBreathTs) {
+      rec.breathTrace.push({ t: ts, v: pt.value });
+      rec.lastBreathTs = ts;
+    }
+  }
+  const apnea = last(m.breathing?.apnea);
+  const stopped = !!(apnea?.detected && apnea?.stable);
+  if (stopped && !rec.inApnea) rec.apnea.push(sinceStart(rec));
+  rec.inApnea = stopped;
+  for (const s of m.face?.talking ?? []) {
+    rec.faceSamples += 1;
+    if (s.detected) rec.talking += 1;
+  }
 }
 
 function noteValidation(rec, code, hint) {
   const name = codeName(code);
   rec.validationCounts[name] = (rec.validationCounts[name] || 0) + 1;
+  trackFraming(rec, code, hint || HINTS[code] || name);
   if (code !== 0) {
     rec.issues.add(name);
     rec.hints.add(hint || HINTS[code] || name);
@@ -199,8 +262,8 @@ async function makeRoom(kind) {
 
 async function startSession(ws, { transferId, kind }) {
   await makeRoom(kind);
-  const { SmartSpectraSDK, FrameTransform, breathingMetrics, cardioMetrics } = sdkModule;
-  const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: [...breathingMetrics, ...cardioMetrics], enableTelemetry: false });
+  const { SmartSpectraSDK, FrameTransform } = sdkModule;
+  const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: requestedMetrics(), enableTelemetry: false });
   const session = {
     ws, sdk, kind, transferId, lastTs: 0, latest: {}, hint: null, frames: 0, postTimer: null, failed: false,
     rec: newRecording(), markedAt: Date.now(),
@@ -218,6 +281,8 @@ async function startSession(ws, { transferId, kind }) {
     const rate = last(m.breathing?.rate);
     const hrv = last(m.cardio?.hrv);
     const trace = (m.breathing?.upperTrace ?? []).slice(-60).map((p) => p.value ?? 0);
+    const pulseWave = (m.cardio?.arterialPressureTrace ?? []).slice(-90).map((p) => p.value ?? 0);
+    const apnea = last(m.breathing?.apnea);
     const at = Date.now();
     if (pulse?.value) session.latest.hr = { value: pulse.value, conf: toConfidence(pulse), stable: !!pulse.stable, at };
     if (rate?.value) session.latest.rr = { value: rate.value, conf: toConfidence(rate), stable: !!rate.stable, at };
@@ -228,6 +293,8 @@ async function startSession(ws, { transferId, kind }) {
       rr: session.latest.rr ?? null,
       hrv: session.latest.hrv ?? null,
       trace,
+      pulse: pulseWave,
+      apnea: !!(apnea?.detected && apnea?.stable),
     });
   });
   sdk.on("validationStatus", (code, _ts, hint) => {
@@ -332,9 +399,9 @@ function exclusive(fn) {
 }
 
 async function fileVitals(clipPath) {
-  const { SmartSpectraSDK, ProcessingStatus, breathingMetrics, cardioMetrics } = sdkModule;
+  const { SmartSpectraSDK, ProcessingStatus } = sdkModule;
   const rec = newRecording();
-  const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: [...breathingMetrics, ...cardioMetrics], enableTelemetry: false });
+  const sdk = new SmartSpectraSDK({ apiKey: API_KEY, requestedMetrics: requestedMetrics(), enableTelemetry: false });
   try {
     const done = new Promise((resolve, reject) => {
       let sawRunning = false;
@@ -360,6 +427,7 @@ async function fileVitals(clipPath) {
     });
     done.catch(() => {}); // start() can emit synchronously; mark `done` handled before it can reject
     sdk.useFile(clipPath, { interframeDelayMs: 33 });
+    rec.startedAt = Date.now(); // real-time playback: wall clock is clip time
     sdk.start();
     await done;
   } finally {
@@ -482,7 +550,7 @@ wss.on("connection", (ws) => {
     // scan: the measured window starts now (Presage was already giving framing hints while the shot was lined up)
     if (msg.type === "mark" && session) {
       session.rec = newRecording();
-      session.markedAt = Date.now();
+      session.markedAt = session.rec.startedAt;
     }
     if (msg.type === "stop") {
       const ending = session;

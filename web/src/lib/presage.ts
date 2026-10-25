@@ -17,7 +17,14 @@ export type PresageState =
   | "error"; // SDK refused (auth, credits…)
 
 export type Measure = { value: number; conf: number; stable: boolean };
-export type PresageMetrics = { hr: Measure | null; rr: Measure | null; hrv: Measure | null; trace: number[] };
+export type PresageMetrics = {
+  hr: Measure | null;
+  rr: Measure | null;
+  hrv: Measure | null;
+  trace: number[]; // breathing (chest movement)
+  pulse: number[]; // pulse waveform (arterial pressure trace, uncalibrated)
+  apnea: boolean; // Presage detected breathing stop (stable detection)
+};
 /** The bridge's summary of a live scan: the whole Presage trace, sent up with the clip (engine estimates_from_bridge). */
 export type PresageSummary = Record<string, unknown>;
 
@@ -195,7 +202,7 @@ function useBridge({ kind, transferId, video, enabled }: { kind: "monitor" | "sc
   const [state, setState] = useState<PresageState>("starting");
   const [message, setMessage] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [metrics, setMetrics] = useState<PresageMetrics>({ hr: null, rr: null, hrv: null, trace: [] });
+  const [metrics, setMetrics] = useState<PresageMetrics>({ hr: null, rr: null, hrv: null, trace: [], pulse: [], apnea: false });
   const [since, setSince] = useState<number | null>(null); // when the measured window started
   const wsRef = useRef<WebSocket | null>(null);
   const summaryRef = useRef<((s: PresageSummary | null) => void) | null>(null);
@@ -246,7 +253,7 @@ function useBridge({ kind, transferId, video, enabled }: { kind: "monitor" | "sc
         }
       }
       if (msg.type === "validation") setHint(msg.ok ? null : msg.hint);
-      if (msg.type === "metrics") setMetrics({ hr: msg.hr, rr: msg.rr, hrv: msg.hrv, trace: msg.trace ?? [] });
+      if (msg.type === "metrics") setMetrics({ hr: msg.hr, rr: msg.rr, hrv: msg.hrv, trace: msg.trace ?? [], pulse: msg.pulse ?? [], apnea: !!msg.apnea });
       if (msg.type === "summary") summaryRef.current?.(msg.result);
     };
     return () => {

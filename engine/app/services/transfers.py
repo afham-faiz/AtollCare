@@ -72,6 +72,9 @@ def scan_summary(scan: Scan) -> str:
                 weak = (quality or 0.0) < LOW_CONFIDENCE
                 parts.append(f"{label} {value}{unit}" + (" (weak signal, not scored)" if weak else ""))
     measured = "; ".join(parts) if parts else "heart and breathing rate not measured"
+    apnea = (v.diagnostics.get("apnea_s") or []) if v is not None and v.source == "presage" else []
+    if apnea:  # Presage's own stable detection; reported, not scored
+        measured += f"; Presage detected a pause in breathing at {', '.join(f'{round(s)} s' for s in apnea[:3])}"
     if scan.signs is None or any(i.startswith("inspection_failed") for i in scan.signs.issues):
         return f"{measured}. Visible signs not checked."
     seen = [f.label for f in scan.signs.findings if f.finding == "present"]
