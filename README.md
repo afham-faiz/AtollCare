@@ -63,10 +63,18 @@ phone (companion / crew) ──► web  Next.js · the three screens · proxies 
 You need **Python 3.11+**, **Node 20+** and a terminal for each of three services. The commands below are for
 PowerShell on Windows; on macOS/Linux use `source .venv/bin/activate` and forward slashes.
 
-**Windows shortcut:** once `.env` exists (step 1) and the `.venv` is set up, `.\scripts\start.ps1` starts the engine,
-the Presage bridge, the web app and the Cloudflare tunnel, waits until they answer, and opens the phone-ready
-`https://…trycloudflare.com` address. `-NoTunnel` for local only, `-Prod` for a production web build, `-Stop` to close
-everything. Steps 2 to 4 below are the same thing by hand.
+**Windows shortcut.** Do steps 1 and 2's `python -m venv` and `pip install` once, then from the repo folder in
+PowerShell:
+
+```powershell
+.\scripts\start.ps1
+```
+
+It installs the web and bridge npm packages on first run, starts the engine, the Presage bridge, the web app and the
+Cloudflare tunnel (each in its own window), waits until they answer, and opens the phone-ready
+`https://…trycloudflare.com` address. Options: `-NoTunnel` for local only (http://localhost:3000), `-Prod` for a
+production web build, `-Stop` to close everything. If PowerShell says running scripts is disabled, use
+`powershell -ExecutionPolicy Bypass -File .\scripts\start.ps1`. The rest of this section is the same thing by hand.
 
 ### 1. Configure
 
