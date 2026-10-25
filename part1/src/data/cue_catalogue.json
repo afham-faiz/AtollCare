@@ -1,0 +1,101 @@
+{
+  "_note": "DEMO ASSUMPTION: an illustrative list of visible signs for a bystander-video check. It is decision support for a clinician, not medical advice, and it has not been clinically validated.",
+  "cues": [
+    {
+      "id": "face_droop",
+      "label": "Face droop or asymmetry",
+      "question": "Does one side of the face droop or look different from the other (a mouth corner lower, a flatter fold beside the nose, one eyelid lower)?",
+      "needs": "face",
+      "presentations": ["stroke"],
+      "baseline": true
+    },
+    {
+      "id": "gaze_deviation",
+      "label": "Eyes turned to one side",
+      "question": "Are the eyes turned to one side, or misaligned with each other, instead of looking toward the camera or the person speaking?",
+      "needs": "face",
+      "presentations": ["stroke"],
+      "baseline": false
+    },
+    {
+      "id": "arm_weakness",
+      "label": "One arm weak or limp",
+      "question": "Is one arm hanging limp, drooping or held differently from the other?",
+      "needs": "both arms in view",
+      "presentations": ["stroke"],
+      "baseline": false
+    },
+    {
+      "id": "responsiveness",
+      "label": "Alert and responsive",
+      "question": "Is the person awake with eyes open and looking around, or are the eyes closed, the head slumped or the person unresponsive?",
+      "needs": "face",
+      "presentations": ["any"],
+      "baseline": true
+    },
+    {
+      "id": "laboured_breathing",
+      "label": "Visible effort to breathe",
+      "question": "Is breathing visibly hard: open-mouth gasping, flared nostrils, or neck and shoulder muscles pulling with each breath?",
+      "needs": "face, neck and shoulders",
+      "presentations": ["respiratory distress", "cardiac"],
+      "baseline": false
+    },
+    {
+      "id": "forward_leaning_posture",
+      "label": "Bent forward to breathe",
+      "question": "Is the person bent forward, hunched, hands on knees or leaning on something as if to catch their breath?",
+      "needs": "upper body",
+      "presentations": ["respiratory distress"],
+      "baseline": false
+    },
+    {
+      "id": "chest_clutching",
+      "label": "Hand pressed to the chest",
+      "question": "Is a hand pressed or clutched against the chest?",
+      "needs": "chest and hands",
+      "presentations": ["cardiac"],
+      "baseline": false
+    },
+    {
+      "id": "pallor_or_blue_lips",
+      "label": "Pale, grey or bluish face or lips",
+      "question": "Are the face or lips unusually pale, grey or bluish compared with ordinary skin tone? Allow for the lighting.",
+      "needs": "face, good light",
+      "presentations": ["cardiac", "respiratory distress", "shock"],
+      "baseline": true
+    },
+    {
+      "id": "sweating",
+      "label": "Visible sweating",
+      "question": "Is the skin visibly sweating or clammy (beads of sweat, a wet shine on the forehead)?",
+      "needs": "face, good light",
+      "presentations": ["cardiac", "shock"],
+      "baseline": false
+    },
+    {
+      "id": "pain_grimace",
+      "label": "Expression of pain",
+      "question": "Does the face show pain: a grimace, clenched teeth or tightly shut eyes?",
+      "needs": "face",
+      "presentations": ["any"],
+      "baseline": false
+    },
+    {
+      "id": "facial_swelling",
+      "label": "Swollen lips, tongue or face",
+      "question": "Are the lips, tongue or face visibly swollen?",
+      "needs": "face",
+      "presentations": ["allergic reaction"],
+      "baseline": false
+    },
+    {
+      "id": "visible_bleeding",
+      "label": "Visible blood or wound",
+      "question": "Is there visible blood, or an open wound?",
+      "needs": "body in view",
+      "presentations": ["trauma"],
+      "baseline": false
+    }
+  ]
+}

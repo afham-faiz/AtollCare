@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AtollCare Pre-arrival</title>
+<style>
+  :root {
+    --bg: #f6f7f8; --card: #ffffff; --text: #14181b; --muted: #5d6870; --line: #dfe3e6;
+    --teal: #0e7c86; --teal-soft: #e3f2f3; --red: #d92d20; --red-soft: #fdeceb;
+    --amber: #b54708; --amber-soft: #fef3e2; --green: #067647; --green-soft: #e4f5ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101315; --card: #181c1f; --text: #eef1f3; --muted: #98a3ab; --line: #2a3035;
+      --teal: #3fb6c0; --teal-soft: #12353a; --red: #f97066; --red-soft: #3a1714;
+      --amber: #fdb022; --amber-soft: #3a2a0c; --green: #47cd89; --green-soft: #0f3524;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header, main, footer { max-width: 46rem; margin: 0 auto; padding-left: 1rem; padding-right: 1rem; }
+  header { padding-top: 1.25rem; }
+  h1 { font-size: 1.3rem; margin: 0 0 .15rem; }
+  main { display: grid; gap: 1rem; padding-top: 1rem; padding-bottom: 1rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: .75rem; padding: 1rem; }
+  h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+  h3 { font-size: 1rem; margin: 1rem 0 .25rem; }
+  .sub { color: var(--muted); }
+  .badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 600; border: 1px solid var(--line); }
+  .b-ok { background: var(--green-soft); color: var(--green); border-color: transparent; }
+  .b-warn { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+  .b-bad { background: var(--red-soft); color: var(--red); border-color: transparent; }
+  .b-info { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  input[type=file] { width: 100%; margin: .35rem 0; }
+  button { font: inherit; font-weight: 600; background: var(--teal); color: #fff; border: 0; border-radius: .5rem; padding: .7rem 1rem; width: 100%; cursor: pointer; min-height: 2.75rem; }
+  button.link { background: none; color: var(--teal); padding: 0; width: auto; min-height: 0; text-decoration: underline; font-weight: 400; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  textarea:focus-visible, input:focus-visible, button:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .row { display: flex; gap: .75rem; align-items: center; }
+  .row > button { width: 11rem; flex: none; }
+  #rec.live, #vrec.live { background: var(--red); }
+  .level { flex: 1; height: .6rem; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .level > i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .08s linear; }
+  .transcript { min-height: 4.5rem; padding: .75rem; background: var(--bg); border-radius: .5rem; white-space: pre-wrap; margin-top: .5rem; }
+  .transcript .interim { color: var(--muted); font-style: italic; }
+  .or { text-align: center; color: var(--muted); margin: .75rem 0 .25rem; }
+  .note { margin: .5rem 0; padding: .6rem .75rem; background: var(--bg); border-radius: .5rem; color: var(--muted); font-size: .9rem; }
+  .meta { color: var(--muted); font-size: .85rem; margin: .5rem 0 0; }
+  .empty { color: var(--muted); padding: 1rem 0; text-align: center; }
+  .err { color: var(--red); background: var(--red-soft); padding: .75rem; border-radius: .5rem; }
+  .vitals { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .vital { border: 1px solid var(--line); border-radius: .6rem; padding: .75rem; }
+  .vital .n { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .vital .u { color: var(--muted); font-size: .85rem; }
+  .vital.dim .n { color: var(--muted); }
+  .cue { border: 1px solid var(--line); border-radius: .6rem; padding: .75rem; margin: .5rem 0; }
+  .cue .head { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; font-weight: 600; }
+  .cue.quiet { padding: .5rem .75rem; }
+  .quote { color: var(--muted); font-style: italic; }
+  .shots { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+  .shots figure { margin: 0; width: 8rem; font-size: .78rem; color: var(--muted); }
+  .shots img { width: 100%; border-radius: .4rem; border: 1px solid var(--line); display: block; }
+  .id-grid { display: grid; gap: 1rem; margin-top: .5rem; grid-template-columns: 1fr; }
+  @media (min-width: 40rem) { .id-grid { grid-template-columns: 14rem 1fr; align-items: start; } }
+  .id-grid img { width: 100%; border-radius: .5rem; border: 1px solid var(--line); }
+  .kv { display: grid; grid-template-columns: 8.5rem 1fr; gap: .35rem .75rem; margin: .5rem 0; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; font-weight: 600; word-break: break-all; }
+  ul.list { margin: .35rem 0; padding-left: 1.1rem; } ul.list li { margin: .2rem 0; }
+  details > summary { cursor: pointer; }
+  details.dev { border-style: dashed; }
+  details.dev > summary { font-weight: 600; color: var(--muted); }
+  pre { overflow: auto; background: var(--bg); padding: .75rem; border-radius: .5rem; font-size: .8rem; max-height: 18rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  code { font: .85em ui-monospace, Consolas, monospace; background: var(--bg); padding: .05rem .3rem; border-radius: .25rem; }
+  footer { padding-bottom: 2rem; color: var(--muted); font-size: .82rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AtollCare &middot; Pre-arrival check</h1>
+  <div class="sub">Add a video, what happened, and the patient's ID. Each box works on its own, and they work better together.</div>
+</header>
+
+<main>
+  <!-- 1. VIDEO -->
+  <section class="card" aria-live="polite">
+    <h2>1. Patient video</h2>
+    <div class="sub">Face and upper body, 30 to 60 seconds, steady and well lit.</div>
+    <input id="video-file" type="file" accept="video/*" aria-label="Patient video file">
+    <div class="or">or record with the camera</div>
+    <div class="row">
+      <button id="vrec" type="button">Record video</button>
+      <span id="vtimer" class="sub" aria-live="off"></span>
+    </div>
+    <details style="margin:.5rem 0">
+      <summary class="sub">Camera settings</summary>
+      <div class="row" style="margin-top:.5rem">
+        <label for="cam" class="sub">Camera</label>
+        <select id="cam" style="flex:1;min-width:0;padding:.4rem;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:.4rem">
+          <option value="">System default camera</option>
+        </select>
+      </div>
+      <div class="sub" style="margin-top:.35rem">Video only, no sound. The voice box handles what is said.</div>
+    </details>
+    <div id="vstatus" class="meta"></div>
+    <video id="vpreview" playsinline muted style="display:none;width:100%;max-height:22rem;background:#000;border-radius:.5rem;margin-top:.5rem"></video>
+    <label style="display:block;margin:.5rem 0 .35rem">
+      <input id="use-presage" type="checkbox" checked> Also measure heart rate and breathing rate
+      <span id="presage-note" class="sub"></span>
+    </label>
+    <div id="account-note" class="note"></div>
+    <button id="video-go" type="button" disabled>Analyse video</button>
+    <div id="video-out"></div>
+  </section>
+
+  <!-- 2. VOICE -->
+  <section class="card" aria-live="polite">
+    <h2>2. What happened (voice)</h2>
+    <div class="sub">Describe what you see, or add a recording. It decides which signs to look for in the video.</div>
+    <div class="row" style="margin-top:.5rem">
+      <button id="rec" type="button">Record</button>
+      <div class="level" aria-hidden="true"><i id="level"></i></div>
+    </div>
+    <details style="margin:.5rem 0">
+      <summary class="sub">Microphone settings</summary>
+      <div class="row" style="margin-top:.5rem">
+        <label for="mic" class="sub">Microphone</label>
+        <select id="mic" style="flex:1;min-width:0;padding:.4rem;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:.4rem">
+          <option value="">System default microphone</option>
+        </select>
+      </div>
+      <label class="sub" style="display:block;margin:.5rem 0">
+        <input id="autostop" type="checkbox" checked> Stop automatically after <span id="silence-s">2</span> seconds of silence
+      </label>
+    </details>
+    <div id="voice-status" class="meta">Press Record and speak.</div>
+    <div id="transcript" class="transcript"><span class="sub">What you say will appear here.</span></div>
+    <div id="voice-audio" style="margin-top:.5rem"></div>
+
+    <div class="or">or add a recording you already have</div>
+    <div class="row">
+      <input id="afile" type="file" accept="audio/*,video/*" style="flex:1;min-width:0" aria-label="Audio recording">
+      <button id="atranscribe" type="button" disabled>Transcribe</button>
+    </div>
+    <p id="voice-summary" class="meta"></p>
+  </section>
+
+  <!-- 3. ID -->
+  <section class="card" aria-live="polite">
+    <h2>3. Patient ID</h2>
+    <div class="sub">A photo of a driving licence or national ID. Anything unclear is left blank, never guessed.</div>
+    <div class="row" style="margin-top:.35rem">
+      <input id="idfile" type="file" accept="image/*" style="flex:1;min-width:0" aria-label="ID photo">
+      <button id="idgo" type="button" disabled>Read ID</button>
+    </div>
+    <div class="id-grid">
+      <img id="idpreview" alt="Selected ID" style="display:none">
+      <div id="idout"></div>
+    </div>
+  </section>
+
+  <!-- 4. HAND-OFF -->
+  <section class="card" aria-live="polite">
+    <h2>4. Send to the crew screen</h2>
+    <div class="sub">Gathers what boxes 1 to 3 found and hands it to the crew app. Every box is optional, and you see exactly what will be sent first.</div>
+    <div id="hs-stale" class="err" style="display:none;margin-top:.5rem"></div>
+    <div id="hs-ready" class="note"></div>
+    <button id="hs-load" type="button">Use the latest saved results (for example from the phone)</button>
+    <div id="hs-loaded" class="sub"></div>
+    <button id="hs-preview" type="button">Preview what will be sent</button>
+    <div id="hs-out"></div>
+  </section>
+
+  <!-- DEVELOPER DETAILS (collapsed by default) -->
+  <details class="card dev" id="dev">
+    <summary>Developer details</summary>
+    <div style="margin-top:.75rem">
+      <span id="sidecar" class="badge">presage: checking&hellip;</span>
+      <span id="voice-mode" class="badge">voice: checking&hellip;</span>
+      <span id="engine-badge" class="badge">crew engine: checking&hellip;</span>
+    </div>
+
+    <h3>Latest raw results</h3>
+    <details><summary class="sub">Video</summary><pre id="raw-video">Nothing yet.</pre></details>
+    <details><summary class="sub">Voice</summary><pre id="raw-voice">Nothing yet.</pre></details>
+    <details><summary class="sub">ID</summary><pre id="raw-id">Nothing yet.</pre></details>
+    <details><summary class="sub">Hand-off</summary><pre id="raw-handshake">Nothing yet.</pre></details>
+
+    <h3>Logged video runs <span class="sub">(logs/results.json)</span></h3>
+    <div style="overflow-x:auto"><table id="runs-table"><thead><tr>
+      <th>Time</th><th>Video</th><th>HR</th><th>RR</th><th>Quality</th><th>Camera flags</th><th>Replay</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h3>Logged sign checks <span class="sub">(logs/visual_cues.json)</span></h3>
+    <div style="overflow-x:auto"><table id="cues-table"><thead><tr>
+      <th>Time</th><th>Video</th><th>Account used</th><th>Seen</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h3>Logged transcripts <span class="sub">(logs/transcripts.json, audio in recordings/)</span></h3>
+    <div style="overflow-x:auto"><table id="transcripts-table"><thead><tr>
+      <th>Time</th><th>Source</th><th>Model</th><th>Seconds</th><th>Transcript</th><th>Replay</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h3>Logged ID scans <span class="sub">(logs/id_scans.json)</span></h3>
+    <div style="overflow-x:auto"><table id="id-table"><thead><tr>
+      <th>Time</th><th>File</th><th>Name</th><th>ID number</th><th>Age</th><th>Review</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h3>Logged hand-offs <span class="sub">(logs/handshakes.json)</span></h3>
+    <div style="overflow-x:auto"><table id="handshake-table"><thead><tr>
+      <th>Time</th><th>Code</th><th>Route</th><th>Steps ok</th><th>Complaint sent</th>
+    </tr></thead><tbody></tbody></table></div>
+  </details>
+</main>
+
+<footer>
+  Decision support only. Nothing here is a diagnosis, and a clinician makes every decision.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const QUALITY_THRESHOLD = 0.4;
+
+function el(tag, props = {}, ...kids) {
+  const e = Object.assign(document.createElement(tag), props);
+  for (const k of kids) e.append(k);
+  return e;
+}
+const h3 = (text) => el("h3", { textContent: text });
+const val = (v) => (v == null ? "—" : String(v));
+
+function setRaw(id, obj) {
+  const clean = JSON.parse(JSON.stringify(obj, (k, v) => (k === "data_url" ? "(image)" : v)));
+  $(id).textContent = JSON.stringify(clean, null, 2);
+}
+
+/* ------------------------------------------------------------------ status (developer panel) */
+async function refreshStatus() {
+  let sidecar = null, voice = null;
+  try {
+    const health = await (await fetch("/api/health")).json();
+    sidecar = health.sidecar; voice = health.transcription;
+    videoRecordMaxS = health.video_record.max_s;
+    if (health.video_record.error) setVideoStatus(health.video_record.error);
+  } catch {
+    $("sidecar").textContent = "server unreachable"; $("sidecar").className = "badge b-bad";
+    return;
+  }
+  $("sidecar").textContent = sidecar ? `presage: ${sidecar}` : "presage: not running";
+  $("sidecar").className = "badge " + (sidecar === "sdk" ? "b-ok" : sidecar ? "b-warn" : "b-bad");
+
+  const box = $("use-presage");
+  box.disabled = !sidecar;
+  if (!sidecar) box.checked = false;
+  $("presage-note").textContent = !sidecar ? " (the Presage service is not running)"
+    : sidecar === "mock" ? " (Presage is in mock mode: fake numbers)" : "";
+  showVoiceInfo(voice);
+}
+
+const ISSUE_HINTS = {
+  kNoFaceFound: "No face found in the frame.", kMultipleFacesFound: "More than one face in the frame.",
+  kFaceNotCentered: "Face is not centred.", kFaceSizeOutOfRange: "Face is too small or too large in the frame.",
+  kTooDark: "Lighting is too dark.", kTooBright: "Lighting is too bright.",
+  kChestNotVisible: "Upper chest is not fully in frame (breathing rate needs it).",
+  kCameraTuning: "Camera was still adjusting exposure.", kFrameRateTooLow: "Frame rate is too low.",
+  kExcessiveMotion: "Too much movement.", kFaceTooClose: "Face is too close to the camera.",
+  kFaceTooFar: "Face is too far from the camera.", kFaceTooHigh: "Face is too high in the frame.",
+  kFaceTooLow: "Face is too low in the frame.", kFaceNotForward: "Face is not turned toward the camera.",
+};
+
+/* ------------------------------------------------------------------ account (voice -> video) */
+const account = { text: "", use: true };
+
+function setAccount(text) {
+  account.text = (text || "").trim();
+  account.use = true;
+  renderAccountNote();
+  renderReadiness();
+}
+
+function renderAccountNote() {
+  const n = $("account-note");
+  n.replaceChildren();
+  if (!account.text) {
+    n.append("No voice account yet, so every standard sign will be checked in the video.");
+    return;
+  }
+  const short = account.text.length > 160 ? account.text.slice(0, 160) + "…" : account.text;
+  if (account.use) {
+    n.append("The voice account will decide which signs to look for: ", el("span", { className: "quote", textContent: `“${short}”` }), " ",
+      el("button", { className: "link", type: "button", textContent: "Ignore it", onclick: () => { account.use = false; renderAccountNote(); renderReadiness(); } }));
+  } else {
+    n.append("The voice account is being ignored, so every standard sign will be checked. ",
+      el("button", { className: "link", type: "button", textContent: "Use it again", onclick: () => { account.use = true; renderAccountNote(); renderReadiness(); } }));
+  }
+}
+
+/* ------------------------------------------------------------------ 1. VIDEO */
+// The video to analyse is either a chosen file or a camera recording. Whichever came last wins.
+const videoSource = { file: null };
+let videoRecordMaxS = null;       // from VIDEO_RECORD_MAX_S in inputs/.env
+const cam = { recorder: null, stream: null, chunks: [], timer: null, startedAt: 0, recording: false };
+
+function setVideoStatus(text) { $("vstatus").textContent = text; }
+
+function showVideoPreview(file) {
+  const v = $("vpreview");
+  if (v.src) URL.revokeObjectURL(v.src);
+  v.srcObject = null;
+  v.src = URL.createObjectURL(file);
+  v.muted = false;
+  v.controls = true;
+  v.style.display = "block";
+}
+
+function setVideoSource(file) {
+  videoSource.file = file;
+  $("video-go").disabled = !file || cam.recording;
+}
+
+$("video-file").addEventListener("change", (ev) => {
+  const f = ev.target.files[0];
+  if (!f) { setVideoSource(null); return; }
+  setVideoSource(f);
+  showVideoPreview(f);
+  setVideoStatus(`Using the file ${f.name}.`);
+});
+
+function pickRecorderType() {
+  const options = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"];
+  return options.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
+}
+
+function formatSeconds(s) {
+  const m = Math.floor(s / 60), r = Math.floor(s % 60);
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+}
+
+async function startVideoRecording() {
+  if (!window.MediaRecorder) { setVideoStatus("This browser cannot record video."); return; }
+  if (videoRecordMaxS == null) { setVideoStatus("The recording length is not set. Check VIDEO_RECORD_MAX_S in inputs/.env."); return; }
+  setVideoStatus("Asking for camera access…");
+  try {
+    const deviceId = $("cam").value;
+    cam.stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(deviceId ? { deviceId: { exact: deviceId } } : {}) } });
+  } catch (err) {
+    setVideoStatus("Camera unavailable: " + err.message + " (allow access in the browser's address bar, or pick another camera).");
+    return;
+  }
+  await refreshCameras();
+
+  $("video-file").value = "";
+  setVideoSource(null);
+  const preview = $("vpreview");
+  if (preview.src) { URL.revokeObjectURL(preview.src); preview.removeAttribute("src"); }
+  preview.srcObject = cam.stream;
+  preview.muted = true;
+  preview.controls = false;
+  preview.style.display = "block";
+  preview.play().catch(() => {});
+
+  const type = pickRecorderType();
+  cam.chunks = [];
+  cam.recorder = new MediaRecorder(cam.stream, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 2_500_000 });
+  cam.recorder.ondataavailable = (e) => { if (e.data && e.data.size) cam.chunks.push(e.data); };
+  cam.recorder.onstop = finishVideoRecording;
+  cam.recorder.start(1000);
+  cam.recording = true;
+  cam.startedAt = Date.now();
+  const b = $("vrec");
+  b.textContent = "Stop";
+  b.classList.add("live");
+  $("video-go").disabled = true;
+  setVideoStatus("Recording. Keep the face and upper chest in view, and stay still.");
+  cam.timer = setInterval(() => {
+    const s = (Date.now() - cam.startedAt) / 1000;
+    $("vtimer").textContent = `${formatSeconds(s)} / ${formatSeconds(videoRecordMaxS)}`;
+    if (s >= videoRecordMaxS) stopVideoRecording();
+  }, 250);
+}
+
+function stopVideoRecording() {
+  if (!cam.recording) return;
+  cam.recording = false;
+  clearInterval(cam.timer);
+  if (cam.recorder.state !== "inactive") cam.recorder.stop();   // triggers finishVideoRecording
+}
+
+function finishVideoRecording() {
+  cam.stream.getTracks().forEach((t) => t.stop());
+  const type = cam.recorder.mimeType || "video/webm";
+  const ext = type.includes("mp4") ? "mp4" : "webm";
+  const seconds = (Date.now() - cam.startedAt) / 1000;
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const file = new File(cam.chunks, `camera-${stamp}.${ext}`, { type });
+  const b = $("vrec");
+  b.textContent = "Record video";
+  b.classList.remove("live");
+  $("vtimer").textContent = "";
+  if (!file.size) { setVideoStatus("Nothing was recorded. Try again."); setVideoSource(null); return; }
+  setVideoSource(file);
+  showVideoPreview(file);
+  setVideoStatus(`Recorded ${formatSeconds(seconds)}. Press Analyse video, or record again.` +
+    (seconds < 30 ? " Short clips give unreliable heart and breathing rates." : ""));
+}
+
+$("vrec").addEventListener("click", () => (cam.recording ? stopVideoRecording() : startVideoRecording()));
+
+// Camera names are only visible to the page after the browser has granted camera access.
+async function refreshCameras() {
+  try {
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+    const select = $("cam");
+    const chosen = select.value;
+    select.replaceChildren(el("option", { value: "", textContent: "System default camera" }));
+    for (const d of devices) select.append(el("option", { value: d.deviceId, textContent: d.label || "Camera" }));
+    select.value = [...select.options].some((o) => o.value === chosen) ? chosen : "";
+  } catch { /* the default camera still works */ }
+}
+
+const SIGN_TEXT = { present: "Seen", absent: "Not seen", cannot_assess: "Cannot assess" };
+const SIGN_CLASS = { present: "b-warn", absent: "b-ok", cannot_assess: "b-info" };
+const SIGN_ORDER = { present: 0, cannot_assess: 1, absent: 2 };
+
+function vitalBox(label, value, unit, quality) {
+  const low = quality != null && quality < QUALITY_THRESHOLD;
+  return el("div", { className: "vital" + (value == null || low ? " dim" : "") },
+    el("div", { className: "u", textContent: label }),
+    el("div", { className: "n", textContent: val(value) }),
+    el("div", { className: "u", textContent: unit }),
+    el("div", { className: "u", textContent: quality == null ? "" :
+      (low ? "low confidence: treat as indicative only" : "confidence " + Math.round(quality * 100) + "%") }));
+}
+
+function renderVideo(data) {
+  const out = $("video-out");
+  out.replaceChildren();
+
+  out.append(h3("Heart rate and breathing rate"));
+  if (data.vitals) {
+    const v = data.vitals;
+    out.append(el("div", { className: "vitals" },
+      vitalBox("Heart rate", v.heart_rate_bpm, "beats / min", v.heart_rate_quality),
+      vitalBox("Breathing rate", v.respiration_rate_bpm, "breaths / min", v.respiration_quality)));
+    if (v.issues.length) {
+      const ul = el("ul", { className: "list" });
+      for (const code of v.issues) ul.append(el("li", { textContent: ISSUE_HINTS[code] || code }));
+      out.append(el("div", { className: "meta", textContent: "What the camera noticed:" }), ul);
+    }
+  } else {
+    out.append(el("p", { className: "sub", textContent: data.vitals_note || "Not measured." }));
+  }
+
+  const r = data.signs.report;
+  out.append(h3("Signs in the video"));
+  const oneRequest = (r.diagnostics || {}).mode === "one_pass";
+  out.append(el("p", { className: "sub", style: "margin:.25rem 0",
+    textContent: !data.used_account ? "No voice account was given, so every standard sign was checked."
+      : oneRequest ? "Every sign was checked. The voice account was only used to note what was mentioned, and the video was judged separately."
+                   : "Chosen because of the voice account. The video check never saw the account." }));
+
+  const findings = [...r.findings].sort((a, b) => SIGN_ORDER[a.finding] - SIGN_ORDER[b.finding]);
+  for (const f of findings) {
+    const card = el("div", { className: "cue" + (f.finding === "present" ? "" : " quiet") },
+      el("div", { className: "head" }, f.label,
+        el("span", { className: "badge " + SIGN_CLASS[f.finding], textContent: SIGN_TEXT[f.finding] }),
+        el("span", { className: "sub", style: "font-weight:400", textContent: `${Math.round(f.confidence * 100)}%` })));
+    if (f.reason) card.append(el("div", { className: "sub", textContent: f.reason }));
+    if (f.evidence_frames.length) {
+      const shots = el("div", { className: "shots" });
+      for (const i of f.evidence_frames) {
+        const ev = data.signs.evidence[String(i)];
+        if (ev) shots.append(el("figure", {}, el("img", { src: ev.data_url, alt: `Frame ${i}` }), `Frame ${i} · ${ev.t_s}s`));
+      }
+      card.append(shots);
+    }
+    out.append(card);
+  }
+
+  if (r.reported_but_not_seen.length) {
+    const ul = el("ul", { className: "list" });
+    for (const label of r.reported_but_not_seen) ul.append(el("li", { textContent: label }));
+    out.append(h3("Mentioned in the voice account but not seen in the video"),
+      el("div", { className: "badge b-warn", style: "display:block;border-radius:.5rem;padding:.5rem .75rem" }, ul));
+  }
+
+  const notes = [...r.plan.issues, ...r.issues];
+  if (notes.length) {
+    const ul = el("ul", { className: "list" });
+    for (const n of notes) ul.append(el("li", { textContent: n }));
+    out.append(el("details", {}, el("summary", { className: "sub", textContent: "Notes" }), ul));
+  }
+  out.append(el("p", { className: "meta", textContent:
+    "Still images cannot show speed or rhythm, and a sign that is not seen may simply not have been in view." }));
+}
+
+$("video-go").addEventListener("click", async () => {
+  const f = videoSource.file;
+  if (!f) return;
+  const btn = $("video-go"), out = $("video-out");
+  btn.disabled = true;
+  const start = Date.now();
+  const tick = () => out.replaceChildren(el("p", { className: "empty",
+    textContent: `Analysing… ${Math.round((Date.now() - start) / 1000)}s. A one-minute video takes one to two minutes.` }));
+  tick();
+  const timer = setInterval(tick, 1000);
+  try {
+    const body = new FormData();
+    body.append("video", f, f.name);
+    body.append("transcript", account.use ? account.text : "");
+    body.append("presage", $("use-presage").checked ? "true" : "false");
+    const resp = await fetch("/api/analyse-video", { method: "POST", body });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    renderVideo(data);
+    setRaw("raw-video", data);
+    parts.vitals = data.vitals ? { ...data.vitals, diagnostics: {} } : null;   // the trace is not needed for the hand-off
+    parts.signs = data.signs.report;
+    renderReadiness();
+  } catch (err) {
+    out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    loadRuns(); loadCueSessions();
+  }
+});
+
+/* ------------------------------------------------------------------ 2. VOICE */
+let silenceStopMs = 2000;       // from STT_SILENCE_STOP_S in inputs/.env
+const SPEECH_RMS = 0.02;        // chunk loudness (0-1) that counts as speech
+
+const voice = { ws: null, ctx: null, stream: null, node: null, pending: [], on: false,
+                heardSpeech: false, silenceMs: 0, finals: [], interim: "" };
+
+function setVoiceStatus(text) { $("voice-status").textContent = text; }
+
+function renderTranscript() {
+  const box = $("transcript");
+  box.replaceChildren();
+  if (!voice.finals.length && !voice.interim) {
+    box.append(el("span", { className: "sub", textContent: "What you say will appear here." }));
+    return;
+  }
+  if (voice.finals.length) box.append(voice.finals.join("\n"));
+  if (voice.interim) box.append(el("span", { className: "interim", textContent: (voice.finals.length ? "\n" : "") + voice.interim }));
+}
+
+function resetRecButton() {
+  const b = $("rec");
+  b.textContent = "Record";
+  b.classList.remove("live");
+  b.disabled = false;
+  $("level").style.width = "0";
+}
+
+function handleChunk(buffer) {
+  if (!voice.on) return;
+  const samples = new Int16Array(buffer);
+  let sum = 0;
+  for (let i = 0; i < samples.length; i++) sum += (samples[i] / 32768) ** 2;
+  const rms = Math.sqrt(sum / samples.length);
+  $("level").style.width = Math.min(100, Math.round(rms * 600)) + "%";
+
+  if (voice.ws && voice.ws.readyState === WebSocket.OPEN) voice.ws.send(buffer);
+  else voice.pending.push(buffer);
+
+  if (rms > SPEECH_RMS) { voice.heardSpeech = true; voice.silenceMs = 0; }
+  else if (voice.heardSpeech) {
+    voice.silenceMs += (samples.length / 16000) * 1000;
+    if ($("autostop").checked && voice.silenceMs >= silenceStopMs) stopRecording("Silence detected, finishing…");
+  }
+}
+
+async function startRecording() {
+  voice.finals = []; voice.interim = ""; voice.pending = [];
+  voice.heardSpeech = false; voice.silenceMs = 0;
+  renderTranscript();
+  $("voice-summary").textContent = "";
+  $("voice-audio").replaceChildren();
+  setVoiceStatus("Asking for microphone access…");
+  try {
+    const deviceId = $("mic").value;
+    voice.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true,
+               ...(deviceId ? { deviceId: { exact: deviceId } } : {}) } });
+  } catch (err) {
+    setVoiceStatus("Microphone unavailable: " + err.message + " (allow access in the browser's address bar, or pick another microphone).");
+    return;
+  }
+  await refreshMics();
+
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  voice.ws = new WebSocket(`${scheme}://${location.host}/ws/transcribe`);
+  voice.ws.binaryType = "arraybuffer";
+  voice.ws.onopen = () => { for (const b of voice.pending) voice.ws.send(b); voice.pending = []; };
+  voice.ws.onmessage = (ev) => onVoiceEvent(JSON.parse(ev.data));
+  voice.ws.onerror = () => setVoiceStatus("Could not reach the server for transcription.");
+  voice.ws.onclose = () => { if (voice.on) { stopRecording(); setVoiceStatus("Connection closed."); } };
+
+  voice.ctx = new AudioContext();
+  await voice.ctx.audioWorklet.addModule("/static/pcm-worklet.js");
+  const source = voice.ctx.createMediaStreamSource(voice.stream);
+  voice.node = new AudioWorkletNode(voice.ctx, "pcm-downsampler");
+  voice.node.port.onmessage = (ev) => handleChunk(ev.data);
+  source.connect(voice.node);
+
+  voice.on = true;
+  const b = $("rec");
+  b.textContent = "Stop";
+  b.classList.add("live");
+  setVoiceStatus("Listening… speak now.");
+}
+
+function stopRecording(message) {
+  if (!voice.on) return;
+  voice.on = false;
+  voice.stream.getTracks().forEach((t) => t.stop());
+  voice.node.disconnect();
+  voice.ctx.close();
+  if (voice.ws.readyState === WebSocket.OPEN) voice.ws.send("end");
+  else voice.ws.addEventListener("open", () => voice.ws.send("end"), { once: true });
+  $("rec").disabled = true;
+  $("level").style.width = "0";
+  setVoiceStatus(message || "Finishing transcription…");
+}
+
+function showAudio(file) {
+  $("voice-audio").replaceChildren(...(file
+    ? [el("span", { className: "sub", textContent: "Saved recording: " }), el("audio", { controls: true, src: file, style: "vertical-align:middle" })] : []));
+}
+
+function onVoiceEvent(ev) {
+  if (ev.type === "ready") {
+    showVoiceInfo(ev);
+  } else if (ev.type === "interim") {
+    voice.interim = ev.text; renderTranscript();
+  } else if (ev.type === "final") {
+    voice.finals.push(ev.text); voice.interim = ""; renderTranscript();
+  } else if (ev.type === "notice") {
+    $("voice-summary").textContent = ev.text;
+  } else if (ev.type === "done") {
+    voice.interim = "";
+    if (ev.segments && ev.segments.length) voice.finals = ev.segments;
+    renderTranscript();
+    showAudio(ev.audio_file);
+    setAccount(ev.transcript);
+    setRaw("raw-voice", ev);
+    $("voice-summary").textContent = ev.fallback_from ? `Backup model used (${ev.fallback_from} could not start).` : "";
+    setVoiceStatus(ev.transcript ? "Done. This account will guide the video check." : "Done, but no speech was recognised.");
+    voice.ws.close();
+    resetRecButton();
+    loadTranscripts();
+  } else if (ev.type === "error") {
+    setVoiceStatus("Transcription failed: " + ev.message);
+    if (voice.on) stopRecording();
+    resetRecButton();
+  }
+}
+
+$("rec").addEventListener("click", () => (voice.on ? stopRecording() : startRecording()));
+
+$("afile").addEventListener("change", (ev) => { $("atranscribe").disabled = !ev.target.files[0]; });
+
+$("atranscribe").addEventListener("click", async () => {
+  const f = $("afile").files[0];
+  if (!f) return;
+  const btn = $("atranscribe");
+  btn.disabled = true;
+  const start = Date.now();
+  const tick = () => setVoiceStatus(`Transcribing the recording… ${Math.round((Date.now() - start) / 1000)}s`);
+  tick();
+  const timer = setInterval(tick, 1000);
+  try {
+    const body = new FormData();
+    body.append("audio", f);
+    const resp = await fetch("/api/transcribe-file", { method: "POST", body });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    voice.finals = data.segments && data.segments.length ? data.segments : (data.transcript ? [data.transcript] : []);
+    voice.interim = "";
+    renderTranscript();
+    showAudio(data.audio_file);
+    setAccount(data.transcript);
+    setRaw("raw-voice", data);
+    $("voice-summary").textContent = "";
+    setVoiceStatus(data.transcript ? "Done. This account will guide the video check." : "Done, but no speech was recognised.");
+  } catch (err) {
+    setVoiceStatus("Transcription failed: " + err.message);
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    loadTranscripts();
+  }
+});
+
+function showVoiceInfo(info) {
+  const badge = $("voice-mode");
+  if (!info) return;
+  if (info.mode === "error") {
+    badge.textContent = "voice: setting missing";
+    badge.className = "badge b-bad";
+    setVoiceStatus(info.error);
+  } else {
+    badge.textContent = info.mode === "gemini"
+      ? `voice: ${info.model} (${info.method}, ${info.platform} key)` + (info.fallback_model ? ` · backup ${info.fallback_model}` : "")
+      : "voice: mock (no GEMINI_API_KEY)";
+    badge.className = "badge " + (info.mode === "gemini" ? "b-ok" : "b-warn");
+  }
+  if (info.silence_stop_s) {
+    silenceStopMs = info.silence_stop_s * 1000;
+    $("silence-s").textContent = String(info.silence_stop_s);
+  }
+}
+
+// Device names are only visible to the page after the browser has granted microphone access.
+async function refreshMics() {
+  try {
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+    const select = $("mic");
+    const chosen = select.value;
+    select.replaceChildren(el("option", { value: "", textContent: "System default microphone" }));
+    for (const d of devices) {
+      if (d.deviceId === "default" || d.deviceId === "communications") continue;
+      select.append(el("option", { value: d.deviceId, textContent: d.label || "Microphone" }));
+    }
+    select.value = [...select.options].some((o) => o.value === chosen) ? chosen : "";
+  } catch { /* the default microphone still works */ }
+}
+navigator.mediaDevices && navigator.mediaDevices.addEventListener &&
+  navigator.mediaDevices.addEventListener("devicechange", () => { refreshMics(); refreshCameras(); });
+
+/* ------------------------------------------------------------------ 3. ID */
+$("idfile").addEventListener("change", (ev) => {
+  const f = ev.target.files[0];
+  $("idgo").disabled = !f;
+  const img = $("idpreview");
+  if (!f) { img.style.display = "none"; return; }
+  img.src = URL.createObjectURL(f);
+  img.style.display = "block";
+});
+
+function renderId(data) {
+  const r = data.result;
+  const out = $("idout");
+  out.replaceChildren();
+  const dl = el("dl", { className: "kv" });
+  for (const [label, value] of [
+    ["Name", r.full_name], ["ID number", r.id_number], ["Date of birth", r.date_of_birth], ["Age", r.age],
+    ["Document", r.document_type],
+    ["Insurance", r.insurance_status + (r.insurance_status === "UNKNOWN" ? " (an ID card does not say)" : "")],
+  ]) dl.append(el("dt", { textContent: label }), el("dd", { textContent: val(value) }));
+  out.append(el("span", { className: "badge " + (r.needs_review ? "b-warn" : "b-ok"),
+    textContent: r.needs_review ? "Please check the card by eye" : "Clearly read" }), dl);
+  if (r.issues.length) {
+    const ul = el("ul", { className: "list" });
+    for (const issue of r.issues) ul.append(el("li", { textContent: issue }));
+    out.append(ul);
+  }
+}
+
+$("idgo").addEventListener("click", async () => {
+  const f = $("idfile").files[0];
+  if (!f) return;
+  const btn = $("idgo"), out = $("idout");
+  btn.disabled = true;
+  const start = Date.now();
+  const tick = () => out.replaceChildren(el("p", { className: "empty", textContent: `Reading… ${Math.round((Date.now() - start) / 1000)}s` }));
+  tick();
+  const timer = setInterval(tick, 1000);
+  try {
+    const body = new FormData();
+    body.append("image", f);
+    const resp = await fetch("/api/scan-id", { method: "POST", body });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    renderId(data);
+    setRaw("raw-id", data);
+    parts.demographics = { ...data.result, diagnostics: {} };
+    renderReadiness();
+  } catch (err) {
+    out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+  } finally {
+    clearInterval(timer);
+    btn.disabled = false;
+    loadIdScans();
+  }
+});
+
+/* ------------------------------------------------------------------ developer panel: logs */
+/* ------------------------------------------------------------------ 4. HAND-OFF to the crew app */
+const parts = { demographics: null, vitals: null, signs: null };   // filled in by boxes 1 and 3
+const handshake = { packet: null, sent: false };
+
+const STALE_MESSAGE = "This page is newer than the server behind it: the server was started before the hand-off was added, " +
+  "so it does not know the hand-off routes. Stop it (close its window) and start it again with start.bat or " +
+  "python run.py --serve. What you have already done in this page stays here.";
+
+function showStale(stale) {
+  const box = $("hs-stale");
+  box.textContent = stale ? STALE_MESSAGE : "";
+  box.style.display = stale ? "block" : "none";
+}
+
+// What each box has produced so far, so it is clear what a preview would contain.
+function renderReadiness() {
+  const v = parts.vitals, s = parts.signs, d = parts.demographics;
+  const readings = v && v.source === "presage" ? [v.heart_rate_bpm != null && "heart rate", v.respiration_rate_bpm != null && "breathing rate"].filter(Boolean) : [];
+  const lines = [
+    `Video: ${s ? `${s.findings.length} signs checked` : "not analysed yet"}${v ? (readings.length ? `, ${readings.join(" and ")} measured` : ", no Presage readings") : ""}`,
+    `Voice: ${account.text ? "account ready" + (account.use ? "" : " (set to be ignored)") : "no account yet"}`,
+    `ID: ${d && (d.full_name || d.age != null) ? "read" : "not read yet"}`,
+  ];
+  $("hs-ready").replaceChildren(el("b", { textContent: "Collected so far: " }), lines.join(". ") + ".");
+}
+
+async function refreshEngineBadge() {
+  const badge = $("engine-badge");
+  try {
+    const resp = await fetch("/api/handshake/options");
+    if (resp.status === 404) {
+      badge.textContent = "server out of date: restart it"; badge.className = "badge b-bad";
+      showStale(true);
+      return;
+    }
+    showStale(false);
+    const o = await resp.json();
+    badge.textContent = o.error ? "crew engine: not reachable" : `crew engine: ${o.region.name}`;
+    badge.className = "badge " + (o.error ? "b-bad" : "b-ok");
+  } catch { badge.textContent = "crew engine: unknown"; badge.className = "badge b-bad"; }
+}
+
+function picker(id, label, choices, chosen) {
+  const select = el("select", { id, style: "width:100%;padding:.4rem;font:inherit;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:.4rem" },
+    ...choices.map((c) => el("option", { value: c.value, textContent: c.text, selected: c.value === chosen })));
+  return el("label", { style: "display:block" }, el("span", { className: "sub", textContent: label }), select);
+}
+
+function pointList(items, empty) {
+  if (!items.length) return el("p", { className: "sub", style: "margin:.25rem 0", textContent: empty });
+  const ul = el("ul", { className: "list" });
+  for (const t of items) ul.append(el("li", { textContent: t }));
+  return ul;
+}
+
+function renderPreview(preview, options) {
+  const p = preview.packet;
+  const out = $("hs-out");
+  out.replaceChildren();
+
+  out.append(h3("What will be sent"));
+  out.append(el("dl", { className: "kv" },
+    el("dt", { textContent: "Patient" }), el("dd", { textContent: [p.patient_label, p.age != null ? `age ${p.age}` : null].filter(Boolean).join(", ") || "—" }),
+    el("dt", { textContent: "Complaint" }), el("dd", { style: "font-weight:400;word-break:normal", textContent: p.complaint })));
+  out.append(el("div", { className: "meta", textContent: "Readings" }), pointList(p.vitals.map((v) =>
+    `${v.heart_rate != null ? `Heart rate ${v.heart_rate}` : `Breathing rate ${v.resp_rate}`} (confidence ${Math.round(v.confidence * 100)}%)` +
+    (v.hint ? `. ${v.hint}` : "")), "None"));
+  for (const n of p.notes) {
+    out.append(el("details", {}, el("summary", { className: "sub", textContent: `Note: ${n.title}` }), el("p", { className: "note", textContent: n.text })));
+  }
+  out.append(h3("Held back on purpose"), pointList(p.withheld, "Nothing"));
+  out.append(h3("Not available"), pointList(p.missing, "Nothing"));
+
+  handshake.packet = p;
+  handshake.sent = false;
+
+  out.append(h3("Route in the crew app"));
+  if (options.error) {
+    out.append(el("div", { className: "err", textContent: options.error }));
+    return;
+  }
+  const firstOf = (kind) => (options.facilities.find((f) => f.kind === kind) || options.facilities[0] || {}).id;
+  const facilities = options.facilities.map((f) => ({ value: f.id, text: `${f.name} (${f.kind})` }));
+  out.append(el("div", { style: "display:grid;gap:.5rem;grid-template-columns:1fr;margin:.25rem 0" },
+    picker("hs-from", "From", facilities, firstOf("clinic")),
+    picker("hs-to", "To", facilities, firstOf("hospital")),
+    picker("hs-mode", "Transport", options.modes.map((m) => ({ value: m, text: m })), options.modes[0])));
+  out.append(el("div", { className: "note", textContent:
+    "Sending starts this transfer's journey clock in the crew app. Do it when the crew actually leaves. The crew then review it on their screen and send the handoff themselves." }));
+  out.append(el("button", { id: "hs-send", type: "button", textContent: "Start transfer and send", onclick: sendHandshake }));
+  out.append(el("div", { id: "hs-result" }));
+}
+
+async function sendHandshake() {
+  const btn = $("hs-send"), box = $("hs-result");
+  if (!handshake.packet || handshake.sent) return;
+  btn.disabled = true;
+  box.replaceChildren(el("p", { className: "empty", textContent: "Sending…" }));
+  try {
+    const resp = await fetch("/api/handshake/send", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ packet: handshake.packet, origin_id: $("hs-from").value, destination_id: $("hs-to").value, mode: $("hs-mode").value }) });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    setRaw("raw-handshake", data);
+    box.replaceChildren();
+    if (!data.ok) {
+      box.append(el("div", { className: "err", textContent: "Not sent: " + data.error }));
+      btn.disabled = false;
+      return;
+    }
+    handshake.sent = true;
+    const failed = data.steps.filter((s) => !s.ok);
+    box.append(el("span", { className: "badge " + (failed.length ? "b-warn" : "b-ok"),
+      textContent: failed.length ? "Sent with problems" : "Sent" }), " ",
+      el("b", { textContent: `Transfer ${data.code}` }), " ",
+      el("a", { href: data.link, target: "_blank", rel: "noopener", textContent: "Open on the crew screen" }));
+    box.append(pointList(data.steps.map((s) => `${s.ok ? "✓" : "✗"} ${s.step}${s.detail ? ": " + s.detail : ""}`), ""));
+    btn.textContent = "Sent";
+  } catch (err) {
+    box.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+    btn.disabled = false;
+  } finally {
+    loadHandshakes();
+  }
+}
+
+// Fills boxes 1 to 3 from what the server saved last, so results made on the phone can be previewed and sent from here.
+$("hs-load").addEventListener("click", async () => {
+  const note = $("hs-loaded");
+  try {
+    const resp = await fetch("/api/latest-capture");
+    if (!resp.ok) throw new Error(`Server said ${resp.status}`);
+    const c = await resp.json();
+    const when = (iso) => new Date(iso).toLocaleString();
+    const loaded = [];
+    if (c.video) {
+      parts.signs = c.video.signs;
+      parts.vitals = c.video.vitals;
+      setAccount(c.video.account);
+      loaded.push(`video ${c.video.name} (${when(c.video.logged_at)})`);
+    }
+    if (c.id) {
+      parts.demographics = c.id.demographics;
+      loaded.push(`ID ${c.id.filename} (${when(c.id.logged_at)})`);
+    }
+    note.textContent = loaded.length ? "Loaded: " + loaded.join("; ") + ". Check these are the right ones, then preview." : "Nothing saved yet.";
+    renderReadiness();
+  } catch (err) { note.textContent = "Could not load: " + err.message; }
+});
+
+$("hs-preview").addEventListener("click", async () => {
+  const btn = $("hs-preview"), out = $("hs-out");
+  btn.disabled = true;
+  out.replaceChildren(el("p", { className: "empty", textContent: "Preparing the preview…" }));
+  try {
+    const body = { demographics: parts.demographics, vitals: parts.vitals, signs: parts.signs,
+                   account: account.use ? account.text : "" };
+    const [previewResp, optionsResp] = await Promise.all([
+      fetch("/api/handshake/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+      fetch("/api/handshake/options")]);
+    if (previewResp.status === 404) { showStale(true); out.replaceChildren(); return; }
+    const preview = await previewResp.json();
+    if (!previewResp.ok) throw new Error(preview.detail || previewResp.statusText);
+    setRaw("raw-handshake", preview);
+    renderPreview(preview, await optionsResp.json());
+  } catch (err) {
+    out.replaceChildren(el("div", { className: "err", textContent: "Failed: " + err.message }));
+  } finally {
+    btn.disabled = false;
+    refreshEngineBadge();
+  }
+});
+
+async function loadHandshakes() {
+  try {
+    const rows = await (await fetch("/api/handshakes")).json();
+    fillTable("handshake-table", rows.map((row) => [
+      when(row.logged_at), val(row.result.code), `${row.route.origin_id} → ${row.route.destination_id} (${row.route.mode})`,
+      `${row.result.steps.filter((s) => s.ok).length}/${row.result.steps.length}`, row.packet.complaint]));
+  } catch { /* optional */ }
+}
+
+function fillTable(tableId, rows) {
+  const body = document.querySelector(`#${tableId} tbody`);
+  body.replaceChildren();
+  if (!rows.length) { body.append(el("tr", {}, el("td", { colSpan: 9, className: "sub", textContent: "Nothing logged yet." }))); return; }
+  for (const cells of rows) body.append(el("tr", {}, ...cells.map((c) => el("td", {}, c))));
+}
+const link = (href, text) => (href ? el("a", { href, target: "_blank", textContent: text }) : "—");
+const when = (iso) => new Date(iso).toLocaleString();
+
+async function loadRuns() {
+  try {
+    const rows = await (await fetch("/api/history")).json();
+    fillTable("runs-table", rows.map((row) => { const r = row.result; return [
+      when(row.logged_at), row.video, val(r.heart_rate_bpm), val(r.respiration_rate_bpm),
+      r.signal_quality_score.toFixed(2), r.issues.join(", ") || "—", link(row.video_file, "play video")]; }));
+  } catch { /* optional */ }
+}
+
+async function loadCueSessions() {
+  try {
+    const rows = await (await fetch("/api/visual-cue-sessions")).json();
+    fillTable("cues-table", rows.map((row) => [
+      when(row.logged_at), row.video, row.transcript ? "yes" : "no",
+      row.report.findings.filter((f) => f.finding === "present").map((f) => f.label).join(", ") || "none"]));
+  } catch { /* optional */ }
+}
+
+async function loadTranscripts() {
+  try {
+    const rows = await (await fetch("/api/transcripts")).json();
+    fillTable("transcripts-table", rows.map((r) => [
+      when(r.logged_at), (r.source || "microphone") + (r.filename ? ` (${r.filename})` : ""),
+      r.model || (r.mode === "mock" ? "mock" : "—"), val(r.duration_s),
+      r.error ? "FAILED: " + r.error : (r.transcript || "—"),
+      r.audio_file ? el("audio", { controls: true, preload: "none", src: r.audio_file, style: "height:2rem" }) : "—"]));
+  } catch { /* optional */ }
+}
+
+async function loadIdScans() {
+  try {
+    const rows = await (await fetch("/api/id-scans")).json();
+    fillTable("id-table", rows.map((row) => { const r = row.result; return [
+      when(row.logged_at), row.filename, val(r.full_name), val(r.id_number), val(r.age), r.needs_review ? "yes" : "no"]; }));
+  } catch { /* optional */ }
+}
+
+/* ------------------------------------------------------------------ start up */
+renderAccountNote();
+refreshStatus();
+loadRuns(); loadCueSessions(); loadTranscripts(); loadIdScans(); loadHandshakes();
+renderReadiness();
+refreshEngineBadge();
+</script>
+</body>
+</html>

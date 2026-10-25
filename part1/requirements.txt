@@ -1,0 +1,27 @@
+# AtollCare Part 1 - Python packages (built and tested on Python 3.13).
+# Install with:  pip install -r requirements.txt
+# The Presage SDK is Node.js; install it separately with `npm install` inside presage-sidecar/.
+
+# Demo web page and API
+fastapi==0.162.0
+uvicorn==0.54.0
+segno==1.6.6             # QR code for the phone link (run.py --tunnel)
+websockets==17.3          # microphone streaming to the page's /ws/transcribe
+python-multipart==0.0.32  # file uploads
+
+# Shared code
+pydantic==2.14.1
+httpx==0.28.1             # Python -> Presage sidecar
+python-dotenv==1.2.4      # reads inputs/.env
+
+# Gemini (speech-to-text, chat)
+google-genai==2.33.0
+
+# Video/audio conversion (ships its own ffmpeg, no separate install needed)
+imageio-ffmpeg==0.6.0
+
+# Optional: put Node.js inside the virtual environment instead of installing it system-wide
+nodeenv==1.11.0
+
+# Tests
+pytest==9.1.1

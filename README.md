@@ -194,3 +194,12 @@ how they're wired in · [`docs/DEPLOY_VULTR.md`](docs/DEPLOY_VULTR.md) deploy ru
 verified · [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) what isn't verified · [`docs/PITCH.md`](docs/PITCH.md) demo
 script · [`docs/DEV_POST.md`](docs/DEV_POST.md) write-up draft · [`docs/CONCEPT.md`](docs/CONCEPT.md) and
 [`docs/PRD.md`](docs/PRD.md) the original v1 concept and PRD (historical).
+
+## Percy's standalone Part 1 app
+
+[`part1/`](part1/) is Percy's original pre-arrival prototype exactly as on his `user-branch`: a desktop page for
+video, voice and ID, phone capture over a tunnel with a secret key, and a hand-off that creates the transfer in this
+engine over its API ([`part1/docs/PART1_HANDOVER.md`](part1/docs/PART1_HANDOVER.md)). The product above uses his
+services from `engine/app/intake` instead; the app is kept whole so it still runs on its own. From `part1/`: copy
+`env.example` to `inputs/.env`, `pip install -r requirements.txt`, then `python run.py --serve` or `python -m pytest`
+(195 tests).
