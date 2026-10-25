@@ -4,7 +4,7 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import type { TrendResponse } from "@/lib/api";
-import { fmtMin, fmtTime } from "@/lib/format";
+import { fmtTime } from "@/lib/format";
 
 const SERIES = [
   { key: "HR", color: "#c8322a", axis: "v", label: "Heart rate" },
@@ -13,7 +13,7 @@ const SERIES = [
   { key: "NEWS2", color: "#a8620a", axis: "n", label: "NEWS2" },
 ];
 
-type Row = { t: string; HR?: number | null; RR?: number | null; "SpO₂"?: number | null; NEWS2?: number | null; Projection?: number | null };
+type Row = { t: string; HR?: number | null; RR?: number | null; "SpO₂"?: number | null; NEWS2?: number | null };
 
 export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?: string; className?: string }) {
   const data: Row[] = (trend?.buckets ?? []).map((b) => ({
@@ -23,11 +23,8 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
     "SpO₂": b.spo2 ? Math.round(b.spo2) : null,
     NEWS2: b.news2,
   }));
+  // a straight line through a few noisy points says which way, not where or when: the direction only, no projection
   const fc = trend?.forecast;
-  if (fc && data.length && fc.projected_news2_at_arrival != null && fc.horizon_min) {
-    data[data.length - 1] = { ...data[data.length - 1], Projection: data[data.length - 1].NEWS2 };
-    data.push({ t: `+${fmtMin(fc.horizon_min)}`, Projection: fc.projected_news2_at_arrival });
-  }
   return (
     <div className={className}>
       <div className="mb-[.75rem] flex flex-wrap gap-x-[1rem] gap-y-[.25rem] text-[0.8125rem] text-ink-2">
@@ -52,7 +49,6 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
               {SERIES.map((s) => (
                 <Line key={s.key} yAxisId={s.axis} dataKey={s.key} stroke={s.color} strokeWidth={1.75} dot={false} connectNulls isAnimationActive={false} />
               ))}
-              <Line yAxisId="n" dataKey="Projection" stroke="#a8620a" strokeWidth={1.5} strokeDasharray="4 4" dot={false} connectNulls isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -69,8 +65,7 @@ export default function ({ trend, tz, className }: { trend?: TrendResponse; tz?:
       )}
       {fc && (
         <p className="mt-[.75rem] text-[0.875rem] text-ink-2">
-          Trend suggests NEWS2 is <span className="font-[600] text-ink">{fc.trend}</span>
-          {fc.projected_news2_at_arrival != null && fc.horizon_min ? <> — around {fc.projected_news2_at_arrival} in {fmtMin(fc.horizon_min)}</> : null}.{" "}
+          NEWS2 is <span className="font-[600] text-ink">{fc.trend}</span>.{" "}
           <span className="text-ink-3">
             {fc.points_used} one-minute points, {fc.confidence} confidence.
           </span>

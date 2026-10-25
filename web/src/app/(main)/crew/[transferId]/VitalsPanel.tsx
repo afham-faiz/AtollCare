@@ -98,7 +98,6 @@ export default function ({
   acquiring,
   hr,
   rr,
-  hrv,
   trace,
   onAddVitals,
 }: {
@@ -108,7 +107,6 @@ export default function ({
   acquiring: boolean;
   hr: LiveReading;
   rr: LiveReading;
-  hrv: number | null;
   trace: number[];
   onAddVitals: () => void;
 }) {
@@ -213,13 +211,7 @@ export default function ({
       </div>
       <div className={styles.footnote}>
         <p className="min-w-0 truncate">
-          {[
-            crewAt && `Crew-entered ${freshness(crewAt, now)}`,
-            // HRV only when measured — a simulated HRV adds noise, not information
-            hrv !== null && (live || (L.hrv_rmssd && L.hrv_rmssd.source !== "simulated")) && `HRV ${Math.round(hrv)} ms`,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
+          {crewAt ? `Crew-entered ${freshness(crewAt, now)}` : ""}
         </p>
         <button type="button" onClick={onAddVitals} className={twMerge(styles.add, missing && styles.addDue)}>
           <Plus size={16} /> {missing ? "Complete NEWS2" : "Update"}

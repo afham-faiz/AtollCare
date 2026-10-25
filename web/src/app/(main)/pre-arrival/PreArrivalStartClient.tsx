@@ -13,13 +13,16 @@ import { toastError } from "@/lib/toast";
 
 import styles from "./PreArrival.module.scss";
 
-export default function () {
+export default function ({ centre: fromLink }: { centre?: string }) {
   const router = useRouter();
   const { data: meta } = useMeta();
-  const [centre, setCentre] = useState("");
+  const [picked, setPicked] = useState("");
+  const [changing, setChanging] = useState(false);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const emergency = meta?.region.emergency_number;
+  const linked = meta?.region.facilities.find((f) => f.id === fromLink);
+  const centre = picked || linked?.id || "";
   // health centres first: that's where a companion usually heads; hospitals after
   const places = useMemo(
     () => [...(meta?.region.facilities ?? [])].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "clinic" ? -1 : 1)),
@@ -66,17 +69,28 @@ export default function () {
         </li>
       </ol>
 
-      <label className={field.field}>
-        <span className={field.label}>Where are you taking them?</span>
-        <select className={field.select} value={centre} onChange={(e) => setCentre(e.target.value)}>
-          <option value="">Choose a health centre</option>
-          {places.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {linked && !changing ? (
+        <p className={styles.going}>
+          <span>
+            Going to <strong>{meta?.region.facilities.find((f) => f.id === centre)?.name}</strong>
+          </span>
+          <button type="button" className={styles.link} onClick={() => setChanging(true)}>
+            Change
+          </button>
+        </p>
+      ) : (
+        <label className={field.field}>
+          <span className={field.label}>Where are you taking them?</span>
+          <select className={field.select} value={centre} onChange={(e) => setPicked(e.target.value)}>
+            <option value="">Choose a health centre</option>
+            {places.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className={styles.consent}>
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />

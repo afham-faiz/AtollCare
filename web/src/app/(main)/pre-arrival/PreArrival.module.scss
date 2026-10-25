@@ -51,6 +51,31 @@
   font-weight: 550;
 }
 
+.going {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  font-size: 1rem;
+}
+
+.patientHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.patientSummary {
+  flex: 1;
+  color: var(--ink-2);
+}
+
 .consent {
   display: flex;
   align-items: flex-start;

@@ -208,7 +208,8 @@ export default function ({ transferId }: { transferId: string }) {
       </header>
 
       {/* 2 + 3 · contactless assessment and vital signs */}
-      {active && (
+      {/* a phone always scans; a mounted tablet or laptop may stream continuously instead */}
+      {active && !phone && (
         <div className={styles.modeRow}>
           <Segmented
             label="How contactless vitals are taken"
@@ -243,7 +244,6 @@ export default function ({ transferId }: { transferId: string }) {
           acquiring={instrument.phase === "acquiring"}
           hr={live ? presage.metrics.hr : null}
           rr={live ? presage.metrics.rr : null}
-          hrv={live && presage.metrics.hrv?.stable ? presage.metrics.hrv.value : typeof t.latest.hrv_rmssd?.value === "number" ? t.latest.hrv_rmssd.value : null}
           trace={presage.metrics.trace}
           onAddVitals={() => setSheet("vitals")}
         />

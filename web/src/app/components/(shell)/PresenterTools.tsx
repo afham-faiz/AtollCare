@@ -43,6 +43,10 @@ export default function ({ onDone }: { onDone?: () => void }) {
   const line = picked?.suggested_note ?? null;
   const origin = useOrigin();
   const secure = origin.startsWith("https://");
+  const clinics = meta?.region.facilities.filter((f) => f.kind === "clinic") ?? [];
+  const [qrCentre, setQrCentre] = useState("");
+  const centreId = qrCentre || clinics[0]?.id || "";
+  const phoneUrl = `${origin}/pre-arrival${centreId ? `?centre=${centreId}` : ""}`;
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setBusy(key);
@@ -88,11 +92,23 @@ export default function ({ onDone }: { onDone?: () => void }) {
         <div className="flex items-start gap-[1rem]">
           {origin && (
             <div className="shrink-0 rounded-[.75rem] bg-white p-[.5rem]">
-              <QRCodeSVG value={`${origin}/pre-arrival`} size={112} marginSize={0} />
+              <QRCodeSVG value={phoneUrl} size={112} marginSize={0} />
             </div>
           )}
           <div className="min-w-0 text-[0.875rem] text-ink-2">
-            <p className="break-all font-mono text-[0.8125rem] text-ink">{origin}/pre-arrival</p>
+            <select
+              className="mb-[.375rem] w-full rounded-[.5rem] border-[1px] border-line bg-surface px-[.5rem] py-[.25rem] text-[0.875rem] text-ink"
+              value={centreId}
+              onChange={(e) => setQrCentre(e.target.value)}
+              aria-label="Health centre the code opens"
+            >
+              {clinics.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+            <p className="break-all font-mono text-[0.8125rem] text-ink">{phoneUrl}</p>
             <p className="mt-[.375rem]">
               {secure
                 ? "Scan with the phone's camera. Presage measures live through this address."

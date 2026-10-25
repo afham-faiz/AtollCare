@@ -47,6 +47,7 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
   const [dest, setDest] = useState("");
   const [mode, setMode] = useState<TransportMode | "">("");
   const [busy, setBusy] = useState(false);
+  const [changing, setChanging] = useState(false);
   const chosenOrigin = intake.health_centre_id || origin || region?.facilities.find((f) => f.kind === "clinic")?.id || "";
   const chosenDest = dest || hospitals[0]?.id || "";
   const chosenMode = mode || region?.modes[0] || "";
@@ -88,7 +89,19 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
         <ChevronDown size={18} className={twMerge("shrink-0 text-ink-3 transition-transform", open && "rotate-180")} />
       </button>
 
-      {open && (
+      {open && !changing && (
+        <div className={styles.packetForm}>
+          <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={busy || !chosenDest || !chosenMode || !chosenOrigin}>
+            {busy && <Loader2 size={18} className="animate-spin" />} Start transfer → {hospitals.find((f) => f.id === chosenDest)?.short_name}
+            {chosenMode ? ` by ${MODE_LABEL[chosenMode].toLowerCase()}` : ""}
+          </ButtonPrimary>
+          <button type="button" className={styles.changeLink} onClick={() => setChanging(true)}>
+            Change destination or transport
+          </button>
+        </div>
+      )}
+
+      {open && changing && (
         <div className={styles.packetForm}>
           {!intake.health_centre_id && (
             <label className={field.field}>

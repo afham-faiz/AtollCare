@@ -16,6 +16,7 @@ import ScanResult from "@/app/components/(scan)/ScanResult";
 import Skeleton from "@/app/components/Skeleton";
 import { api, patch, post, type Intake } from "@/lib/api";
 import type { PresageSummary } from "@/lib/presage";
+import { patientTitle } from "@/lib/clinical";
 import { place } from "@/lib/format";
 import { useIntake, useMeta } from "@/lib/swr";
 import { toastError } from "@/lib/toast";
@@ -47,6 +48,7 @@ export default function ({ intakeId }: { intakeId: string }) {
   const [recordAgain, setRecordAgain] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [editPatient, setEditPatient] = useState(false);
   const region = meta?.regions.find((r) => r.id === intake?.region_id);
   const refresh = (next: Intake) => mutate(`/intakes/${intakeId}`, next, { revalidate: false });
 
@@ -141,10 +143,15 @@ export default function ({ intakeId }: { intakeId: string }) {
         <h1 className={styles.title}>Before you arrive</h1>
       </header>
 
-      <Step n={1} title="Measure the patient" done={!!scan} hint={scan ? undefined : "Presage reads heart and breathing rate from the camera, with no contact, in 30 to 60 seconds."}>
+      <Step
+        n={1}
+        title="Film the patient, and say what happened"
+        done={!!scan}
+        hint={scan ? undefined : "30 to 60 seconds. Presage reads heart and breathing rate from the camera with no contact; your words become the account. Keep the patient still and quiet."}
+      >
         {!scan || recordAgain ? (
           <>
-            <ScanRecorder onClip={uploadClip} disabled={uploading} />
+            <ScanRecorder onClip={uploadClip} disabled={uploading} withAudio />
             {uploading && (
               <p className={styles.uploading}>
                 <Loader2 size={16} className="animate-spin" /> Sending the video…
@@ -161,7 +168,7 @@ export default function ({ intakeId }: { intakeId: string }) {
         )}
       </Step>
 
-      <Step n={2} title="What happened?" done={!!intake.account}>
+      <Step n={2} title="What happened?" done={!!intake.account} hint={intake.account ? undefined : "Said it while filming? It appears here. Or tap and tell us, or type it."}>
         <AccountCapture intake={intake} onSaved={refresh} />
       </Step>
 
@@ -170,7 +177,14 @@ export default function ({ intakeId }: { intakeId: string }) {
       </Step>
 
       <section className={styles.step}>
-        <h2 className={styles.stepTitle}>About the patient</h2>
+        <header className={styles.patientHead}>
+          <h2 className={styles.stepTitle}>About the patient</h2>
+          <span className={styles.patientSummary}>{intake.patient.age || intake.patient.sex ? patientTitle(intake.patient) : "Age and sex, if you know them"}</span>
+          <button type="button" className={styles.link} onClick={() => setEditPatient(!editPatient)}>
+            {editPatient ? "Done" : intake.patient.age || intake.patient.sex ? "Edit" : "Add"}
+          </button>
+        </header>
+        {editPatient && (
         <div className={styles.patient}>
           <label className={field.field}>
             <span className={field.label}>Age</span>
@@ -202,6 +216,7 @@ export default function ({ intakeId }: { intakeId: string }) {
             />
           </div>
         </div>
+        )}
       </section>
 
       <div className={styles.sendBar}>

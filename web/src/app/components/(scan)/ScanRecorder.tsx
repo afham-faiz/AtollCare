@@ -38,12 +38,14 @@ export default function ({
   maxSeconds = 60,
   windowSeconds = 30,
   defaultFacing = "environment",
+  withAudio = false,
   disabled,
 }: {
   onClip: (clip: Blob, filename: string, presage: PresageSummary | null) => void;
   maxSeconds?: number;
   windowSeconds?: number; // Presage's cleared measurement window (K254169)
   defaultFacing?: "environment" | "user";
+  withAudio?: boolean; // record the companion's voice too: what they say while filming becomes the account
   disabled?: boolean;
 }) {
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
@@ -74,7 +76,10 @@ export default function ({
       setCamera("starting");
       stopCamera();
       try {
-        const s = await navigator.mediaDevices.getUserMedia(cameraConstraints(mode));
+        // the microphone only if asked, and never fatal: without it the video still records
+        const s = await navigator.mediaDevices
+          .getUserMedia({ ...cameraConstraints(mode), audio: withAudio })
+          .catch((err) => (withAudio ? navigator.mediaDevices.getUserMedia(cameraConstraints(mode)) : Promise.reject(err)));
         stream.current = s;
         if (videoEl) {
           videoEl.srcObject = s;
@@ -86,7 +91,7 @@ export default function ({
         setCamera(cameraError(err));
       }
     },
-    [stopCamera, videoEl],
+    [stopCamera, videoEl, withAudio],
   );
 
   useEffect(() => stopCamera, [stopCamera]);
@@ -262,7 +267,8 @@ export default function ({
       <ul className={styles.coach}>
         <li className={twMerge(recording && styles.coachDim)}>Prop the phone up so it doesn&apos;t move</li>
         <li className={twMerge(recording && styles.coachDim)}>Keep their face and upper chest in view, in good light</li>
-        <li className={twMerge(settling && styles.coachNow)}>{settling ? "Keep still and quiet until the numbers settle" : "Ask them to stay still and not talk"}</li>
+        <li className={twMerge(settling && styles.coachNow)}>{settling ? "Keep them still and quiet until the numbers settle" : "Ask them to stay still and not talk"}</li>
+        {withAudio && <li className={twMerge(recording && styles.coachNow)}>You talk: say what happened and when it started</li>}
       </ul>
       {camera === "on" && !live && presage.state !== "starting" && (
         <p className={styles.fallback}>

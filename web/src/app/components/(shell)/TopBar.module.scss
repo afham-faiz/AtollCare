@@ -23,6 +23,15 @@
 }
 
 // on phones the three moments need the room: keep the mark, drop the wordmark
+.companion {
+  @media (max-width: 47.99rem) {
+    .roles,
+    .end {
+      display: none;
+    }
+  }
+}
+
 .brandText {
   @media (max-width: 29.99rem) {
     display: none;

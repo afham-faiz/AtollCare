@@ -128,6 +128,22 @@ def audio_to_pcm(data: bytes) -> bytes:
     return out
 
 
+def audio_track_wav(video_bytes: bytes) -> bytes | None:
+    """The clip's sound as 16 kHz mono WAV (for speech-to-text), or None when it has no sound track."""
+    with tempfile.TemporaryDirectory() as tmp:
+        src, dst = os.path.join(tmp, "in.bin"), os.path.join(tmp, "out.wav")
+        with open(src, "wb") as f:
+            f.write(video_bytes)
+        cmd = [_ffmpeg_exe(), "-y", "-loglevel", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", dst]
+        try:
+            subprocess.run(cmd, check=True, timeout=300, capture_output=True)
+            with open(dst, "rb") as f:
+                out = f.read()
+        except (subprocess.SubprocessError, OSError):
+            return None
+    return out if len(out) > 16000 else None  # under ~0.5 s of sound: nothing was said
+
+
 def to_sdk_readable(video_bytes: bytes, max_side: int = 960) -> bytes:
     """MJPEG .avi for the Presage SDK, whose bundled FFmpeg cannot open H.264 .mp4 (phone video) but reads MJPEG.
 

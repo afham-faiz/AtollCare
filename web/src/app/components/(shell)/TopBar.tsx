@@ -31,7 +31,8 @@ export default function () {
   const pathname = usePathname();
   const { data: meta } = useMeta();
   return (
-    <header className={styles.bar}>
+    // on a phone, the companion sees only their own screen: no crew or hospital tabs, no presenter tools
+    <header className={twMerge(styles.bar, pathname.startsWith("/pre-arrival") && styles.companion)}>
       <div className={styles.inner}>
         <Link href="/crew" className={styles.brand}>
           <Mark className="h-[1.375rem] w-[1.375rem] text-teal" />

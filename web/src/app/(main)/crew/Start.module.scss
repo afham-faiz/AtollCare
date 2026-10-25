@@ -163,6 +163,13 @@
   color: var(--caution);
 }
 
+.changeLink {
+  align-self: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
 .packetForm {
   display: flex;
   flex-direction: column;

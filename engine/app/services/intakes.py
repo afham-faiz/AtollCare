@@ -22,7 +22,7 @@ from app.intake.ocr_service import parse_identity_doc
 from app.intake.rppg_extractor import bridge_ready, estimates_from_bridge, extract_vitals_from_video
 from app.intake.schemas import RppgEstimates
 from app.intake.transcription import transcribe_pcm
-from app.intake.video_prep import Frame, audio_to_pcm, downsample_video
+from app.intake.video_prep import Frame, audio_to_pcm, audio_track_wav, downsample_video
 from app.intake.vqa_evaluator import run_visual_cue_session
 from app.models import (
     CreateIntakeRequest,
@@ -71,9 +71,12 @@ class ScanRunner:
         self.tasks: set[asyncio.Task] = set()
 
     def start(self, scan: Scan, raw: bytes, account: str, age: int | None, mutate: MutateScan,
-              on_vitals: Callable[[Scan], Awaitable[None]] | None = None, live: RppgEstimates | None = None) -> None:
-        """live: Presage already measured this clip as it was recorded (the phone streamed to the bridge)."""
-        task = asyncio.create_task(self._run(scan.id, raw, account, age, mutate, on_vitals, live))
+              on_vitals: Callable[[Scan], Awaitable[None]] | None = None, live: RppgEstimates | None = None,
+              account_from_clip: Callable[[bytes], Awaitable[str | None]] | None = None) -> None:
+        """live: Presage already measured this clip as it was recorded (the phone streamed to the bridge).
+        account_from_clip: the companion talked while filming; their words become the account before the sign
+        check, so "described but not seen" works from the same recording."""
+        task = asyncio.create_task(self._run(scan.id, raw, account, age, mutate, on_vitals, live, account_from_clip))
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)
 
@@ -93,10 +96,14 @@ class ScanRunner:
             self.clips.popitem(last=False)
 
     async def _run(self, scan_id: UUID, raw: bytes, account: str, age: int | None, mutate: MutateScan,
-                   on_vitals: Callable[[Scan], Awaitable[None]] | None, live: RppgEstimates | None = None) -> None:
+                   on_vitals: Callable[[Scan], Awaitable[None]] | None, live: RppgEstimates | None = None,
+                   account_from_clip: Callable[[bytes], Awaitable[str | None]] | None = None) -> None:
         try:
             if live is not None:
                 await self._apply_vitals(scan_id, live, None, mutate, on_vitals)
+            if account_from_clip is not None:
+                await mutate(scan_id, lambda s: setattr(s, "stage", "Writing down what was said"))
+                account = await account_from_clip(raw) or account
             await mutate(scan_id, lambda s: setattr(s, "stage", "Preparing the video"))
             small = await asyncio.to_thread(downsample_video, raw)
             self._remember(scan_id, small)
@@ -310,8 +317,34 @@ class IntakeService:
             i.scans.append(scan)
             await self._save(i)
         self.runner.start(scan, video, i.account or "", i.patient.age, self._mutate_scan(intake_id),
-                          live=live_estimates(presage))
+                          live=live_estimates(presage), account_from_clip=self._account_from_clip(intake_id))
         return i
+
+    def _account_from_clip(self, intake_id: UUID) -> Callable[[bytes], Awaitable[str | None]]:
+        """Film and speak at once: what the companion said while filming becomes their account, unless they've
+        already given one. Quietly does nothing when there's no sound or no speech-to-text."""
+        async def account(raw: bytes) -> str | None:
+            current = await self._load(intake_id)
+            if current.account:
+                return current.account
+            wav = await asyncio.to_thread(audio_track_wav, raw)
+            if wav is None:
+                return None
+            try:
+                text = await self._transcribe(wav, "account.wav", "audio/wav")
+            except Exception:  # noqa: BLE001 — the video still goes through; typing the account still works
+                log.warning("couldn't transcribe the clip's sound for intake %s", intake_id)
+                return None
+            if len(text.split()) < 3:  # a cough or a "hm" isn't an account
+                return None
+            async with self.locks[intake_id]:
+                i = await self._load(intake_id)
+                if not i.account:
+                    await self._set_account(i, text, "voice")
+                    await self._save(i)
+                return i.account
+
+        return account
 
     def _mutate_scan(self, intake_id: UUID):
         async def mutate(scan_id: UUID, fn: Callable[[Scan], None]) -> None:

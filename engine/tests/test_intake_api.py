@@ -83,6 +83,26 @@ def test_packet_from_phone_to_transfer(client, clip):
     assert client.patch(f"/api/intakes/{i['id']}", json={"account": "changed"}).status_code == 409
 
 
+def test_speaking_while_filming_becomes_the_account(client, monkeypatch):
+    """Film and speak at once: the clip's sound track is transcribed into the account (unless one was given)."""
+    out = subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-loglevel", "error", "-f", "lavfi", "-i",
+                          "testsrc=size=320x240:rate=15", "-f", "lavfi", "-i", "sine=frequency=440", "-t", "3",
+                          "-pix_fmt", "yuv420p", "-shortest", "-f", "mp4", "-movflags", "frag_keyframe+empty_moov", "-"],
+                         capture_output=True, check=True).stdout
+    from app.services.intakes import IntakeService
+
+    async def fake_transcribe(self, audio, filename, content_type):
+        assert audio[:4] == b"RIFF" and filename == "account.wav"
+        return "He collapsed on the jetty about twenty minutes ago and his left arm is weak."
+
+    monkeypatch.setattr(IntakeService, "_transcribe", fake_transcribe)
+    i = ok(client.post("/api/intakes", json={"health_centre_id": "dhiffushi_hc"}))
+    ok(client.post(f"/api/intakes/{i['id']}/scans", files={"video": ("c.mp4", out, "video/mp4")}))
+    wait_scans(client, f"/api/intakes/{i['id']}")
+    i = ok(client.get(f"/api/intakes/{i['id']}"))
+    assert i["account"].startswith("He collapsed on the jetty") and i["account_source"] == "voice"
+
+
 def test_empty_packet_cannot_be_sent(client):
     i = ok(client.post("/api/intakes", json={}))
     assert client.post(f"/api/intakes/{i['id']}/send").status_code == 422
