@@ -92,12 +92,17 @@ function Packet({ intake, meta }: { intake: Intake; meta: MetaResponse }) {
       {open && !changing && (
         <div className={styles.packetForm}>
           <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={busy || !chosenDest || !chosenMode || !chosenOrigin}>
-            {busy && <Loader2 size={18} className="animate-spin" />} Start transfer → {hospitals.find((f) => f.id === chosenDest)?.short_name}
-            {chosenMode ? ` by ${MODE_LABEL[chosenMode].toLowerCase()}` : ""}
+            {busy && <Loader2 size={18} className="animate-spin" />} Start transfer <ArrowRight size={18} />
           </ButtonPrimary>
-          <button type="button" className={styles.changeLink} onClick={() => setChanging(true)}>
-            Change destination or transport
-          </button>
+          <p className={styles.startTo}>
+            <span>
+              To {hospitals.find((f) => f.id === chosenDest)?.short_name}
+              {chosenMode ? ` by ${MODE_LABEL[chosenMode].toLowerCase()}` : ""}
+            </span>
+            <button type="button" className={styles.changeLink} onClick={() => setChanging(true)}>
+              Change
+            </button>
+          </p>
         </div>
       )}
 

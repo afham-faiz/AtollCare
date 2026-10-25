@@ -45,7 +45,7 @@ export default function ({ centre: fromLink }: { centre?: string }) {
       <header className={styles.intro}>
         <p className={styles.eyebrow}>Before you arrive</p>
         <h1 className={styles.title}>Let the health centre get ready for you</h1>
-        <p className={styles.lede}>Three quick steps, about three minutes. Everything you send goes with the patient, so nobody asks twice.</p>
+        <p className={styles.lede}>Two quick steps, about two minutes. Everything you send goes with the patient, so nobody asks twice.</p>
       </header>
 
       {emergency && (
@@ -59,13 +59,10 @@ export default function ({ centre: fromLink }: { centre?: string }) {
 
       <ol className={styles.preview}>
         <li>
-          <span>1</span>Point your phone at the patient: Presage reads heart and breathing rate
+          <span>1</span>Film the patient and say what happened: Presage reads heart and breathing rate
         </li>
         <li>
-          <span>2</span>Say what happened, in your own words
-        </li>
-        <li>
-          <span>3</span>Take a photo of their ID, if you have it
+          <span>2</span>Take a photo of their ID, if you have it
         </li>
       </ol>
 

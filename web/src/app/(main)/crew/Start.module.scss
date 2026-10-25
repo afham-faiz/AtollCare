@@ -163,6 +163,16 @@
   color: var(--caution);
 }
 
+.startTo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  text-align: center;
+}
+
 .changeLink {
   align-self: center;
   font-size: 0.9375rem;
