@@ -19,4 +19,5 @@ if ! command -v cloudflared >/dev/null 2>&1; then
 fi
 curl -fsS "http://localhost:$PORT/api/health" >/dev/null || { echo "Nothing on http://localhost:$PORT/api/health: start the web app and engine first"; exit 1; }
 curl -fsS "http://localhost:$PORT/presage/health" >/dev/null || echo "warning: the Presage bridge isn't answering on /presage/health; scans will fall back to measuring the upload"
-exec cloudflared tunnel --no-autoupdate --url "http://localhost:$PORT"
+# HTTP/2 over TCP: the default QUIC (UDP) crawled on venue-style Wi-Fi in testing (pages took 15 s, phones gave up)
+exec cloudflared tunnel --no-autoupdate --protocol "${TUNNEL_PROTOCOL:-http2}" --url "http://localhost:$PORT"
