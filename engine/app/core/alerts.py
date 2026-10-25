@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from app.models import Alert, AlertLevel, DeteriorationForecast, LatestValue, News2Result
+from app.models import Alert, AlertLevel, DeteriorationForecast, LatestValue, News2Result, VitalsSource
 
 
 def evaluate(
@@ -28,12 +28,20 @@ def evaluate(
     spo2 = num("spo2")
     if spo2 is not None and spo2 <= 91:
         found.append(("spo2_low", AlertLevel.critical, f"SpO₂ {spo2:g}%"))
+    # Presage's clearance is for spot checks on calm, healthy adults: an extreme value from the camera alone is a
+    # prompt to measure by hand, never a critical alert on its own. Crew-entered values alert as before.
+    def camera(field: str) -> bool:
+        lv = latest.get(field)
+        return lv is not None and lv.source == VitalsSource.presage
+
     hr = num("heart_rate")
     if hr is not None and (hr >= 131 or hr <= 40):
-        found.append(("hr_extreme", AlertLevel.critical, f"Heart rate {hr:g}"))
+        found.append(("hr_extreme", AlertLevel.warning, f"Camera estimate: heart rate {hr:g} — confirm with a monitor")
+                     if camera("heart_rate") else ("hr_extreme", AlertLevel.critical, f"Heart rate {hr:g}"))
     rr = num("resp_rate")
     if rr is not None and (rr >= 25 or rr <= 8):
-        found.append(("rr_extreme", AlertLevel.critical, f"Breathing rate {rr:g}"))
+        found.append(("rr_extreme", AlertLevel.warning, f"Camera estimate: breathing rate {rr:g} — count it by hand")
+                     if camera("resp_rate") else ("rr_extreme", AlertLevel.critical, f"Breathing rate {rr:g}"))
     if forecast and forecast.hr_slope_per_hour is not None and forecast.hr_slope_per_hour >= 15:
         found.append(("hr_rising", AlertLevel.warning, f"Heart rate rising (+{forecast.hr_slope_per_hour:g}/h)"))
     worsening = forecast and forecast.trend == "worsening" and (forecast.minutes_to_news2_7 or 0) > 0

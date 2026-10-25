@@ -120,7 +120,7 @@ export default function ({ intakeId }: { intakeId: string }) {
         </section>
         {scan && (
           <section className={styles.card}>
-            <ScanResult scan={scan} tz={region?.timezone} title="Your video" />
+            <ScanResult scan={scan} tz={region?.timezone} title="Your video" bystander />
           </section>
         )}
         <Link href="/pre-arrival" className="self-center font-[600] text-accent">
@@ -151,7 +151,7 @@ export default function ({ intakeId }: { intakeId: string }) {
           </>
         ) : (
           <div className={styles.card}>
-            <ScanResult scan={scan} tz={region?.timezone} title="Your video" coach />
+            <ScanResult scan={scan} tz={region?.timezone} title="Your video" coach bystander />
             <button type="button" className={styles.link} onClick={() => setRecordAgain(true)}>
               Record again
             </button>

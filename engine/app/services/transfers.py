@@ -56,6 +56,7 @@ log = logging.getLogger("atollcare.transfers")
 ACTIVE = {TransferStatus.preparing, TransferStatus.pending, TransferStatus.accepted}
 CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 NEWS2_LOOKBACK_MIN = 60
+PRESAGE_MAX_AGE = timedelta(minutes=15)  # a camera spot check stops counting after this; crew values keep the 60 min
 GEMINI_MIN_INTERVAL_S = 20.0
 PREPARE_OPTIONS = ["Cath lab", "Stroke team + CT", "Trauma team", "Theatre", "ICU bed", "Blood products", "Resus bay"]
 
@@ -249,8 +250,12 @@ class TransferService:
         now = self.now()
         # Clinical scoring sees only what was measured (Presage, crew). Simulated readings keep the demo moving on
         # screen, labelled, but never raise an alert, move NEWS2 or feed the forecast.
-        readings = [r for r in await self.repo.get_vitals(t.id, 240) if r.source != VitalsSource.simulated]
-        measured_latest = {k: v for k, v in t.latest.items() if v.source != VitalsSource.simulated}
+        # A Presage spot check counts for 15 minutes; after that it's history, not the patient's current state.
+        def counts(source: VitalsSource, at: datetime) -> bool:
+            return source != VitalsSource.simulated and (source != VitalsSource.presage or now - at <= PRESAGE_MAX_AGE)
+
+        readings = [r for r in await self.repo.get_vitals(t.id, 240) if counts(r.source, r.recorded_at)]
+        measured_latest = {k: v for k, v in t.latest.items() if counts(v.source, v.at)}
         before_total = t.news2.total if t.news2 else None
         t.news2 = compute_news2(readings, now, NEWS2_LOOKBACK_MIN)
         trend = await self._trend_buckets(t, 60, readings)
@@ -404,24 +409,23 @@ class TransferService:
             t.pre_arrival = packet
             if packet.account:
                 await self._note(t, Author.companion, NoteKind.text, packet.account, at=packet.sent_at or self.now())
+            # the companion's video is a bystander's recording, outside Presage's cleared use (trained staff, a
+            # mounted phone): its numbers are shown as an estimate and never become scored readings
             for s in packet.scans:
-                await self._record_scan_vitals(t, s)
                 await self._note_scan(t, s, "Pre-arrival video")
             await self._template_briefing(t, keep_gemini=True)
             await self._save(t)
         self._schedule_briefing(transfer_id, force=True)
 
     async def sync_pre_arrival_scan(self, transfer_id: UUID, scan: Scan) -> None:
-        """A pre-arrival scan finished after the transfer started: update the transfer's copy and record its vitals."""
+        """A pre-arrival scan finished after the transfer started: update the transfer's copy and its timeline line."""
         async with self.locks[transfer_id]:
             t = await self._load(transfer_id)
             if t.pre_arrival is None:
                 return
             mine = next((s for s in t.pre_arrival.scans if s.id == scan.id), None)
-            copy = scan.model_copy(deep=True, update={"recorded": mine.recorded if mine else False,
-                                                      "noted": mine.noted if mine else False})
+            copy = scan.model_copy(deep=True, update={"noted": mine.noted if mine else False})
             t.pre_arrival.scans = [copy if s.id == scan.id else s for s in t.pre_arrival.scans]
-            await self._record_scan_vitals(t, copy)
             await self._note_scan(t, copy, "Pre-arrival video")
             await self._save(t)
 

@@ -186,7 +186,13 @@ def test_simulated_readings_never_drive_clinical_scoring(client):
     # the same values measured by Presage do count
     ack = ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "presage", "heart_rate": 140, "resp_rate": 30,
                                                                     "confidence": 0.9}))
-    assert ack["news2"]["total"] >= 6 and any(a["code"] == "hr_extreme" for a in ack["alerts"])
+    assert ack["news2"]["total"] >= 6
+    # ...but a camera reading on its own prompts a manual check; it is never a critical alert
+    extreme = next(a for a in ack["alerts"] if a["code"] == "hr_extreme")
+    assert extreme["level"] == "warning" and extreme["text"].startswith("Camera estimate")
+    # the same value entered by the crew is critical
+    ack = ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"heart_rate": 140}))
+    assert next(a for a in ack["alerts"] if a["code"] == "hr_extreme")["level"] == "critical"
 
 
 def test_crew_can_strike_a_wrong_extraction(client):

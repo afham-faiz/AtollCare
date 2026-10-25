@@ -148,6 +148,37 @@ def test_scan_vitals_become_readings_once(client, source, expected_readings):
         assert lines[0].startswith("Crew scan: heart rate 96 bpm; breathing 22/min.")
 
 
+def test_bystander_video_is_shown_but_never_scored(client):
+    """The companion's video is outside Presage's cleared use: its numbers reach the timeline, not NEWS2."""
+    from app.models import PreArrival
+
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    svc = get_hub().transfers
+    scan = Scan(id=uuid4(), at=svc.now(), status=ScanStatus.done,
+                vitals=RppgEstimates(heart_rate_bpm=96, respiration_rate_bpm=22, heart_rate_quality=0.8,
+                                     respiration_quality=0.7, source="presage"))
+    packet = PreArrival(intake_id=uuid4(), code="PA-TEST", sent_at=svc.now(), scans=[scan])
+    client.portal.call(svc.attach_pre_arrival, UUID(t["id"]), packet)
+    t = ok(client.get(f"/api/transfers/{t['id']}"))
+    assert not [v for v in t["vitals"] if v["source"] == "presage"] and t["news2"] is None
+    assert any(n["text"].startswith("Pre-arrival video: heart rate 96 bpm") for n in t["notes"])
+
+
+def test_old_camera_readings_stop_counting(client):
+    """A Presage spot check counts for 15 minutes; crew values keep the usual NEWS2 window."""
+    from datetime import timedelta
+
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    old = (get_hub().transfers.now() - timedelta(minutes=20)).isoformat()
+    ack = ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "presage", "heart_rate": 140,
+                                                                    "confidence": 0.9, "recorded_at": old}))
+    assert ack["news2"] is None and not ack["alerts"]
+    ack = ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"heart_rate": 140, "recorded_at": old}))
+    assert ack["news2"] is not None  # the crew's reading from 20 minutes ago still counts
+
+
 def test_scan_summary_marks_weak_readings_and_contradictions():
     from app.intake.schemas import CueFinding, CuePlan, PlannedCue, VisualCueReport
     from app.services.transfers import scan_summary

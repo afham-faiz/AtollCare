@@ -18,8 +18,9 @@ function quality(stable?: boolean | null, q?: number | null): { word: string; to
   return (stable ?? (q != null && q >= SCORED)) ? { word: "Stable · scored", tone: "good" } : { word: "Not stable · not scored", tone: "weak" };
 }
 
-function Vital({ label, value, unit, q, stable }: { label: string; value?: number | null; unit: string; q?: number | null; stable?: boolean | null }) {
-  const qual = quality(stable, q);
+function Vital({ label, value, unit, q, stable, bystander }: { label: string; value?: number | null; unit: string; q?: number | null; stable?: boolean | null; bystander?: boolean }) {
+  // a bystander's recording is outside Presage's cleared use: shown as an estimate, never scored
+  const qual = bystander ? { word: "Estimate · not scored", tone: "weak" as const } : quality(stable, q);
   return (
     <div className={styles.vital}>
       <span className={styles.vitalLabel}>{label}</span>
@@ -58,7 +59,8 @@ function Frames({ finding, scan }: { finding: CueFinding; scan: Scan }) {
 }
 
 // coach: the person who recorded is looking, so say how to get a better clip
-export default function ({ scan, tz, title, coach }: { scan: Scan; tz?: string; title?: string; coach?: boolean }) {
+// bystander: the companion recorded it (not trained staff with a mounted phone), so its numbers are an estimate
+export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz?: string; title?: string; coach?: boolean; bystander?: boolean }) {
   const signs = scan.signs;
   const notChecked = signs?.issues.some((i) => i.startsWith("inspection_failed"));
   const present = signs?.findings.filter((f) => f.finding === "present") ?? [];
@@ -96,12 +98,12 @@ export default function ({ scan, tz, title, coach }: { scan: Scan; tz?: string; 
       <section className={styles.block}>
         <div className={styles.blockHead}>
           <h4>Heart and breathing</h4>
-          <span className={styles.source}>Presage · from the video</span>
+          <span className={styles.source}>{bystander ? "Presage · bystander video" : "Presage · from the video"}</span>
         </div>
         {measured ? (
           <div className={styles.vitals}>
-            <Vital label="Heart rate" value={v?.heart_rate_bpm} unit="bpm" q={v?.heart_rate_quality} stable={v?.heart_rate_stable} />
-            <Vital label="Breathing" value={v?.respiration_rate_bpm} unit="/min" q={v?.respiration_quality} stable={v?.respiration_stable} />
+            <Vital label="Heart rate" value={v?.heart_rate_bpm} unit="bpm" q={v?.heart_rate_quality} stable={v?.heart_rate_stable} bystander={bystander} />
+            <Vital label="Breathing" value={v?.respiration_rate_bpm} unit="/min" q={v?.respiration_quality} stable={v?.respiration_stable} bystander={bystander} />
           </div>
         ) : (
           <p className={styles.note}>

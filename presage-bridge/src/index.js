@@ -21,6 +21,7 @@ const PORT = Number(process.env.PORT ?? 8787);
 const ENGINE_URL = (process.env.ENGINE_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const API_KEY = process.env.PRESAGE_API_KEY ?? "";
 const POST_INTERVAL_MS = 5000;
+const FRESH_MS = 5000; // a value older than this (face gone, camera covered) is never posted as current
 const HEARTBEAT_MS = 5000;
 const FRAME_MAGIC = 0x41435046; // "ACPF"
 const HEADER_BYTES = 16; // u32 magic, u16 width, u16 height, f64 capture time (ms)
@@ -127,9 +128,10 @@ async function startSession(ws, transferId) {
     const rate = last(m.breathing?.rate);
     const hrv = last(m.cardio?.hrv);
     const trace = (m.breathing?.upperTrace ?? []).slice(-60).map((p) => p.value ?? 0);
-    if (pulse?.value) session.latest.hr = { value: pulse.value, conf: toConfidence(pulse), stable: !!pulse.stable };
-    if (rate?.value) session.latest.rr = { value: rate.value, conf: toConfidence(rate), stable: !!rate.stable };
-    if (hrv?.rmssd) session.latest.hrv = { value: hrv.rmssd, conf: toConfidence(hrv), stable: !!hrv.stable };
+    const at = Date.now();
+    if (pulse?.value) session.latest.hr = { value: pulse.value, conf: toConfidence(pulse), stable: !!pulse.stable, at };
+    if (rate?.value) session.latest.rr = { value: rate.value, conf: toConfidence(rate), stable: !!rate.stable, at };
+    if (hrv?.rmssd) session.latest.hrv = { value: hrv.rmssd, conf: toConfidence(hrv), stable: !!hrv.stable, at };
     send(ws, {
       type: "metrics",
       hr: session.latest.hr ?? null,
@@ -140,6 +142,8 @@ async function startSession(ws, transferId) {
   });
   sdk.on("validationStatus", (code, _ts, hint) => {
     session.hint = code === 0 ? null : hint || HINTS[code] || `Adjust camera (code ${code})`;
+    // the face left the frame (or the light went): whatever was measured before is no longer the patient now
+    if (code !== 0) session.latest = {};
     send(ws, { type: "validation", code, ok: code === 0, hint: session.hint });
   });
   sdk.on("processingStatus", (status) => send(ws, { type: "processing", status }));
@@ -159,7 +163,8 @@ async function startSession(ws, transferId) {
 
   // Throttled post of the latest stable values to the engine (Tiger Data hypertable via the API).
   session.postTimer = setInterval(async () => {
-    const { hr, rr, hrv } = session.latest;
+    const fresh = (x) => (x && Date.now() - x.at <= FRESH_MS ? x : null);
+    const [hr, rr, hrv] = [fresh(session.latest.hr), fresh(session.latest.rr), fresh(session.latest.hrv)];
     const stable = [hr, rr, hrv].filter((x) => x?.stable);
     if (!stable.length) return;
     await postJson(`/api/transfers/${transferId}/vitals`, {

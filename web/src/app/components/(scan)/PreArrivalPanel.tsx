@@ -65,7 +65,7 @@ export default function ({ t, tz }: { t: Transfer; tz?: string }) {
 
           {p.scans.map((s) => (
             <div key={s.id} className={styles.scan}>
-              <ScanResult scan={s} tz={tz} title="Companion’s video" />
+              <ScanResult scan={s} tz={tz} title="Companion’s video" bystander />
             </div>
           ))}
         </section>
