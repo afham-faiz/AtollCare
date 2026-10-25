@@ -2,7 +2,9 @@
 
 **Shape:** a Vultr Cloud Compute instance runs Caddy (automatic HTTPS) → the Next.js web app and the FastAPI engine.
 Data lives in **Tiger Cloud** (recommended), or in the bundled TimescaleDB container. The **Presage bridge stays on
-the crew laptop** next to the camera; it posts numbers to the engine over HTTPS, and video never leaves the vehicle.
+the crew laptop**; phones reach it through the web app's `/presage` route, and in monitor mode it posts numbers to
+the engine over HTTPS. If the engine runs on the VM, set `PRESAGE_BRIDGE_URL` to an address the VM can reach (or run
+the bridge on the VM too: the SDK supports Linux), otherwise scans fall back to "not measured".
 
 ```
 crew laptop (Chrome + presage-bridge) ──HTTPS──► Vultr: Caddy ─┬─ /api/* → engine ──► Tiger Cloud

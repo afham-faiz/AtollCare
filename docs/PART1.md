@@ -93,7 +93,7 @@ timeline entry, and the video's heart and breathing rate become Presage readings
 | Percy's module (`src/…` on `user-branch`) | Now | Used by |
 |---|---|---|
 | `vqa_evaluator`, `cue_planner`, `data/cue_catalogue.json` | `engine/app/intake/` | Every scan (pre-arrival and crew): signs checked frame by frame, each "seen" citing frames, "described but not seen" kept |
-| `rppg_extractor` + `presage-sidecar` | `engine/app/intake/rppg_extractor.py` → `presage-bridge` `POST /vitals/file` | Same scans. One bridge serves both the live camera and clips; his insight (the SDK can't read H.264) is kept: clips go as MJPEG |
+| `rppg_extractor` + `presage-sidecar` | `engine/app/intake/rppg_extractor.py` → `presage-bridge` | Phones stream to the bridge live and send its summary with the clip; his summariser (median of stable samples) handles both that and the clip fallback (`POST /vitals/file`). His insight (the SDK can't read H.264) is kept: clips go as MJPEG, now at constant 30 fps from the original upload |
 | `ocr_service` | `engine/app/intake/ocr_service.py` | Pre-arrival step 3 (ID photo). Age worked out in code; "needs review" shown as "check by eye" |
 | `transcription` | `engine/app/intake/transcription.py` | Pre-arrival step 2, as the fallback when ElevenLabs Scribe isn't configured |
 | `video_prep`, `gemini_client`, `config`, `schemas` | `engine/app/intake/` | Shared. Settings keep his names and are read from the root `.env` |
@@ -101,7 +101,7 @@ timeline entry, and the video's heart and breathing rate become Presage readings
 | Screen | Route | What it does |
 |---|---|---|
 | Pre-arrival (companion's phone) | `/pre-arrival` | Choose the health centre → record ~60 s → say or type what happened → optional ID photo → Send. Results land as they finish |
-| Crew | `/crew` | "Sent ahead from a phone" lists sent packets; one tap starts the transfer. 60 s scans on a phone, or the live camera on a mount |
+| Crew | `/crew` | "Sent ahead from a phone" lists sent packets; one tap starts the transfer. Presage scans on a phone (live), or a continuous stream on a mount |
 | Hospital | `/hospital` | "Seen on video" beside the handoff, and a Video & ID tab with the account, the ID and every scan with its frames |
 
 API: `POST /api/intakes`, `PATCH /api/intakes/{id}`, `POST /api/intakes/{id}/scans` (video), `/account/voice` (audio),

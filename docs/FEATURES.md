@@ -12,8 +12,10 @@ and TimescaleDB 2.31 / Postgres 17 (`TEST_DATABASE_URL`); 7 web unit tests (`bun
 | Feature | Status | Files |
 |---|---|---|
 | Choose the health centre, get a packet code (PA-XXXX) | ✅ | `pre-arrival/PreArrivalStartClient.tsx`, `services/intakes.py` |
-| Record ~60 s (back camera, countdown ring, breathing-window coaching) or upload a video | ⚠️ upload ✅; recording not tried on a real phone | `components/(scan)/ScanRecorder.tsx` |
-| Scan result as it lands: Presage HR / RR with signal quality; Gemini's signs with cited frames; "described but not seen" vs "couldn't show it" | ⚠️ no real face scanned yet | `components/(scan)/ScanResult.tsx`, `intake/vqa_evaluator.py` |
+| Presage live on the phone: hints while framing, HR / RR / pulse and breathing waves while recording, auto-finish when both stable after 30 s; clip path as fallback | ✅ path (replayed clip) · ⚠️ real face, real phone | `components/(scan)/ScanRecorder.tsx`, `lib/presage.ts`, `presage-bridge/` |
+| Film and speak at once: the video's sound becomes the account | ✅ (test with a synthetic clip) · ⚠️ real speech | `services/intakes.py`, `intake/video_prep.py` |
+| "Call 102 first", consent, true privacy copy; `?centre=` deep link from a QR | ✅ | `pre-arrival/PreArrivalStartClient.tsx` |
+| Scan result: Presage's stable verdict; report with pulse and breathing waveforms, framing timeline, apnea, talking; Gemini's signs "seen in N of M frames" | ✅ rendering · ⚠️ real face | `components/(scan)/ScanResult.tsx`, `intake/vqa_evaluator.py` |
 | What happened: speak (Scribe, Gemini fallback) or type; condensed to one line; age and sex taken when stated | ✅ typed · ⚠️ spoken | `AccountCapture.tsx`, `adapters/gemini.py` |
 | ID photo read by Gemini; "check by eye" when anything is unclear | ⚠️ needs a specimen card | `IdCapture.tsx`, `intake/ocr_service.py` |
 | Send (nothing reaches the health centre before); sent screen with the code | ✅ | `PreArrivalClient.tsx` |
@@ -24,12 +26,13 @@ and TimescaleDB 2.31 / Postgres 17 (`TEST_DATABASE_URL`); 7 web unit tests (`bun
 |---|---|---|
 | Start a transfer: "What's happening" (type or dictate), age, sex, from → to, transport | ✅ | `crew/CrewStartClient.tsx` |
 | "Sent ahead from a phone": sent packets with what they hold; start the transfer from one (account, ID, video carried over) | ✅ | `crew/SentAhead.tsx`, `services/intakes.py` |
-| Contactless vitals by 60 s scan (default on phones) or live camera; the choice is on the timeline | ✅ · ⚠️ real face | `crew/[transferId]/ScanStage.tsx`, `CrewClient.tsx` |
+| Phone scans (live Presage) on a phone, continuous stream on a mount; next scan due by acuity | ✅ · ⚠️ real face | `crew/[transferId]/ScanStage.tsx`, `CrewClient.tsx` |
+| Oximeter pulse checked against the camera | ✅ | `VitalsSheet.tsx`, `services/transfers.py` |
 | "Sent ahead" sheet: the companion's account, ID and video results | ✅ | `components/(scan)/PreArrivalPanel.tsx` |
 | Monitor hierarchy: patient + status → camera instrument → vitals → note dock → next action; fits 1024×768 | ✅ | `crew/[transferId]/CrewClient.tsx` |
 | Camera instrument: face + upper-chest guide, acquiring sweep, framing hints, 30 s breathing settle | ⚠️ live phases need a Presage measurement | `CameraInstrument.tsx`, `lib/presage.ts` |
 | Says why it isn't measuring (API key missing / bridge offline / unavailable); blocked / busy / no-camera states; any-size camera fallback | ✅ | `CameraInstrument.tsx`, `lib/presage.ts` |
-| Presage live HR / RR / HRV + breathing wave; >110 BPM flagged "confirm with a monitor" | ⚠️ SDK ready with a real key; no live face measurement observed yet | `VitalsPanel.tsx`, `BreathingWave.tsx` |
+| Presage live HR / RR + breathing wave on a mount; outside 50–150 / 8–26 flagged | ⚠️ path runs; no real face measured yet | `VitalsPanel.tsx`, `BreathingWave.tsx` |
 | Simulated values: labelled, muted, no status word; never scored | ✅ | `VitalsPanel.tsx`, `services/transfers.py` |
 | Crew-entered SpO₂ / BP / temp / ACVPU with freshness; "Complete NEWS2" | ✅ | `VitalsSheet.tsx`, `VitalsPanel.tsx` |
 | Alerts (NEWS2 band, HR trend, forecast) from measured readings only, with "+N more" | ✅ | `core/alerts.py`, `VitalsPanel.tsx` |
@@ -46,6 +49,8 @@ and TimescaleDB 2.31 / Postgres 17 (`TEST_DATABASE_URL`); 7 web unit tests (`bun
 | Feature | Status | Files |
 |---|---|---|
 | Incoming rail; only handed-off transfers appear | ✅ | `hospital/HospitalClient.tsx`, `services/transfers.py` |
+| Presage tile: latest HR / RR, the trace, "known N min before arrival", camera trend, oximeter check, every reading | ✅ | `hospital/ContactlessTile.tsx`, `lib/contactless.ts` |
+| Camera trend (two stable scans that moved a lot) → warning in the vehicle, resus suggested in the accept dialog | ✅ | `core/scan_trend.py`, `AcceptModal.tsx` |
 | Hero: working impression with its source and the words it came from (crew or companion); name from the ID, marked "check by eye"; arrival time; **Accept transfer** | ✅ | `hospital/TransferDetail.tsx` |
 | "Seen on video" beside the handoff (frame thumbnail per sign); Video & ID tab with every scan | ✅ · ⚠️ no "seen" sign from a real clip yet | `TransferDetail.tsx`, `components/(scan)/PreArrivalPanel.tsx` |
 | Container-query layout (rail-aware); sticky decision bar on phones | ✅ | `hospital/Hospital.module.scss` |

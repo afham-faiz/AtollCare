@@ -14,31 +14,40 @@ receiving team, meanwhile, knows almost nothing until the doors open.
 
 We started with a nine-screen prototype for the Maldives: route optimiser, reporter app, dispatch board. Our
 testers were blunt. Too much, too specific, and the one thing that should feel magic (contactless vitals) didn't work.
-So we cut it to **two screens** and one loop.
+Then three mock judges told us the second version still put Presage on a laptop on a stand, while the people in our
+story only have phones. So the phone became the instrument.
 
 ## What we built
 
-1. **Crew screen**: a tablet on a mount. The camera reads heart rate, breathing rate and HRV with **Presage**. The
-   crew tap once and talk. **ElevenLabs Scribe** transcribes, and **Gemini** pulls out what was given ("Aspirin
-   300 mg · GTN spray · Oxygen 4 litres"). One tap sends the handoff.
-2. **Hospital screen**: who's arriving, how sick, what's been given, every measurement with its source and age, an
-   SBAR, the ETA, and one primary decision: **Accept**. Questions typed here are spoken aloud in the vehicle. The
-   acceptance, and what's being prepared, appears on the crew screen.
+1. **The companion's phone** (`/pre-arrival`): "Call 102 first", consent, then film the patient for 30–60 seconds while
+   saying what happened. **Presage** measures heart and breathing rate live from the camera; the words become the
+   account (**ElevenLabs Scribe**). **Gemini** checks still frames for visible signs and cites the frames. Send.
+2. **The crew's phone** (`/crew`): the packet is waiting; one tap starts the transfer with everything carried over.
+   Presage scans on a propped-up phone, as often as the patient's acuity calls for. Voice notes become the handoff.
+3. **The hospital** (`/hospital`): a Presage tile with the latest heart and breathing rate, the trace, *"known 1 h 19 min
+   before arrival"*, the camera trend and the oximeter check; every other measurement with its source and age; an
+   SBAR; and one primary decision: **Accept**.
 
-## Presage: making the camera an instrument
+## Presage: the phone as the first monitor
 
-Presage's SmartSpectra is validated for a camera that *isn't* handheld, with the face and upper chest in view, a
-still patient, and about 30 seconds for breathing to settle. That's exactly a mounted tablet in an ambulance, so we
-designed around it:
-
-- **`presage-bridge/`** runs the official `@smartspectra/node-sdk` next to the camera. The browser streams RGBA frames
-  over a local WebSocket (16-byte header: magic, width, height, capture time) into `sendFrame`, and gets back HR, RR,
-  HRV, the breathing trace and framing hints ("Too far — move the camera closer", "Chest not visible — show the
-  upper chest").
-- **Video never leaves the vehicle.** Every 5 s the bridge posts only *stable* numbers to the engine.
-- **The UI tells the truth.** Readings show *Presage · acquiring* until they're stable. Pulse above the validated
-  110 BPM is flagged *confirm with a monitor*. Without a key the vitals are **Simulated**: muted, with no clinical status word,
-  and labelled on both screens and in the SBAR as "(simulated)".
+- **Live from the phone.** The phone sends JPEG frames (30 fps, 640 px, each stamped with its capture time) over the
+  app's own HTTPS address to `presage-bridge/`, which runs the official `@smartspectra/node-sdk`. Presage answers
+  with framing hints while the shot is lined up, then HR, RR, the pulse waveform and the chest-movement waveform
+  within seconds. The scan ends itself once Presage calls both stable after its 30-second window. If the phone can't
+  stream, Presage measures the uploaded clip instead (converted once, at constant 30 fps, from the original upload).
+- **Presage's verdict decides.** A reading it calls stable (±3 bpm, ±1 breath/min) is scored; anything else is shown and
+  never counted. Each scan's report shows the waveforms, when the shot wasn't usable and why ("Too much movement
+  3–7 s"), a pause in breathing if Presage detects one, and how much the patient talked.
+- **It changes a decision.** Two stable crew scans minutes apart that moved a lot raise *"Camera trend HR 92→124, RR
+  18→25 over 3 min — take a full manual set"*: spoken in the vehicle, amber on the hospital tile, and the accept dialog
+  suggests the resus bay.
+- **Inside the clearance.** Presage's FDA 510(k) K254169 covers spot checks of pulse (50–150 bpm) and breathing (8–26)
+  over 30 s, on a phone in a static mount, by trained staff. Our ranges are those; the crew's propped-up scan copies
+  that setup; the companion's video is a *bystander estimate*, never scored; and a camera reading alone never raises a
+  critical alert. When the crew enter an oximeter pulse it's checked against the camera, on screen.
+- **Where the video goes.** To our server while it's measured (Presage, and Gemini on still frames). It isn't stored;
+  only frames that show a sign are kept, for the hospital. Presage's native mobile SDK, keeping everything on the
+  phone, is the next step.
 
 ## The rest of the stack
 
@@ -72,7 +81,8 @@ designed around it:
 
 ## What's next
 
-Per-hospital inboxes and authentication, push instead of polling, SMS fallback for low-connectivity legs, and
-validation of the contactless readings against a monitor in a real vehicle.
+Presage's native mobile SDK so only numbers leave the phone, per-hospital inboxes and authentication, push instead of
+polling, SMS fallback for low-connectivity legs, and validation of the contactless readings against a monitor in a
+real vehicle.
 
 *Decision support only. No real patient data. Clinical thresholds and timings in the demo are illustrative.*

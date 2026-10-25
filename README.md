@@ -6,16 +6,16 @@ almost nothing until the doors open.
 
 AtollCare is three connected screens. What's captured once is never asked again:
 
-- **Pre-arrival** (`/pre-arrival`): the companion's phone, before anyone reaches the health centre. Three steps: a
-  60-second video of the patient (**Presage** heart and breathing rate; **Gemini** checks it frame by frame for visible
-  signs and cites the frames), what happened in their own words (spoken or typed), and an optional ID photo. Nothing
-  reaches the health centre until they press Send.
-- **Crew** (`/crew`): picks up a sent packet and starts the transfer from it, or starts one from scratch. Contactless
-  vitals come from **60-second scans on a propped-up phone** (the default on phones) or the **live camera** on a mounted
-  tablet or laptop. The crew speak their notes, and the notes become a structured handoff. One tap sends it.
-- **Hospital** (`/hospital`): who's arriving, how sick they are, what's been given, measurements with their source,
-  what was seen on video (with the frame), the companion's account and ID, an SBAR briefing, the ETA, and one primary
-  decision: **Accept**. Questions typed here are spoken aloud in the vehicle.
+- **Pre-arrival** (`/pre-arrival`): the companion's phone, before anyone reaches the health centre. "Call 102 first",
+  consent, then film the patient for 30–60 seconds while saying what happened: **Presage** measures heart and
+  breathing rate live from the camera, the words become the account, **Gemini** checks still frames for visible signs
+  and cites them. Optional ID photo. Nothing reaches the health centre until they press Send.
+- **Crew** (`/crew`): picks up a sent packet and starts the transfer from it with one tap. Contactless vitals come from
+  **Presage scans on a propped-up phone**, live, as often as the patient's acuity calls for (or a continuous stream from
+  a mounted tablet or laptop). The crew speak their notes, and the notes become a structured handoff.
+- **Hospital** (`/hospital`): the **Presage tile** (latest heart and breathing rate, the trace, how long before arrival
+  they knew, the camera trend, the oximeter check), every other measurement with its source, what was seen on video
+  (with the frame), the companion's account and ID, an SBAR, and one primary decision: **Accept**.
 
 Region-neutral: regions are JSON data packs. The Maldives and the Scottish Western Isles ship as examples.
 Product brief: [`docs/BRIEF.md`](docs/BRIEF.md). Decision support only. Every clinical number in the demo is
@@ -37,8 +37,10 @@ vehicle laptop / tablet (live mode)          engine  FastAPI · NEWS2 · alerts 
 hospital browser ── /hospital ── polls /api every 2 s (SWR)
 ```
 
-A scan's clip is analysed in memory and never stored: Gemini's sign check and Presage's measurement run in parallel,
-and only the frames a finding cites are kept. One SmartSpectra session runs at a time; a clip takes over a live session.
+A phone scan streams JPEG frames to the bridge live (through the web app's `/presage/ws`, so one HTTPS address serves
+everything) and uploads its clip with Presage's summary; the engine then only runs Gemini on the clip. If the phone
+can't stream, Presage measures the uploaded clip instead. Clips are analysed in memory and never stored; only the
+frames a finding cites are kept. One SmartSpectra session runs at a time; a scan pauses a continuous one.
 
 - The **engine owns the data and the clinical logic**. Next.js only calls `/api/*`, so keys stay server-side.
 - **One source of truth for types:** Pydantic models in `engine/app/models.py` → OpenAPI → `web/src/lib/api-types.ts`
@@ -47,9 +49,12 @@ and only the frames a finding cites are kept. One SmartSpectra session runs at a
   into the transfer, read-only from then on).
 - **Transfer lifecycle:** `preparing` (crew only) → `pending` (handoff sent; the hospital sees it) → `accepted` →
   `arrived` → `closed`.
-- **Scans become readings once.** A finished scan's heart and breathing rate become two Presage readings, timed when
-  the clip was recorded, each with its own signal quality (below 0.6 is shown but not scored). Each scan also adds one
-  line to the timeline: what was measured, what was seen, and what was described but not seen.
+- **Presage's verdict decides.** A vital Presage calls stable (±3 bpm, ±1 breath/min) is scored; anything else is
+  shown and labelled. Ranges follow its FDA clearance K254169 (pulse 50–150, breathing 8–26, 30 s window). A crew
+  scan's numbers become two readings, once, timed at recording; the companion's are a bystander estimate, never
+  scored. A camera reading alone never raises a critical alert, counts for 15 minutes, and is checked against the
+  crew's oximeter pulse whenever one is entered. Two stable scans minutes apart that moved a lot raise a camera-trend
+  warning.
 - **Honest provenance:** every vital carries its source (`presage`, `manual` or `simulated`) and a timestamp. Simulated
   values are labelled *Simulated* on both screens and "(simulated)" in the SBAR, and get no clinical status word.
 - **Only measured values score.** NEWS2, alerts and the deterioration forecast use Presage and crew readings only;
@@ -79,10 +84,12 @@ Then open the crew screen in Chrome or Edge and allow the camera. Camera and mic
 (`localhost` or HTTPS). Embedded preview panes, such as an editor's built-in browser, usually block capture. Details:
 [`presage-bridge/README.md`](presage-bridge/README.md).
 
-**Scans** (pre-arrival and crew) need the same bridge running: the engine sends each clip to its `/vitals/file`
-(`PRESAGE_BRIDGE_URL`, default `http://127.0.0.1:8787`). Without it, scans still run Gemini's sign check and say
-plainly that heart and breathing rate weren't measured. To try the phone flow on a real phone, serve the web app over
-HTTPS (the Vultr deploy, or a tunnel); a phone can't use the camera on a plain `http://` LAN address.
+**Phones.** A phone only gets its camera on HTTPS. With engine, bridge and web running, `./scripts/phone_tunnel.sh`
+puts the web app on a Cloudflare quick tunnel; open the printed address on the laptop, press **Ctrl + .**, and scan
+the **On a phone** QR code. The web app proxies `/api` to the engine and `/presage` to the bridge, so that one address
+carries everything. To rehearse the live path without a phone: `node presage-bridge/scripts/replay.mjs face.mp4`.
+Without the bridge, scans still run Gemini's sign check and say plainly that heart and breathing rate weren't
+measured.
 
 ### With Tiger Data locally (TimescaleDB in Docker)
 
@@ -135,12 +142,13 @@ See [`.env.example`](.env.example). Each adapter has a `mock` mode, and a missin
 | `GEMINI_MODE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | engine | `real` → Gemini writes the SBAR and extracts interventions (fallback model when the primary is overloaded); otherwise template + rules |
 | `ELEVENLABS_MODE`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_CREW`, `ELEVENLABS_VOICE_HOSPITAL` | engine | `real` → Scribe transcribes voice notes; hospital messages are spoken with ElevenLabs TTS. Otherwise the browser's own speech recognition and synthesis |
 | `GEMINI_VQA_MODEL`, `VQA_MODE`, `VQA_FRAME_INTERVAL_S`, `VQA_MAX_FRAMES`, `GEMINI_VQA_THINKING` | engine | The scan's sign check (Percy's settings): model, one-pass or two-step, frame sampling, thinking level (`low` by default: ~20 s instead of up to 2 min) |
-| `PRESAGE_BRIDGE_URL` | engine | Where scans are measured (`/vitals/file`) |
+| `PRESAGE_BRIDGE_URL` | engine | Where clips are measured when the phone couldn't stream (`/vitals/file`) |
+| `PRESAGE_BRIDGE_INTERNAL_URL` | web | Where Next proxies `/presage/*` (default `http://127.0.0.1:8787`) |
 | `STORAGE_MODE` (`local`/`s3`), `S3_*` | engine | Where TTS audio and the evidence frames a finding cites are kept |
 | `DEFAULT_REGION`, `DEFAULT_SPEED_MULTIPLIER` | engine | Demo defaults |
 | `HOST_LABEL`, `HOST_REGION` | engine | Only if Vultr's metadata service isn't reachable from the container |
 | `NEXT_PUBLIC_ENGINE_URL`, `ENGINE_INTERNAL_URL` | web | API base for the browser / for the Next.js proxy |
-| `NEXT_PUBLIC_PRESAGE_BRIDGE_URL` | web | Default `ws://localhost:8787/ws` |
+| `NEXT_PUBLIC_PRESAGE_BRIDGE_URL` | web | Override the Presage WebSocket (default: this app's own `/presage/ws`) |
 | `PRESAGE_API_KEY`, `ENGINE_URL`, `PORT` | presage-bridge | `node --env-file=../.env src/index.js`, or set in its shell |
 
 ## Tiger Data
@@ -171,7 +179,7 @@ vehicle and points its `ENGINE_URL` at the public HTTPS URL.
 
 | Track | Role | Where |
 |---|---|---|
-| **Presage** (main) | On a phone: HR and RR from a 60 s clip, with per-vital signal quality. On a mount: live HR, RR, HRV, breathing waveform and framing hints | `presage-bridge/` (`/vitals/file`, `/ws`), `engine/app/intake/rppg_extractor.py`, `components/(scan)/`, `crew/[transferId]/CameraInstrument.tsx` |
+| **Presage** (main) | Live from the phone: hints, HR, RR, pulse and breathing waveforms, apnea, talking; Presage's stable verdict scores; serial-scan trend; oximeter check; hospital tile | `presage-bridge/`, `web/src/lib/presage.ts`, `components/(scan)/`, `hospital/ContactlessTile.tsx`, `engine/app/core/scan_trend.py` |
 | Gemini | Visible signs checked frame by frame with cited frames; ID read; companion's account condensed; live SBAR; interventions extracted from speech | `engine/app/intake/`, `engine/app/adapters/gemini.py`, `engine/app/core/briefing.py` |
 | ElevenLabs | Speech to text (Scribe, Gemini as fallback); hospital questions and alerts spoken in the vehicle | `engine/app/adapters/elevenlabs.py`, `web/src/lib/{dictation,speech}.ts` |
 | Tiger Data | Hypertables, measured-only `vitals_1m` → trend + forecast, network aggregates, columnar compression, Network insights with a live benchmark | `engine/app/migrations/`, `engine/app/db.py`, `web/src/app/(main)/insights/` |

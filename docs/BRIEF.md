@@ -1,4 +1,4 @@
-# AtollCare — product brief (v2, refocused)
+# AtollCare — product brief (v3, Presage on the phone)
 
 > **The patient's story arrives before the patient does.**
 
@@ -8,68 +8,59 @@ Remote emergency **transfers** — island, rural, maritime, mountain — where a
 hours in a boat, ambulance or aircraft before reaching the hospital that can treat them. Today the receiving team
 learns almost nothing until the doors open.
 
-AtollCare puts a camera on a mount in the vehicle. **Presage** reads heart rate, breathing rate and HRV hands-free
-while the crew keeps both hands on the patient. The crew **talk** instead of typing. The receiving hospital sees a
-live briefing and a vitals trend, can accept with one tap, and can ask questions that are **spoken aloud** in the
-vehicle.
+AtollCare makes the phone everyone already has into the first monitor in the chain. **Presage** reads heart and
+breathing rate from the camera, with no contact, in 30 to 60 seconds: first on the companion's phone before anyone
+reaches the health centre, then on the crew's phone, propped up in the boat, as often as the patient's acuity calls
+for. The receiving hospital sees every reading with where it came from, how long before arrival it knew, and when
+the camera trend says to prepare more.
 
-It is region-neutral. Regions are data packs (hospitals, clinics, transport modes). The Maldives and the Scottish
-Western Isles ship as examples, and a new region is a single JSON file.
+Region-neutral: regions are data packs (hospitals, clinics, transport modes, the emergency number). The Maldives and
+the Scottish Western Isles ship as examples.
 
-## Two screens, one story
+## Three screens, one story, captured once
 
-| Screen | Device | What it shows (nothing else) |
+| Screen | Device | What it does |
 |---|---|---|
-| **Crew** `/crew` | Tablet or laptop on a mount, landscape | Patient + status · camera instrument with framing guide · live HR / RR / HRV and breathing waveform (Presage) · crew-entered SpO₂ / BP / temp / ACVPU · NEWS2 · one mic button · **Send handoff** · hospital questions and acceptance, read aloud · ETA |
-| **Hospital** `/hospital` | Desktop / tablet | Incoming transfers · condition, urgency, arrival · vitals with source and age · SBAR + what's been given · trend · **Accept** (primary) · Ask the crew · map (secondary) |
-
-A transfer is **crew-only while it's being prepared**. The hospital sees it the moment the crew send the handoff.
+| **Pre-arrival** `/pre-arrival` | The companion's phone | "Call 102 first." Consent. Film the patient for 30–60 s while saying what happened: Presage measures live, the words become the account. Optional ID photo. Send. |
+| **Crew** `/crew` | The crew's phone (or a mounted tablet) | Packets sent ahead; one tap starts the transfer with everything carried over. Presage scans on a propped-up phone, timed by acuity. Voice notes → handoff. Hospital replies read aloud. |
+| **Hospital** `/hospital` | Desktop / tablet | The Presage tile (latest HR and RR, the trace, "known 1 h 19 min before arrival", the camera trend, the oximeter check) · vitals with source and age · SBAR · seen on video · **Accept**. |
 
 ## Why Presage is the main track
 
-- **The setup matches what Presage is validated for:** a mounted camera, a patient lying still, face and upper chest
-  visible. A handheld phone held by a bystander who is also talking does not.
-- **It's a real integration, not a mock-up:** `presage-bridge/` runs the official `@smartspectra/node-sdk` next to the
-  camera (Windows, macOS and Linux). The browser streams frames to it and gets HR, RR, HRV, breathing waveform and
-  framing hints back ("face too far", "chest not visible").
-- **Privacy story:** video never leaves the vehicle. Only the numbers go to the cloud.
-- **Honest limits shown in the UI:** pulse is validated for 40–110 BPM (higher readings are flagged *confirm
-  manually*). Breathing takes 30 s to settle. Contactless HR + RR give only a *partial* NEWS2, and the crew adds
-  SpO₂ / BP / temperature / ACVPU with a few taps.
-- **No API key? The demo still works:** clearly labelled *simulated* values take over, on both screens and in the SBAR.
+- **It runs from the phone, live.** The phone streams JPEG frames to the SmartSpectra SDK (`presage-bridge/`) over the
+  app's own HTTPS address. Framing hints come back while the shot is lined up; HR, RR, the pulse and breathing
+  waveforms within seconds. If the phone can't stream, Presage measures the uploaded clip instead.
+- **Presage's own verdict decides.** A reading Presage calls stable (±3 bpm, ±1 breath/min) is scored; anything else is
+  shown and labelled, never counted. Its framing problems, apnea detection and talking detection are shown in every
+  scan's report.
+- **It changes a decision.** Two stable scans minutes apart that moved a lot raise "Camera trend HR 92→124 — take a full
+  manual set", spoken in the vehicle; the hospital's accept dialog suggests the resus bay.
+- **Inside the clearance, said out loud.** Presage's FDA 510(k) K254169 covers spot checks of pulse (50–150) and
+  breathing (8–26) over 30 s, on a phone in a static mount, by trained staff. The crew's propped-up scan copies that.
+  The companion's video is labelled a bystander estimate and never scored. A camera reading alone never raises a
+  critical alert; the crew's oximeter pulse is checked against the camera every time it's entered.
+- **Privacy, plainly.** The picture goes to our server while it's measured (Presage, and Gemini on still frames); the
+  video isn't stored, and only frames that show a sign are kept for the hospital. Presage's native mobile SDK, keeping
+  everything on the phone, is the next step.
 
 ## Sponsor tracks
 
 | Track | Role in the product |
 |---|---|
-| **Presage** (main) | Live hands-free HR, RR, HRV and breathing waveform from the mounted camera |
-| **ElevenLabs** | Crew voice notes → text (Scribe); hospital questions and alerts spoken in the vehicle (TTS) |
-| **Gemini** | Turns vitals + voice notes into a live SBAR briefing; extracts interventions ("aspirin 300 mg, 21:14") |
-| **Tiger Data** | Hypertables + real-time 1-minute aggregate of measured readings → trend and forecast; network aggregates + compression → Network insights with a live benchmark |
-| **Vultr** | Engine + web on Cloud Compute behind Caddy HTTPS, region read from instance metadata; the bridge posts to it from the vehicle |
+| **Presage** (main) | Live HR, RR, pulse and breathing waveforms, framing hints, apnea and talking from the phone; serial-scan trend; oximeter check |
+| **Gemini** | Visible signs checked frame by frame with the frames cited; ID read; the account condensed (age and sex when stated); the SBAR |
+| **ElevenLabs** | Speech to text (the companion's account from the video's sound, crew notes); hospital replies spoken in the vehicle |
+| **Tiger Data** | Hypertables + a real-time 1-minute aggregate of measured readings; network aggregates and compression behind Network insights |
+| **Vultr** | Engine + web on Cloud Compute behind Caddy HTTPS |
 
-## The demo (3 minutes)
+## The demo
 
-Full script with setup and backups: [`PITCH.md`](PITCH.md).
+Script, setup, fallbacks and hard questions: [`PITCH.md`](PITCH.md).
 
-1. **Crew screen** on a laptop on a stand. A teammate lies back as the patient. Prepared case *Chest pain on a sea
-   ambulance* (presenter panel, Ctrl + .). Presage acquires → HR and RR appear as *Presage · live*, the breathing
-   waveform moves.
-2. Crew taps the mic: "Gave aspirin 300 milligrams and GTN spray, oxygen four litres, pain eight out of ten." → chips
-   appear. **Send handoff** → review → send.
-3. **Hospital screen**: the transfer arrives with condition, urgency, arrival time, sourced vitals and the SBAR.
-   **Ask the crew**: "On blood thinners?" → the laptop speaks it → crew answer by voice.
-4. **Accept** · cath lab · "Come straight to the cath lab" → the crew dock shows it, and the vehicle hears it.
-5. Close: "Same app, any region": Western Isles → *Suspected stroke, island to Glasgow*.
+## Not doing now
 
-## What we are dropping
+- Presage's native iOS/Android SDK (next step: only numbers leave the phone).
+- Real authentication, per-hospital inboxes, push instead of polling, SMS fallback, offline queue.
+- The route optimiser, dispatch board, first-aid library.
 
-- The phone reporter app, first-aid library, family link / QR, offline queue, language selector.
-- The route optimiser UI, dispatch board, asset roster, capacity panel, weather / daylight controls, engine
-  inspector, "time saved vs phone chain" panel, five scripted scenarios, role switcher, dark mode.
-- The Maldives as the story. It stays as one example region pack.
-
-## Explicitly out of scope
-
-Real authentication, multi-tenant hospitals, device/sensor integrations beyond the camera, national record systems,
-SMS/WhatsApp (pitch them as next steps).
+*Decision support only. No real patient data.*
