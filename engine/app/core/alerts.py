@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from app.core.scan_trend import ScanTrend
 from app.models import Alert, AlertLevel, DeteriorationForecast, LatestValue, News2Result, VitalsSource
 
 
@@ -12,6 +13,7 @@ def evaluate(
     forecast: DeteriorationForecast | None,
     previous: list[Alert],
     now: datetime,
+    scan_trend: ScanTrend | None = None,
 ) -> list[Alert]:
     """Current active alerts. Keeps the original `since` for alerts that persist."""
     found: list[tuple[str, AlertLevel, str]] = []
@@ -42,6 +44,9 @@ def evaluate(
     if rr is not None and (rr >= 25 or rr <= 8):
         found.append(("rr_extreme", AlertLevel.warning, f"Camera estimate: breathing rate {rr:g} — count it by hand")
                      if camera("resp_rate") else ("rr_extreme", AlertLevel.critical, f"Breathing rate {rr:g}"))
+    # two stable Presage spot checks minutes apart that moved a lot: measure properly now
+    if scan_trend and scan_trend.worrying:
+        found.append(("presage_trend", AlertLevel.warning, scan_trend.text))
     if forecast and forecast.hr_slope_per_hour is not None and forecast.hr_slope_per_hour >= 15:
         found.append(("hr_rising", AlertLevel.warning, f"Heart rate rising (+{forecast.hr_slope_per_hour:g}/h)"))
     worsening = forecast and forecast.trend == "worsening" and (forecast.minutes_to_news2_7 or 0) > 0

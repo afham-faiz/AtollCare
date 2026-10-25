@@ -24,6 +24,8 @@ export default function ({ t, tz, now }: { t: Transfer; tz?: string; now: string
   if (!latest && !scanning) return null;
   const known = knownBeforeArrival(t, first);
   const bystander = latest?.who === "companion";
+  const trend = t.alerts.find((a) => a.code === "presage_trend");
+  const check = t.presage_checks.at(-1);
 
   return (
     <section className={twMerge(styles.contactless, "rise-in")} aria-label="Contactless vitals from Presage">
@@ -52,6 +54,13 @@ export default function ({ t, tz, now }: { t: Transfer; tz?: string; now: string
               </div>
             )}
           </div>
+          {trend && <p className={styles.ctTrend}>{trend.text}</p>}
+          {check && (
+            <p className={check.agrees ? styles.ctAgrees : styles.ctTrend}>
+              Checked against the crew&apos;s oximeter: camera {check.camera}, oximeter {check.reference} ·{" "}
+              {check.agrees ? "agree" : `${Math.abs(check.camera - check.reference)} bpm apart${check.disputed ? ", oximeter used" : ""}`}
+            </p>
+          )}
           <p className={styles.ctMeta}>
             {WHO[latest.who]} · {fmtTime(latest.at, tz)} · {freshness(latest.at, now)} ·{" "}
             {bystander ? "bystander estimate, not scored" : latest.stable ? "Presage: stable, scored" : "not stable, not scored"}

@@ -800,7 +800,7 @@
           "transfers"
         ],
         "summary": "Add Scan",
-        "description": "A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background.",
+        "description": "A clip from a propped-up phone: visible signs, plus Presage vitals (measured live while recording when the\nphone could stream, `presage`; otherwise from the clip), processed in the background.",
         "operationId": "add_scan_api_transfers__transfer_id__scans_post",
         "parameters": [
           {
@@ -1422,6 +1422,7 @@
           "intakes"
         ],
         "summary": "Add Scan",
+        "description": "A clip from the companion's phone. `presage`: the bridge's live summary when the phone streamed while\nrecording; otherwise Presage measures the clip itself.",
         "operationId": "add_scan_api_intakes__intake_id__scans_post",
         "parameters": [
           {
@@ -1899,6 +1900,17 @@
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "Video"
+          },
+          "presage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presage"
           }
         },
         "type": "object",
@@ -1913,6 +1925,17 @@
             "type": "string",
             "contentMediaType": "application/octet-stream",
             "title": "Video"
+          },
+          "presage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presage"
           }
         },
         "type": "object",
@@ -3838,6 +3861,41 @@
         "title": "PreArrival",
         "description": "The packet as the transfer received it (a copy, so later edits to the intake don't rewrite history)."
       },
+      "PresageCheck": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "camera": {
+            "type": "integer",
+            "title": "Camera"
+          },
+          "reference": {
+            "type": "integer",
+            "title": "Reference"
+          },
+          "agrees": {
+            "type": "boolean",
+            "title": "Agrees"
+          },
+          "disputed": {
+            "type": "boolean",
+            "title": "Disputed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "camera",
+          "reference",
+          "agrees",
+          "disputed"
+        ],
+        "title": "PresageCheck",
+        "description": "The crew's oximeter pulse against the nearest camera heart rate (within 10 min before it)."
+      },
       "Region": {
         "properties": {
           "id": {
@@ -4573,6 +4631,14 @@
             },
             "type": "array",
             "title": "Scans",
+            "default": []
+          },
+          "presage_checks": {
+            "items": {
+              "$ref": "#/components/schemas/PresageCheck"
+            },
+            "type": "array",
+            "title": "Presage Checks",
             "default": []
           }
         },

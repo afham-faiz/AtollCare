@@ -18,6 +18,7 @@ from app.core import regions
 from app.core.clock import fmt_local
 from app.core.forecast import bucket_news2, forecast
 from app.core.news2 import compute as compute_news2
+from app.core.scan_trend import scan_trend
 from app.core.vitals import LOW_CONFIDENCE, simulated_values, update_latest
 from app.models import (
     Acceptance,
@@ -36,6 +37,7 @@ from app.models import (
     NoteRequest,
     Patient,
     PreArrival,
+    PresageCheck,
     Region,
     RemoveInterventionRequest,
     Scan,
@@ -246,8 +248,28 @@ class TransferService:
             t.monitoring.last_reading_at = reading.recorded_at
         if reading.source == VitalsSource.manual:
             await self._note(t, Author.crew, NoteKind.event, "Vitals entered: " + describe(reading), at=reading.recorded_at)
+            if reading.heart_rate is not None:
+                await self._check_camera(t, reading)
         await self._reassess(t)
         return reading
+
+    async def _check_camera(self, t: Transfer, oximeter: VitalsReading) -> None:
+        """Hold the camera to account: the crew's oximeter pulse against the nearest Presage heart rate before it.
+        Agreement is recorded; a big gap is said plainly, and the oximeter's newer value is the one scored."""
+        window = timedelta(minutes=10)
+        camera = [r for r in await self.repo.get_vitals(t.id, 120)
+                  if r.source == VitalsSource.presage and r.heart_rate is not None
+                  and timedelta(0) <= oximeter.recorded_at - r.recorded_at <= window]
+        if not camera:
+            return
+        cam, ref = round(camera[-1].heart_rate), round(oximeter.heart_rate)
+        diff = abs(cam - ref)
+        check = PresageCheck(at=oximeter.recorded_at, camera=cam, reference=ref, agrees=diff <= 5, disputed=diff > 10)
+        t.presage_checks.append(check)
+        verdict = ("agree" if check.agrees else f"differ by {diff} bpm" + (", so the oximeter's is used" if check.disputed
+                                                                             else ""))
+        await self._note(t, Author.system, NoteKind.event, f"Pulse check: camera {cam}, oximeter {ref} — {verdict}",
+                         at=oximeter.recorded_at)
 
     async def _reassess(self, t: Transfer) -> None:
         now = self.now()
@@ -264,7 +286,7 @@ class TransferService:
         trend = await self._trend_buckets(t, 60, readings)
         fc = forecast(trend, now, t.eta)
         before = t.alerts
-        t.alerts = alerts_mod.evaluate(t.news2, measured_latest, fc, before, now)
+        t.alerts = alerts_mod.evaluate(t.news2, measured_latest, fc, before, now, scan_trend(t.scans))
         announce = alerts_mod.new_alerts(before, t.alerts, t.alerts_announced, now)
         for a in announce:
             t.alerts_announced[a.code] = now

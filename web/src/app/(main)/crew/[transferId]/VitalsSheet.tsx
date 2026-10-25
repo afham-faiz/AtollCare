@@ -1,4 +1,5 @@
-// What the camera can't measure: SpO₂, blood pressure, temperature, ACVPU, oxygen. Completes NEWS2.
+// What the camera can't measure: SpO₂, blood pressure, temperature, ACVPU, oxygen. Completes NEWS2. The oximeter's
+// pulse, when given, is also checked against the camera's heart rate (and wins if they disagree).
 "use client";
 
 import { useState } from "react";
@@ -15,6 +16,7 @@ type Acvpu = "A" | "C" | "V" | "P" | "U";
 
 export default function ({ transferId, open, onClose, onSaved }: { transferId: string; open: boolean; onClose: () => void; onSaved: () => void }) {
   const [spo2, setSpo2] = useState("");
+  const [pulse, setPulse] = useState("");
   const [sbp, setSbp] = useState("");
   const [temp, setTemp] = useState("");
   const [acvpu, setAcvpu] = useState<Acvpu | null>(null);
@@ -24,6 +26,7 @@ export default function ({ transferId, open, onClose, onSaved }: { transferId: s
   const save = async () => {
     const body: VitalsRequest = { source: "manual", on_oxygen: oxygen === "oxygen" };
     if (spo2) body.spo2 = Number(spo2);
+    if (pulse) body.heart_rate = Number(pulse);
     if (sbp) body.systolic_bp = Number(sbp);
     if (temp) body.temperature_c = Number(temp);
     if (acvpu) body.consciousness = acvpu;
@@ -33,6 +36,7 @@ export default function ({ transferId, open, onClose, onSaved }: { transferId: s
       onSaved();
       onClose();
       setSpo2("");
+      setPulse("");
       setSbp("");
       setTemp("");
       setAcvpu(null);
@@ -59,14 +63,15 @@ export default function ({ transferId, open, onClose, onSaved }: { transferId: s
       footer={
         <>
           <ButtonBase onClick={onClose}>Cancel</ButtonBase>
-          <ButtonPrimary onClick={save} disabled={busy || (!spo2 && !sbp && !temp && !acvpu)}>
+          <ButtonPrimary onClick={save} disabled={busy || (!spo2 && !pulse && !sbp && !temp && !acvpu)}>
             Save
           </ButtonPrimary>
         </>
       }
     >
-      <div className="grid grid-cols-3 gap-[.75rem]">
+      <div className="grid grid-cols-2 gap-[.75rem] sm:grid-cols-4">
         {numberField("SpO₂ %", spo2, setSpo2, { inputMode: "numeric", min: 50, max: 100, autoFocus: true })}
+        {numberField("Pulse (oximeter)", pulse, setPulse, { inputMode: "numeric", min: 20, max: 250 })}
         {numberField("Systolic BP", sbp, setSbp, { inputMode: "numeric", min: 40, max: 280 })}
         {numberField("Temp °C", temp, setTemp, { inputMode: "decimal", step: "0.1", min: 30, max: 44 })}
       </div>

@@ -65,6 +65,27 @@
   }
 }
 
+.againRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.due,
+.dueLater {
+  font-size: 0.875rem;
+}
+
+.due {
+  font-weight: 650;
+  color: var(--caution);
+}
+
+.dueLater {
+  color: var(--ink-3);
+}
+
 .earlier {
   border-top: 1px solid var(--line);
   padding-top: 0.75rem;

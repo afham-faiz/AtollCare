@@ -214,6 +214,70 @@ def test_old_camera_readings_stop_counting(client):
     assert ack["news2"] is not None  # the crew's reading from 20 minutes ago still counts
 
 
+def test_serial_scans_raise_a_camera_trend(client):
+    """Two stable crew scans minutes apart: a big rise asks for a manual set, in the vehicle and at the hospital."""
+    from datetime import timedelta
+
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    svc = get_hub().transfers
+    now = svc.now()
+
+    def scan(at, hr, rr):  # still processing: Gemini hasn't finished, but Presage's numbers are in
+        return Scan(id=uuid4(), at=at, status=ScanStatus.processing,
+                    vitals=RppgEstimates(heart_rate_bpm=hr, respiration_rate_bpm=rr, heart_rate_stable=True,
+                                         respiration_stable=True, heart_rate_quality=0.8, respiration_quality=0.7,
+                                         source="presage"))
+
+    async def run(scans):
+        async with svc.locks[UUID(t["id"])]:
+            doc = await svc._load(UUID(t["id"]))
+            for s in scans:
+                doc.scans.append(s)
+                await svc._record_scan_vitals(doc, s)
+            await svc._save(doc)
+
+    client.portal.call(run, [scan(now - timedelta(minutes=12), 76, 16)])
+    assert not any(a["code"] == "presage_trend" for a in ok(client.get(f"/api/transfers/{t['id']}"))["alerts"])
+    client.portal.call(run, [scan(now, 118, 24)])
+    t = ok(client.get(f"/api/transfers/{t['id']}"))
+    trend = next(a for a in t["alerts"] if a["code"] == "presage_trend")
+    assert trend["level"] == "warning"
+    assert trend["text"] == "Camera trend HR 76→118, RR 16→24 over 12 min — take a full manual set"
+    assert any(n["kind"] == "alert" and n["text"] == trend["text"] for n in t["notes"])  # spoken in the vehicle
+
+
+def test_oximeter_pulse_checks_the_camera(client):
+    t = ok(client.post("/api/transfers", json={"complaint": "Chest pain", "origin_id": "dhiffushi_hc",
+                                               "destination_id": "igmh", "mode": "boat"}))
+    ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "presage", "heart_rate": 98, "confidence": 0.9}))
+    ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "manual", "heart_rate": 96}))
+    ok(client.post(f"/api/transfers/{t['id']}/vitals", json={"source": "manual", "heart_rate": 72}))
+    t = ok(client.get(f"/api/transfers/{t['id']}"))
+    checks = [(c["camera"], c["reference"], c["agrees"], c["disputed"]) for c in t["presage_checks"]]
+    assert checks == [(98, 96, True, False), (98, 72, False, True)]
+    assert any(n["text"] == "Pulse check: camera 98, oximeter 72 — differ by 26 bpm, so the oximeter's is used"
+               for n in t["notes"])
+    assert t["latest"]["heart_rate"]["source"] == "manual"  # the newer oximeter value is the one scored
+
+
+def test_scan_trend_needs_time_and_stability():
+    from datetime import timedelta
+
+    from app.core.scan_trend import scan_trend
+
+    now = get_hub().transfers.now()
+
+    def scan(minutes_ago, hr, stable=True):
+        return Scan(id=uuid4(), at=now - timedelta(minutes=minutes_ago), status=ScanStatus.done,
+                    vitals=RppgEstimates(heart_rate_bpm=hr, heart_rate_stable=stable, source="presage"))
+
+    assert scan_trend([scan(1, 70), scan(0, 100)]) is None  # a minute apart: not a trend
+    assert scan_trend([scan(10, 70, stable=False), scan(0, 100)]) is None  # baseline Presage didn't trust
+    calm = scan_trend([scan(10, 70), scan(0, 78)])
+    assert calm and not calm.worrying and calm.text == "Camera trend HR 70→78 over 10 min"
+
+
 def test_scan_summary_marks_weak_readings_and_contradictions():
     from app.intake.schemas import CueFinding, CuePlan, PlannedCue, VisualCueReport
     from app.services.transfers import scan_summary

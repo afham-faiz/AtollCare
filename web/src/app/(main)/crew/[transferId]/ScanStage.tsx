@@ -14,12 +14,21 @@ import { toastError } from "@/lib/toast";
 
 import styles from "./ScanStage.module.scss";
 
-export default function ({ t, tz, onSaved }: { t: Transfer; tz?: string; onSaved: (next: Transfer) => void }) {
+// how often to re-scan: every 30 min when NEWS2 is low, 15 when medium, 5 when high or the camera trend is worrying
+function scanEveryMin(t: Transfer): number {
+  if (t.alerts.some((a) => a.code === "presage_trend")) return 5;
+  const total = t.news2?.total ?? 0;
+  return total >= 7 ? 5 : total >= 5 ? 15 : 30;
+}
+
+export default function ({ t, tz, now, onSaved }: { t: Transfer; tz?: string; now?: string; onSaved: (next: Transfer) => void }) {
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const latest = t.scans.at(-1);
   const earlier = t.scans.slice(0, -1).reverse();
   const finished = t.status === "arrived" || t.status === "closed";
+  const every = scanEveryMin(t);
+  const dueIn = latest && now ? Math.round((new Date(latest.at).getTime() + every * 60000 - new Date(now).getTime()) / 60000) : null;
 
   const upload = async (clip: Blob, filename: string, presage: PresageSummary | null) => {
     setUploading(true);
@@ -65,9 +74,16 @@ export default function ({ t, tz, onSaved }: { t: Transfer; tz?: string; onSaved
         <p className={styles.empty}>No scans were taken on this transfer.</p>
       )}
       {!finished && (
-        <button type="button" className={styles.again} onClick={() => setRecording(true)} disabled={latest?.status === "processing"}>
-          <RotateCcw size={16} /> Measure again
-        </button>
+        <div className={styles.againRow}>
+          <button type="button" className={styles.again} onClick={() => setRecording(true)} disabled={latest?.status === "processing"}>
+            <RotateCcw size={16} /> Measure again
+          </button>
+          {dueIn !== null && (
+            <span className={dueIn <= 0 ? styles.due : styles.dueLater}>
+              {dueIn <= 0 ? "Next scan due now" : `Next scan in ${dueIn} min`} · every {every} min at this acuity
+            </span>
+          )}
+        </div>
       )}
       {earlier.length > 0 && (
         <details className={styles.earlier}>

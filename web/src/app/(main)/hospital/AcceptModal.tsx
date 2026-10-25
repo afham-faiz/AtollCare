@@ -29,7 +29,11 @@ export default function ({
   onDone: (t: Transfer) => void;
 }) {
   const [by, setBy] = useState("");
-  const [prepare, setPrepare] = useState<string[]>([]);
+  // a worrying camera trend suggests resus; the clinician's own picks replace the suggestion
+  const trend = t.alerts.some((a) => a.code === "presage_trend") && options.includes("Resus bay");
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const prepare = picked ?? (trend ? ["Resus bay"] : []);
+  const setPrepare = (fn: (p: string[]) => string[]) => setPicked(fn(prepare));
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -52,6 +56,7 @@ export default function ({
     }
     try {
       onDone(await post<Transfer>(`/transfers/${t.id}/accept`, { by, prepare, message: message || null }));
+      setPicked(null);
       onClose();
     } catch (err) {
       toastError(err);
@@ -80,7 +85,7 @@ export default function ({
         <input className={field.input} value={by} onChange={(e) => setBy(e.target.value)} placeholder="Dr … , Cardiology" autoFocus />
       </label>
       <div className={field.field}>
-        <span className={field.label}>Preparing</span>
+        <span className={field.label}>Preparing{trend && picked === null ? " · resus suggested by the camera trend" : ""}</span>
         <div className={styles.chips}>
           {options.map((o) => (
             <button key={o} type="button" aria-pressed={prepare.includes(o)} onClick={() => setPrepare((p) => (p.includes(o) ? p.filter((x) => x !== o) : [...p, o]))}>

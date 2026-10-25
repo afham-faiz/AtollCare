@@ -225,6 +225,16 @@ class Monitoring(BaseModel):
     hint: str | None = None  # latest Presage framing hint ("face too far")
 
 
+class PresageCheck(BaseModel):
+    """The crew's oximeter pulse against the nearest camera heart rate (within 10 min before it)."""
+
+    at: datetime
+    camera: int
+    reference: int  # the oximeter's pulse, as the crew entered it
+    agrees: bool  # within 5 bpm
+    disputed: bool  # more than 10 bpm apart: the oximeter's value is the one used
+
+
 class Acceptance(BaseModel):
     by: str
     at: datetime
@@ -266,6 +276,7 @@ class Transfer(BaseModel):
     arrived_at: datetime | None = None
     pre_arrival: PreArrival | None = None  # the companion's packet this transfer started from, as it arrived
     scans: list[Scan] = []  # recorded clips during the transfer (phone): vitals + visible signs
+    presage_checks: list[PresageCheck] = []  # camera heart rate against the crew's oximeter, every time it was entered
 
 
 class TransferListItem(BaseModel):

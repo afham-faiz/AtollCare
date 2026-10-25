@@ -326,7 +326,8 @@ export interface paths {
         put?: never;
         /**
          * Add Scan
-         * @description A ~60 s clip from a propped-up phone: Presage vitals and visible signs, processed in the background.
+         * @description A clip from a propped-up phone: visible signs, plus Presage vitals (measured live while recording when the
+         *     phone could stream, `presage`; otherwise from the clip), processed in the background.
          */
         post: operations["add_scan_api_transfers__transfer_id__scans_post"];
         delete?: never;
@@ -516,7 +517,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Scan */
+        /**
+         * Add Scan
+         * @description A clip from the companion's phone. `presage`: the bridge's live summary when the phone streamed while
+         *     recording; otherwise Presage measures the clip itself.
+         */
         post: operations["add_scan_api_intakes__intake_id__scans_post"];
         delete?: never;
         options?: never;
@@ -697,11 +702,15 @@ export interface components {
         Body_add_scan_api_intakes__intake_id__scans_post: {
             /** Video */
             video: string;
+            /** Presage */
+            presage?: string | null;
         };
         /** Body_add_scan_api_transfers__transfer_id__scans_post */
         Body_add_scan_api_transfers__transfer_id__scans_post: {
             /** Video */
             video: string;
+            /** Presage */
+            presage?: string | null;
         };
         /** Body_id_photo_api_intakes__intake_id__id_photo_post */
         Body_id_photo_api_intakes__intake_id__id_photo_post: {
@@ -1421,6 +1430,25 @@ export interface components {
              */
             scans: components["schemas"]["Scan"][];
         };
+        /**
+         * PresageCheck
+         * @description The crew's oximeter pulse against the nearest camera heart rate (within 10 min before it).
+         */
+        PresageCheck: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Camera */
+            camera: number;
+            /** Reference */
+            reference: number;
+            /** Agrees */
+            agrees: boolean;
+            /** Disputed */
+            disputed: boolean;
+        };
         /** Region */
         Region: {
             /** Id */
@@ -1762,6 +1790,11 @@ export interface components {
              * @default []
              */
             scans: components["schemas"]["Scan"][];
+            /**
+             * Presage Checks
+             * @default []
+             */
+            presage_checks: components["schemas"]["PresageCheck"][];
         };
         /** TransferListItem */
         TransferListItem: {

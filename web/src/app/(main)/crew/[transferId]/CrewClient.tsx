@@ -224,7 +224,7 @@ export default function ({ transferId }: { transferId: string }) {
       )}
       <div className={styles.stage}>
         {mode === "scan" || !active ? (
-          <ScanStage t={t} tz={region?.timezone} onSaved={(next) => refresh(next)} />
+          <ScanStage t={t} tz={region?.timezone} now={meta.now} onSaved={(next) => refresh(next)} />
         ) : (
           <CameraInstrument
             videoRef={videoRef}
