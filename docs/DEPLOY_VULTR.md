@@ -16,9 +16,9 @@ full test suite passes against TimescaleDB 2.31 / Postgres 17.
 
 ## 1. Create the server (5 min)
 
-Vultr → **Deploy** → Cloud Compute (shared CPU) → **Ubuntu 24.04 LTS** → **2 vCPU / 4 GB** at least (the web build
-needs the memory) → the region closest to where you demo (London = `lhr`). Under **SSH Keys** add your public key.
-Firewall group: allow inbound **22, 80, 443**.
+Vultr → **Deploy** → Cloud Compute (shared CPU) → **Ubuntu 24.04 LTS** → **2 vCPU / 4 GB** recommended (the web
+build needs the memory; on 2 GB the script adds 2 GB swap) → the region closest to where you demo (London = `lhr`).
+Under **SSH Keys** add your public key. Firewall group: allow inbound **22, 80, 443**.
 
 ## 2. Prepare `.env` on your machine (repo root)
 
@@ -26,8 +26,8 @@ Copy `.env.example` to `.env` and set:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | Tiger Cloud service URL (`postgres://…?sslmode=require`). Leave the example value to use the bundled container instead |
-| `PUBLIC_HOST` | `<server-ip>.sslip.io` (instant Let's Encrypt certificate) or your domain. The script fills it in if missing |
+| `DATABASE_URL` | Tiger Cloud service URL (`postgres://…?sslmode=require`). Leave the example value (or empty) to use the bundled container: the script then starts it with `--profile localdb` |
+| `PUBLIC_HOST` | `<server-ip>.sslip.io` (instant Let's Encrypt certificate) or your domain. The script fills it in if missing or `localhost` |
 | `GEMINI_MODE=real`, `GEMINI_API_KEY` | Gemini |
 | `ELEVENLABS_MODE=real`, `ELEVENLABS_API_KEY` | ElevenLabs (Text to Speech + Speech to Text permissions) |
 | `HOST_LABEL=Vultr`, `HOST_REGION=lhr` | Only if the presenter panel shows "This computer" after deploy (the engine normally reads Vultr's metadata service itself) |
@@ -44,9 +44,11 @@ VULTR_HOST=<server-ip> ./scripts/deploy_vultr.sh
 ```
 
 The default mode ships the **committed** tree with `git archive` over SSH (no rsync or GitHub access needed on the
-server), installs Docker if missing, and runs `docker compose -f docker-compose.prod.yml up -d --build`. Options:
-`SSH_KEY=~/.ssh/<key>`, `MODE=rsync` (include uncommitted changes), `MODE=git BRANCH=<branch>` (server pulls from
-GitHub). The first build takes a few minutes.
+server). First run: installs Docker, adds swap on small instances, opens 80/443 if `ufw` is active. Then it runs
+`docker compose -f docker-compose.prod.yml [--profile localdb] up -d --build` and waits for
+`https://<PUBLIC_HOST>/api/health`. Options: `SSH_KEY=~/.ssh/<key>`, `MODE=rsync` (include uncommitted changes),
+`MODE=git BRANCH=<branch>` (server pulls from GitHub; default `main`), `REF=<commit>` (archive another commit). The
+first build takes a few minutes.
 
 ## 4. Check it
 
@@ -66,7 +68,7 @@ Then **Network insights → Seed 60 days of history** (about 10–20 s) and open
 On the crew laptop, in the repo's `.env`: `PRESAGE_API_KEY=…` and `ENGINE_URL=https://<server-ip>.sslip.io`. Then:
 
 ```bash
-cd presage-bridge && node --env-file=../.env src/index.js
+cd presage-bridge && npm install && node --env-file=../.env src/index.js
 ```
 
 Open `https://<server-ip>.sslip.io/crew` in **Chrome or Edge** and allow the camera. The page talks to the bridge at
@@ -74,13 +76,14 @@ Open `https://<server-ip>.sslip.io/crew` in **Chrome or Edge** and allow the cam
 
 ## Updating
 
-Commit, then rerun `VULTR_HOST=<server-ip> ./scripts/deploy_vultr.sh`. Data in Tiger Cloud is untouched.
+Commit, then rerun `VULTR_HOST=<server-ip> ./scripts/deploy_vultr.sh`. Data in Tiger Cloud (or the `dbdata` volume)
+is untouched.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
-| Web build killed / exits 137 | Out of memory: use 4 GB+, or add swap (`fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`) |
+| Web build killed / exits 137 | Out of memory: use 4 GB+ (the script adds 2 GB swap below ~3.8 GB RAM) |
 | Certificate errors | Ports 80/443 open in the Vultr firewall; `PUBLIC_HOST` matches the IP; check `docker compose -f docker-compose.prod.yml logs caddy` |
 | Engine restarts, "database not ready" | Tiger URL wrong or missing `?sslmode=require`; `docker compose -f docker-compose.prod.yml logs engine` |
 | Crew screen: "Not measuring · Presage bridge offline" | Bridge not running on the laptop, or Chrome blocked local network access (site settings) |
