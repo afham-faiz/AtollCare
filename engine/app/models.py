@@ -136,7 +136,7 @@ class LatestValue(BaseModel):
     value: float | str | bool
     at: datetime
     source: VitalsSource
-    flag: str | None = None  # e.g. "outside Presage validated range — confirm manually"
+    flag: str | None = None  # e.g. "outside Presage's cleared range — confirm manually"
 
 
 class News2Result(BaseModel):

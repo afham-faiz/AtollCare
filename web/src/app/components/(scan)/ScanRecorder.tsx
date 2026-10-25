@@ -52,7 +52,7 @@ export default function ({
       stopCamera();
       try {
         const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
           audio: false,
         });
         stream.current = s;
@@ -88,7 +88,8 @@ export default function ({
   const record = () => {
     if (!stream.current) return;
     const type = pickType();
-    const r = new MediaRecorder(stream.current, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 2_500_000 });
+    // 6 Mbps: the pulse is a colour change of a fraction of a percent, and a starved encoder smooths it away
+    const r = new MediaRecorder(stream.current, { ...(type ? { mimeType: type } : {}), videoBitsPerSecond: 6_000_000 });
     chunks.current = [];
     r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
     r.onstop = () => {

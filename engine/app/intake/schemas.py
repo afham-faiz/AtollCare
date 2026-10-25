@@ -79,7 +79,11 @@ class RppgEstimates(BaseModel):
     heart_rate_quality: float | None = None
     respiration_quality: float | None = None
     signal_quality_score: float = Field(0.0, ge=0.0, le=1.0)
-    # True when quality is too low to trust the numbers (score < 0.4).
+    # Presage's own verdict per vital (`stable` on at least a few samples). Stable vitals report quality >= 0.6, the
+    # engine's scoring gate, so the SDK's verdict and the score never disagree. None when not measured.
+    heart_rate_stable: bool | None = None
+    respiration_stable: bool | None = None
+    # True when a reported vital isn't one Presage called stable (overall quality < 0.6).
     uncalibrated: bool = True
     source: Literal["presage", "mock", "unavailable"] = "unavailable"
     # Presage readiness problems, e.g. kTooDark, kExcessiveMotion.

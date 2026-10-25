@@ -3969,6 +3969,28 @@
             "title": "Signal Quality Score",
             "default": 0.0
           },
+          "heart_rate_stable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate Stable"
+          },
+          "respiration_stable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respiration Stable"
+          },
           "uncalibrated": {
             "type": "boolean",
             "title": "Uncalibrated",

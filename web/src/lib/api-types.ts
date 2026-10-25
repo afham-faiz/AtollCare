@@ -1469,6 +1469,10 @@ export interface components {
              * @default 0
              */
             signal_quality_score: number;
+            /** Heart Rate Stable */
+            heart_rate_stable?: boolean | null;
+            /** Respiration Stable */
+            respiration_stable?: boolean | null;
             /**
              * Uncalibrated
              * @default true

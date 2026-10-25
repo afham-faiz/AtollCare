@@ -201,7 +201,7 @@ function handleFrame(session, data) {
 
 // ── file mode: recorded clips from phones ─────────────────────────────────────
 const FILE_TIMEOUT_MS = Number(process.env.PRESAGE_TIMEOUT_MS ?? 240_000);
-const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 400 * 1024 * 1024; // 60 s of high-quality MJPEG at 960 px is ~150 MB
 let queue = Promise.resolve(); // one SDK at a time: clips wait their turn
 let fileJobs = 0;
 

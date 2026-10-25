@@ -26,7 +26,10 @@ import styles from "./VitalsPanel.module.scss";
 
 export type LiveReading = { value: number | null; stable: boolean } | null;
 
-const PRESAGE_HR_MAX = 110; // Presage validated pulse range 40–110 BPM
+// Presage's FDA clearance (K254169): pulse 50–150 bpm, breathing 8–26 /min. Outside it the number stays, flagged.
+const PRESAGE_HR = [50, 150] as const;
+const PRESAGE_RR = [8, 26] as const;
+const outside = (v: number | null, [lo, hi]: readonly [number, number]) => v !== null && (v < lo || v > hi);
 
 function Status({ a }: { a: Assessment | null }) {
   if (!a) return null;
@@ -166,7 +169,7 @@ export default function ({
         assessment={hrValue !== null ? assessHr(hrValue) : null}
         source={<Source kind={contact("heart_rate", hr)} at={L.heart_rate?.at} now={now} />}
         simulated={contact("heart_rate", hr) === "simulated"}
-        flag={(live && hrValue !== null && hrValue > PRESAGE_HR_MAX) || L.heart_rate?.flag ? "Above Presage’s validated range — confirm with a monitor" : null}
+        flag={(live && outside(hrValue, PRESAGE_HR)) || L.heart_rate?.flag ? "Outside Presage’s cleared range (50–150) — confirm with a monitor" : null}
         aside={<Sparkline points={hrSeries} color="#c8322a" className={styles.spark} />}
       />
       <Metric
@@ -176,6 +179,7 @@ export default function ({
         assessment={rrValue !== null ? assessRr(rrValue) : null}
         source={<Source kind={contact("resp_rate", rr)} at={L.resp_rate?.at} now={now} />}
         simulated={contact("resp_rate", rr) === "simulated"}
+        flag={(live && outside(rrValue, PRESAGE_RR)) || L.resp_rate?.flag ? "Outside Presage’s cleared range (8–26) — count it by hand" : null}
         aside={
           live && trace.length > 4 ? (
             <BreathingWave trace={trace} className={styles.spark} />

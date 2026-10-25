@@ -11,17 +11,15 @@ import { fmtTime } from "@/lib/format";
 
 import styles from "./ScanResult.module.scss";
 
-const SCORED = 0.6; // the engine scores readings at or above this signal quality (NEWS2, alerts, trend)
+const SCORED = 0.6; // the engine's scoring gate; a vital Presage calls stable always reports at least this
 
-function quality(q?: number | null): { word: string; tone: "good" | "weak" | "poor" } {
-  if (q == null) return { word: "No signal", tone: "poor" };
-  if (q >= SCORED) return { word: `Good signal · ${q.toFixed(2)}`, tone: "good" };
-  if (q >= 0.4) return { word: `Weak signal · ${q.toFixed(2)} · not scored`, tone: "weak" };
-  return { word: `Unreliable · ${q.toFixed(2)} · not scored`, tone: "poor" };
+// Presage's own verdict, in words: stable readings are scored; anything else is shown but never counted
+function quality(stable?: boolean | null, q?: number | null): { word: string; tone: "good" | "weak" } {
+  return (stable ?? (q != null && q >= SCORED)) ? { word: "Stable · scored", tone: "good" } : { word: "Not stable · not scored", tone: "weak" };
 }
 
-function Vital({ label, value, unit, q }: { label: string; value?: number | null; unit: string; q?: number | null }) {
-  const qual = quality(q);
+function Vital({ label, value, unit, q, stable }: { label: string; value?: number | null; unit: string; q?: number | null; stable?: boolean | null }) {
+  const qual = quality(stable, q);
   return (
     <div className={styles.vital}>
       <span className={styles.vitalLabel}>{label}</span>
@@ -102,8 +100,8 @@ export default function ({ scan, tz, title, coach }: { scan: Scan; tz?: string; 
         </div>
         {measured ? (
           <div className={styles.vitals}>
-            <Vital label="Heart rate" value={v?.heart_rate_bpm} unit="bpm" q={v?.heart_rate_quality} />
-            <Vital label="Breathing" value={v?.respiration_rate_bpm} unit="/min" q={v?.respiration_quality} />
+            <Vital label="Heart rate" value={v?.heart_rate_bpm} unit="bpm" q={v?.heart_rate_quality} stable={v?.heart_rate_stable} />
+            <Vital label="Breathing" value={v?.respiration_rate_bpm} unit="/min" q={v?.respiration_quality} stable={v?.respiration_stable} />
           </div>
         ) : (
           <p className={styles.note}>

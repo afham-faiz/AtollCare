@@ -11,7 +11,7 @@ import type { CameraState, PresageMetrics, PresageState } from "@/lib/presage";
 
 import styles from "./CameraInstrument.module.scss";
 
-const SETTLE_MS = 30_000; // Presage breathing rate needs a 30 s window
+const SETTLE_MS = 30_000; // Presage's cleared measurement window (K254169) is 30 s for pulse and breathing
 
 export type Instrument = {
   phase: "off" | "connecting" | "acquiring" | "measuring" | "demo";

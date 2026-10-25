@@ -9,9 +9,9 @@ import statistics
 import httpx
 
 from app.intake.schemas import RppgEstimates
-from app.intake.video_prep import to_sdk_readable
+from app.intake.video_prep import probe_fps, to_sdk_readable
 
-QUALITY_THRESHOLD = 0.4
+QUALITY_THRESHOLD = 0.6  # the engine's scoring gate (core/vitals.LOW_CONFIDENCE): one threshold everywhere
 MIN_STABLE_SAMPLES = 3
 TIMEOUT_S = float(os.environ.get("PRESAGE_TIMEOUT_S", "300"))
 
@@ -46,8 +46,16 @@ def summarise_series(series: list[dict]) -> tuple[int | None, float]:
     return value, max(0.0, min(1.0, quality))
 
 
+def presage_verdict(series: list[dict], quality: float) -> tuple[bool, float]:
+    """Presage's own verdict decides: a vital it called stable (on enough samples) is scored, whatever its raw
+    confidence (the SDK calls breathing stable from 45/100). Same mapping as the bridge's live mode."""
+    stable = sum(1 for s in series if s.get("stable")) >= MIN_STABLE_SAMPLES
+    return stable, (max(QUALITY_THRESHOLD, quality) if stable else min(QUALITY_THRESHOLD - 0.01, quality))
+
+
 def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
     """Send video to the Presage bridge; never raises, degrades to null vitals."""
+    fps = probe_fps(video_bytes)
     try:
         resp = httpx.post(
             f"{bridge_url()}/vitals/file",
@@ -62,8 +70,10 @@ def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
 
     diagnostics = data.get("diagnostics") or {}
     diagnostics["hints"] = data.get("hints") or []  # Presage's own plain-language framing hints, for the screen
-    hr, hr_q = _vital(diagnostics.get("pulse_series"), data.get("heart_rate_bpm"), data.get("confidence"))
-    rr, rr_q = _vital(diagnostics.get("breathing_series"), data.get("respiration_rate_bpm"), data.get("confidence"))
+    diagnostics["source_fps"] = fps
+    hr, hr_q, hr_stable = _vital(diagnostics.get("pulse_series"), data.get("heart_rate_bpm"), data.get("confidence"))
+    rr, rr_q, rr_stable = _vital(diagnostics.get("breathing_series"), data.get("respiration_rate_bpm"),
+                                 data.get("confidence"))
 
     qualities = [q for v, q in ((hr, hr_q), (rr, rr_q)) if v is not None]
     # Conservative overall score: the weakest vital we are reporting.
@@ -73,6 +83,8 @@ def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
         respiration_rate_bpm=rr,
         heart_rate_quality=hr_q if hr is not None else None,
         respiration_quality=rr_q if rr is not None else None,
+        heart_rate_stable=hr_stable if hr is not None else None,
+        respiration_stable=rr_stable if rr is not None else None,
         signal_quality_score=quality,
         uncalibrated=quality < QUALITY_THRESHOLD,
         source="mock" if data.get("mode") == "mock" else "presage",
@@ -81,10 +93,13 @@ def extract_vitals_from_video(video_bytes: bytes) -> RppgEstimates:
     )
 
 
-def _vital(series: list[dict] | None, fallback_value, fallback_confidence) -> tuple[int | None, float]:
+def _vital(series: list[dict] | None, fallback_value, fallback_confidence) -> tuple[int | None, float, bool]:
     """Prefer the whole-trace summary; fall back to the sidecar's single value (mock mode)."""
     if series:
-        return summarise_series(series)
+        value, quality = summarise_series(series)
+        stable, quality = presage_verdict(series, quality)
+        return value, quality, stable
     if fallback_value is None:
-        return None, 0.0
-    return fallback_value, max(0.0, min(1.0, float(fallback_confidence or 0.0)))
+        return None, 0.0, False
+    quality = max(0.0, min(1.0, float(fallback_confidence or 0.0)))
+    return fallback_value, quality, quality >= QUALITY_THRESHOLD

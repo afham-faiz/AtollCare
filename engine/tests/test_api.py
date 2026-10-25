@@ -59,7 +59,7 @@ def test_full_transfer_lifecycle(client):
     assert t["notes"][0]["kind"] == "event"
 
     # contactless (bridge) + manual vitals → NEWS2, latest values with Presage flag
-    ack = ok(client.post(f"/api/transfers/{tid}/vitals", json={"source": "presage", "heart_rate": 118, "resp_rate": 24,
+    ack = ok(client.post(f"/api/transfers/{tid}/vitals", json={"source": "presage", "heart_rate": 118, "resp_rate": 28,
                                                                 "confidence": 0.8, "hint": "Hold still"}))
     assert ack["monitoring"]["source"] == "presage" and ack["monitoring"]["hint"] == "Hold still"
     assert not ack["news2"]["complete"]
@@ -68,7 +68,8 @@ def test_full_transfer_lifecycle(client):
     assert ack["news2"]["total"] >= 7
     assert any(a["level"] == "critical" for a in ack["alerts"])
     t = ok(client.get(f"/api/transfers/{tid}"))
-    assert t["latest"]["heart_rate"]["flag"]  # 118 > Presage validated 110
+    assert t["latest"]["resp_rate"]["flag"]  # 28 > Presage's cleared 26 /min
+    assert not t["latest"]["heart_rate"].get("flag")  # 118 is inside the cleared 50–150
     assert any(n["kind"] == "alert" for n in t["notes"])
 
     # crew note → interventions + briefing refresh

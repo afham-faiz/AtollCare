@@ -50,6 +50,16 @@ def test_bad_final_samples_do_not_override_a_good_trace(monkeypatch):
     assert est.uncalibrated
 
 
+def test_presage_stable_verdict_is_scored_even_at_modest_confidence(monkeypatch):
+    # the SDK calls breathing stable from 45/100: that reading must clear the engine's 0.6 scoring gate
+    breathing = [sample(16, 0.48) for _ in range(10)]
+    payload = {"mode": "sdk", "diagnostics": {"pulse_series": [], "breathing_series": breathing}}
+    monkeypatch.setattr(httpx, "post", fake_post(payload))
+    est = rppg_extractor.extract_vitals_from_video(b"video")
+    assert est.respiration_rate_bpm == 16 and est.respiration_stable
+    assert est.respiration_quality >= 0.6 and not est.uncalibrated
+
+
 def test_sidecar_down_degrades_without_raising(monkeypatch):
     monkeypatch.setattr(httpx, "post", fake_post(exc=httpx.ConnectError("refused")))
     est = rppg_extractor.extract_vitals_from_video(b"video")

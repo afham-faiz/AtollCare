@@ -59,6 +59,7 @@ class Frame:
 
 
 _DURATION = re.compile(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)")
+_FPS = re.compile(r"(\d+(?:\.\d+)?) fps")
 
 
 def _duration_s(path: str) -> float | None:
@@ -66,6 +67,20 @@ def _duration_s(path: str) -> float | None:
     probe = subprocess.run([_ffmpeg_exe(), "-i", path], capture_output=True, text=True, timeout=60, check=False)
     m = _DURATION.search(probe.stderr)
     return int(m[1]) * 3600 + int(m[2]) * 60 + float(m[3]) if m else None
+
+
+def probe_fps(video_bytes: bytes) -> float | None:
+    """The frame rate the clip says it has (phones record 24, 30 or variable). None if ffmpeg can't tell."""
+    with tempfile.TemporaryDirectory() as tmp:
+        src = os.path.join(tmp, "in.bin")
+        with open(src, "wb") as f:
+            f.write(video_bytes)
+        try:
+            probe = subprocess.run([_ffmpeg_exe(), "-i", src], capture_output=True, text=True, timeout=60, check=False)
+        except (subprocess.SubprocessError, OSError):
+            return None
+    m = _FPS.search(probe.stderr)
+    return float(m[1]) if m else None
 
 
 def sample_frames(video: bytes, every_s: float, max_frames: int, max_side: int = 768) -> list[Frame]:
@@ -113,18 +128,20 @@ def audio_to_pcm(data: bytes) -> bytes:
     return out
 
 
-def to_sdk_readable(video_bytes: bytes, max_side: int = 1280) -> bytes:
+def to_sdk_readable(video_bytes: bytes, max_side: int = 960) -> bytes:
     """MJPEG .avi for the Presage SDK, whose bundled FFmpeg cannot open H.264 .mp4 (phone video) but reads MJPEG.
 
-    Applies phone rotation and caps the long side. Fails soft: on any ffmpeg error the original bytes come back.
-    (Moved here from the Node sidecar so the Presage bridge needs no ffmpeg of its own.)
+    rPPG lives in tiny colour changes, so this is the only re-encode Presage's copy gets, at high quality (q 3), from
+    the original upload. Constant 30 fps because the bridge replays at 33 ms per frame: a 24 fps or variable-rate phone
+    clip replayed that way would run fast and read the pulse high. Applies phone rotation and caps the long side.
+    Fails soft: on any ffmpeg error the original bytes come back.
     """
-    scale = f"scale='if(gt(iw,ih),min({max_side},iw),-2)':'if(gt(iw,ih),-2,min({max_side},ih))'"
+    scale = f"fps=30,scale='if(gt(iw,ih),min({max_side},iw),-2)':'if(gt(iw,ih),-2,min({max_side},ih))'"
     with tempfile.TemporaryDirectory() as tmp:
         src, dst = os.path.join(tmp, "in.bin"), os.path.join(tmp, "out.avi")
         with open(src, "wb") as f:
             f.write(video_bytes)
-        cmd = [_ffmpeg_exe(), "-y", "-loglevel", "error", "-i", src, "-an", "-vf", scale, "-c:v", "mjpeg", "-q:v", "4", dst]
+        cmd = [_ffmpeg_exe(), "-y", "-loglevel", "error", "-i", src, "-an", "-vf", scale, "-c:v", "mjpeg", "-q:v", "3", dst]
         try:
             subprocess.run(cmd, check=True, timeout=300, capture_output=True)
             with open(dst, "rb") as f:

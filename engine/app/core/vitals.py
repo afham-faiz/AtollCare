@@ -9,8 +9,9 @@ from app.models import LatestValue, SimProfile, VitalsReading, VitalsSource
 
 FIELDS = ["heart_rate", "resp_rate", "hrv_rmssd", "spo2", "on_oxygen", "systolic_bp", "temperature_c", "consciousness"]
 
-# Presage SmartSpectra model card: pulse validated 40–110 BPM, breathing 5–40 /min (DEMO: shown as a flag, not hidden).
-PRESAGE_RANGES = {"heart_rate": (40, 110), "resp_rate": (5, 40)}
+# Presage's FDA 510(k) clearance K254169 (SmartSpectra Vital Signs Monitor, 18 June 2026): pulse 50–150 bpm and
+# respiratory rate 8–26 /min, each over a 30 s window. Outside that we still show the number, flagged for a manual check.
+PRESAGE_RANGES = {"heart_rate": (50, 150), "resp_rate": (8, 26)}
 LOW_CONFIDENCE = 0.6
 
 
@@ -19,7 +20,7 @@ def presage_flag(field: str, value: float, source: VitalsSource) -> str | None:
         return None
     lo, hi = PRESAGE_RANGES[field]
     if value < lo or value > hi:
-        return f"Outside Presage validated range ({lo}–{hi}) — confirm manually"
+        return f"Outside Presage's cleared range ({lo}–{hi}) — confirm manually"
     return None
 
 

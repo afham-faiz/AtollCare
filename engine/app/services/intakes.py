@@ -87,8 +87,10 @@ class ScanRunner:
             small = await asyncio.to_thread(downsample_video, raw)
             self._remember(scan_id, small)
             await mutate(scan_id, lambda s: setattr(s, "stage", "Checking visible signs and measuring vitals"))
+            # Gemini looks at stills, so the small copy is enough; Presage reads colour changes too faint to survive
+            # a second lossy encode, so it gets the original upload
             await asyncio.gather(self._signs(scan_id, small, account, age, mutate),
-                                 self._vitals(scan_id, small, mutate, on_vitals))
+                                 self._vitals(scan_id, raw, mutate, on_vitals))
             await mutate(scan_id, lambda s: (setattr(s, "status", ScanStatus.done), setattr(s, "stage", None)))
         except Exception as exc:
             log.exception("scan %s failed", scan_id)

@@ -39,9 +39,11 @@ def test_journey_eta_scales_with_mode():
 
 
 def test_presage_flag_outside_validated_range():
-    assert presage_flag("heart_rate", 118, VitalsSource.presage)
-    assert presage_flag("heart_rate", 96, VitalsSource.presage) is None
-    assert presage_flag("heart_rate", 118, VitalsSource.manual) is None
+    assert presage_flag("heart_rate", 158, VitalsSource.presage)  # cleared range is 50–150 (K254169)
+    assert presage_flag("heart_rate", 45, VitalsSource.presage)
+    assert presage_flag("heart_rate", 118, VitalsSource.presage) is None
+    assert presage_flag("resp_rate", 28, VitalsSource.presage)
+    assert presage_flag("heart_rate", 158, VitalsSource.manual) is None
 
 
 def test_latest_ignores_low_quality_and_older_readings():
