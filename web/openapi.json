@@ -3914,6 +3914,17 @@
             "type": "string",
             "title": "Description"
           },
+          "emergency_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emergency Number"
+          },
           "timezone": {
             "type": "string",
             "title": "Timezone"

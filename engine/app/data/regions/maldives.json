@@ -3,6 +3,7 @@
   "name": "Maldives",
   "country": "Maldives",
   "description": "1,000+ islands; specialist care concentrated in Malé. Sea ambulances and seaplanes link the atolls.",
+  "emergency_number": "102",
   "timezone": "Indian/Maldives",
   "center": {
     "lat": 3.2,

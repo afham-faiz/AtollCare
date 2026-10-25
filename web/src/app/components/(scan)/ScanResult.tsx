@@ -214,7 +214,8 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
               <p className={styles.mismatch}>
                 <MessageSquareQuote size={16} className="shrink-0" />
                 <span>
-                  <strong>Described, but not seen in the video:</strong> {contradicted.map((f) => f.label).join(", ")}
+                  <strong>Described by the companion, not visible in this clip:</strong> {contradicted.map((f) => f.label).join(", ")}.
+                  Symptoms can come and go.
                 </span>
               </p>
             )}
@@ -230,7 +231,9 @@ export default function ({ scan, tz, title, coach, bystander }: { scan: Scan; tz
                     <p className={styles.presentHead}>
                       <Eye size={15} className="shrink-0" />
                       <strong>{f.label}</strong>
-                      <span className={styles.conf}>{Math.round(f.confidence * 100)}%</span>
+                      <span className={styles.conf}>
+                        seen in {f.evidence_frames.length} of {signs.frames.length} frames
+                      </span>
                     </p>
                     <p className={styles.reason}>{f.reason}</p>
                     <Frames finding={f} scan={scan} />

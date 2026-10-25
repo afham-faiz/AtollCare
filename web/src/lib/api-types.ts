@@ -1459,6 +1459,8 @@ export interface components {
             country: string;
             /** Description */
             description: string;
+            /** Emergency Number */
+            emergency_number?: string | null;
             /** Timezone */
             timezone: string;
             center: components["schemas"]["GeoPoint"];

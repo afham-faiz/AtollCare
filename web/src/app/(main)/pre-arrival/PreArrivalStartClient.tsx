@@ -1,7 +1,7 @@
 // Pre-arrival, first screen (the companion's phone): where are you taking them? Then the three steps.
 "use client";
 
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -17,7 +17,9 @@ export default function () {
   const router = useRouter();
   const { data: meta } = useMeta();
   const [centre, setCentre] = useState("");
+  const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const emergency = meta?.region.emergency_number;
   // health centres first: that's where a companion usually heads; hospitals after
   const places = useMemo(
     () => [...(meta?.region.facilities ?? [])].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "clinic" ? -1 : 1)),
@@ -43,6 +45,15 @@ export default function () {
         <p className={styles.lede}>Three quick steps, about three minutes. Everything you send goes with the patient, so nobody asks twice.</p>
       </header>
 
+      {emergency && (
+        <p className={styles.emergency}>
+          <Phone size={18} className="shrink-0" />
+          <span>
+            Emergency? Call <strong className="tnum">{emergency}</strong> first. This doesn&apos;t replace it.
+          </span>
+        </p>
+      )}
+
       <ol className={styles.preview}>
         <li>
           <span>1</span>Point your phone at the patient: Presage reads heart and breathing rate
@@ -67,12 +78,18 @@ export default function () {
         </select>
       </label>
 
-      <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={!centre || busy}>
+      <label className={styles.consent}>
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+        <span>The patient agrees to be filmed, or can&apos;t be asked and this is for their care.</span>
+      </label>
+
+      <ButtonPrimary size="lg" className="w-full" onClick={start} disabled={!centre || !consent || busy}>
         {busy ? <Loader2 size={18} className="animate-spin" /> : null} Start <ArrowRight size={18} />
       </ButtonPrimary>
       <p className={styles.fine}>
-        The video is analysed as soon as you record it, but the health centre sees nothing until you press Send. The video itself
-        isn&apos;t kept — only the measurements and the few frames they rely on.
+        The camera&apos;s picture goes to our server while you measure: Presage reads heart and breathing rate from it, and Google&apos;s
+        Gemini checks still frames for visible signs. The video isn&apos;t stored; only frames that show a sign are kept, for the
+        hospital. The health centre sees nothing until you press Send.
       </p>
     </div>
   );

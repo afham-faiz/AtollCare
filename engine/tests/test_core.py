@@ -105,7 +105,8 @@ def test_rule_extraction_reads_speech_to_text():
 
 
 def test_suspected_condition_keywords():
-    assert "STEMI" in briefing.suspected_condition("crushing chest pain going to the left arm")
+    assert briefing.suspected_condition("crushing chest pain going to the left arm") == "Chest pain, possible ACS (no ECG yet)"
+    assert briefing.suspected_condition("chest pain, ST elevation in the inferior leads") == "Suspected STEMI"
     assert "stroke" in briefing.suspected_condition("slurred speech and facial droop").lower()
     assert briefing.suspected_condition("feels unwell") is None
 

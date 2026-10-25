@@ -3,6 +3,7 @@
   "name": "Scottish Western Isles",
   "country": "United Kingdom",
   "description": "Island and Highland communities hours from Glasgow and Inverness; fixed-wing and helicopter air ambulances.",
+  "emergency_number": "999",
   "timezone": "Europe/London",
   "center": {
     "lat": 57.2,

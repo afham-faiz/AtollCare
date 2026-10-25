@@ -40,6 +40,33 @@
   color: var(--ink-3);
 }
 
+.emergency {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--critical) 9%, transparent);
+  color: var(--critical);
+  font-weight: 550;
+}
+
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+
+  input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+  }
+}
+
 .preview {
   display: flex;
   flex-direction: column;

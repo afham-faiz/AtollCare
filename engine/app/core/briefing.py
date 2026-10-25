@@ -13,7 +13,9 @@ from app.core.news2 import partial_label
 from app.models import Briefing, Extraction, Transfer
 
 SUSPECTED = [
-    ("Suspected STEMI / acute coronary syndrome", r"chest pain|crushing chest|st elevation|stemi"),
+    # STEMI is an ECG diagnosis: only when someone reports ST elevation; chest pain alone is a possible ACS
+    ("Suspected STEMI", r"st elevation|stemi"),
+    ("Chest pain, possible ACS (no ECG yet)", r"chest pain|crushing chest"),
     ("Suspected stroke", r"slurred|facial droop|face.*droop|one.sided weakness|weakness of the (left|right)|stroke"),
     ("Major trauma / haemorrhage", r"fell|fall from|fracture|bleeding heavily|heavy bleeding|crash|stab"),
     ("Postpartum haemorrhage", r"gave birth|postpartum|after (the )?birth"),
@@ -55,6 +57,8 @@ def inputs(t: Transfer, origin: str, destination: str, mode_label: str, tz: str)
         "interventions": [f"{fmt_local(i.at, tz)} {i.text}" for i in t.interventions],
         "crew_notes": [f"{fmt_local(n.at, tz)} {n.text}" for n in t.notes
                        if n.author.value == "crew" and n.kind.value in ("voice", "text", "answer")][-8:],
+        # a bystander's own words from before the crew arrived (history, onset, medicines): use it, attributed
+        "companion_account": t.pre_arrival.account if t.pre_arrival else None,
         "hospital_questions": [
             {"q": n.text, "answered": any(m.reply_to == n.id for m in t.notes)} for n in t.notes if n.kind.value == "question"
         ],
@@ -88,6 +92,8 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
     situation = f"{who} from {data['from']} by {data['transport'].lower()}, ETA {data['eta_local']}. {t.complaint.rstrip('.')}."
     background_parts = [n for n in data["crew_notes"]][-2:]
     background = "Crew notes: " + " · ".join(background_parts) if background_parts else "No crew notes yet."
+    if data.get("companion_account"):
+        background = f"Per companion: \u201c{data['companion_account']}\u201d " + background
     assessment = f"{suspected + '. ' if suspected else ''}{n2_txt}. Vitals: {vitals or 'not recorded'}."
     if t.alerts:
         assessment += " Alerts: " + "; ".join(a.text for a in t.alerts) + "."
@@ -97,6 +103,8 @@ def template(t: Transfer, data: dict[str, Any], now: datetime) -> Briefing:
         rec.append("Already given: " + "; ".join(given) + ".")
     if suspected and "STEMI" in suspected:
         rec.append("Consider cath lab activation on arrival.")
+    elif suspected and "ACS" in suspected:
+        rec.append("12-lead ECG on arrival; ask the crew for a photo of any ECG taken.")
     elif suspected and "stroke" in suspected.lower():
         rec.append("Consider stroke team + CT on arrival; confirm last-seen-well time.")
     elif suspected and "trauma" in suspected.lower():

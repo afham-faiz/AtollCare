@@ -60,7 +60,7 @@
     {
       "id": "pallor_or_blue_lips",
       "label": "Pale, grey or bluish face or lips",
-      "question": "Are the face or lips unusually pale, grey or bluish compared with ordinary skin tone? Allow for the lighting.",
+      "question": "Are the face or lips unusually pale, grey or bluish compared with ordinary skin tone? Allow for the lighting. On darker skin, judge from the lips, gums and inner eyelids, and answer cannot_assess if those aren't clearly visible.",
       "needs": "face, good light",
       "presentations": ["cardiac", "respiratory distress", "shock"],
       "baseline": true

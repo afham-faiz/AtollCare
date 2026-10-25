@@ -101,6 +101,7 @@ class RegionSummary(BaseModel):
 
 
 class Region(RegionSummary):
+    emergency_number: str | None = None  # shown to a companion before anything else: call this first
     timezone: str
     center: GeoPoint
     zoom: int

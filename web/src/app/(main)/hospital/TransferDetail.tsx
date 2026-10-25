@@ -107,7 +107,7 @@ function SeenOnVideo({ t, onOpen }: { t: Transfer; onOpen: () => void }) {
                   <span className="min-w-0">
                     <span className="block font-[600]">{f.label}</span>
                     <span className="block text-[0.8125rem] text-ink-3">
-                      {who} · {Math.round(f.confidence * 100)}%
+                      {who} · seen in {f.evidence_frames.length} of {scan.signs?.frames.length ?? 0} frames
                     </span>
                   </span>
                 </button>
