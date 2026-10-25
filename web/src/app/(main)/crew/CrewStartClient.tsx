@@ -85,8 +85,18 @@ export default function () {
                     </span>
                     {left !== null && (
                       <span className={styles.rowEta} title={`ETA ${fmtMin(left)}`}>
-                        <span className="numeral">{Math.max(0, Math.round(left))}</span>
-                        <span className="unit">min</span>
+                        {left >= 60 ? (
+                          <>
+                            <span className="numeral">{Math.floor(Math.round(left) / 60)}</span>
+                            <span className="unit">h</span>
+                            <span className="numeral">{String(Math.round(left) % 60).padStart(2, "0")}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="numeral">{Math.max(0, Math.round(left))}</span>
+                            <span className="unit">min</span>
+                          </>
+                        )}
                       </span>
                     )}
                   </Link>

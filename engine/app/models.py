@@ -414,6 +414,23 @@ class NoteRequest(BaseModel):
     reply_to: UUID | None = None
 
 
+class HeardRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class HeardVitals(BaseModel):
+    """Vitals read out of something said. Nothing is recorded until the crew saves them (or says them in a note)."""
+    transcript: str
+    spo2: float | None = None
+    on_oxygen: bool | None = None
+    systolic_bp: float | None = None
+    diastolic_bp: float | None = None  # said with it, shown back; NEWS2 scores the systolic only
+    temperature_c: float | None = None
+    heart_rate: float | None = None
+    resp_rate: float | None = None
+    consciousness: Consciousness | None = None
+
+
 class MessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     kind: Literal["question", "message"] = "question"

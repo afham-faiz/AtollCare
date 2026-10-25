@@ -106,7 +106,7 @@ export default function ({
   };
 
   return (
-    <div className={styles.capture}>
+    <div className={styles.capture} data-state={listening ? "listening" : saving ? "saving" : result ? "result" : replying ? "asking" : "idle"}>
       {canVoice ? (
         <button
           type="button"

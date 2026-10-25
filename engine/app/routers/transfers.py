@@ -3,9 +3,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 
+from app.core import spoken_vitals
 from app.models import (
     AcceptRequest,
     CreateTransferRequest,
+    HeardRequest,
+    HeardVitals,
     MessageRequest,
     MonitoringRequest,
     NoteRequest,
@@ -41,6 +44,21 @@ async def get_transfer(transfer_id: UUID, h: Hub = Depends(hub)):
 @router.post("/{transfer_id}/vitals", response_model=VitalsAck)
 async def add_vitals(transfer_id: UUID, body: VitalsRequest, h: Hub = Depends(hub)):
     return await h.transfers.add_vitals(transfer_id, body)
+
+
+@router.post("/vitals/heard", response_model=HeardVitals)
+async def heard_vitals(body: HeardRequest):
+    """Read vitals out of a sentence (browser dictation or typed). Records nothing."""
+    return spoken_vitals.parse(body.text)
+
+
+@router.post("/vitals/heard/voice", response_model=HeardVitals)
+async def heard_vitals_voice(audio: UploadFile = File(...), h: Hub = Depends(hub)):
+    """Read vitals out of a recording, transcribed by ElevenLabs. Records nothing."""
+    data = await audio.read()
+    if not data:
+        raise AppError("empty_audio", "No audio received", 422)
+    return await h.transfers.hear_vitals(data, audio.filename or "vitals.webm", audio.content_type or "audio/webm")
 
 
 @router.get("/{transfer_id}/vitals/trend", response_model=TrendResponse)

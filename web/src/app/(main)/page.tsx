@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import HomeClient from "./HomeClient";
 
-// AtollCare opens straight into the crew experience.
-export default async function () {
-  redirect("/crew");
+export default function () {
+  return <HomeClient />;
 }

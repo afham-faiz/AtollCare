@@ -171,9 +171,9 @@ export default function ({ intakeId }: { intakeId: string }) {
     <div className={styles.page}>
       <header className={twMerge("glass", styles.wizardBar)}>
         {index === 0 ? (
-          <span className={styles.wizardMark} aria-hidden>
+          <Link href="/" className={styles.wizardMark} aria-label="Home" title="Home">
             <Mark className="h-[1.125rem] w-[1.125rem]" />
-          </span>
+          </Link>
         ) : (
           <button type="button" className={styles.back} onClick={() => go(ORDER[index - 1])} aria-label="Back">
             <ChevronLeft size={20} strokeWidth={1.75} />

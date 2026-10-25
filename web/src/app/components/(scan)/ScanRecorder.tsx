@@ -227,11 +227,12 @@ export default function <T,>({
               ? null
               : "Arm's length away, face and chest inside the corners";
   const upload = () => fileInput.current?.click();
+  const reading = camera === "on" && live && recording;
   const shutter = blocked ? upload : camera === "on" ? (recording ? finish : record) : () => startCamera(facing);
 
   return (
     <div className={styles.wrap}>
-      <div className={twMerge(styles.stage, recording && styles.stageLive, live && camera === "on" && styles.stageReading)}>
+      <div className={twMerge(styles.stage, recording && styles.stageLive, reading && styles.stageReading)}>
         <video ref={setVideoEl} playsInline muted className={twMerge(styles.video, (camera !== "on" || handing) && styles.hidden, facing === "user" && styles.mirror)} />
         {handing ? (
           <div className={styles.result} role="status" aria-live="polite">
@@ -316,21 +317,20 @@ export default function <T,>({
             )}
 
             <div className={styles.bottom}>
-              {camera === "on" && live && (
+              {/* while recording only, and slim: one row above the shutter, so the picture stays clear */}
+              {reading && presage.metrics.apnea && <span className={styles.apnea}>Presage sees a pause in breathing</span>}
+              {reading && (
                 <div className={styles.readout} aria-live="polite">
-                  <div className={styles.readoutRow}>
-                    <Heartbeat bpm={hr?.stable ? hr.value : null} waiting={!hr?.stable} size="sm" />
-                    <p className={twMerge(styles.primary, !hr?.stable && styles.ghosted)}>
-                      <span className={twMerge("numeral", styles.hrValue)}>{hrValue ?? "—"}</span>
-                      <span className={styles.unit}>{hr?.stable ? "bpm · steady" : hrValue ? "bpm · settling" : "bpm"}</span>
-                    </p>
-                    <p className={twMerge(styles.secondary, !rr?.stable && styles.ghosted)}>
-                      <span className={twMerge("numeral", styles.rrValue)}>{rrValue ?? "—"}</span>
-                      <span className={styles.unit}>breaths</span>
-                    </p>
-                  </div>
-                  <Trace values={presage.metrics.trace} tone="camera" fade dot label="Live breathing wave" className={styles.readoutWave} />
-                  {presage.metrics.apnea && <span className={styles.apnea}>Presage sees a pause in breathing</span>}
+                  <Heartbeat bpm={hr?.stable ? hr.value : null} waiting={!hr?.stable} size="sm" />
+                  <p className={twMerge(styles.primary, !hr?.stable && styles.ghosted)} title={hr?.stable ? "Steady" : "Settling"}>
+                    <span className={twMerge("numeral", styles.hrValue)}>{hrValue ?? "—"}</span>
+                    <span className={styles.unit}>bpm</span>
+                  </p>
+                  <p className={twMerge(styles.secondary, !rr?.stable && styles.ghosted)}>
+                    <span className={twMerge("numeral", styles.rrValue)}>{rrValue ?? "—"}</span>
+                    <span className={styles.unit}>/min</span>
+                  </p>
+                  <Trace values={presage.metrics.trace} tone="camera" dot label="Live breathing wave" className={styles.readoutWave} />
                 </div>
               )}
               {coach && <p className={styles.coach}>{coach}</p>}

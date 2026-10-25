@@ -527,6 +527,90 @@
         }
       }
     },
+    "/api/transfers/vitals/heard": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Heard Vitals",
+        "description": "Read vitals out of a sentence (browser dictation or typed). Records nothing.",
+        "operationId": "heard_vitals_api_transfers_vitals_heard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeardVitals"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transfers/vitals/heard/voice": {
+      "post": {
+        "tags": [
+          "transfers"
+        ],
+        "summary": "Heard Vitals Voice",
+        "description": "Read vitals out of a recording, transcribed by ElevenLabs. Records nothing.",
+        "operationId": "heard_vitals_voice_api_transfers_vitals_heard_voice_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeardVitals"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transfers/{transfer_id}/vitals/trend": {
       "get": {
         "tags": [
@@ -1944,6 +2028,20 @@
         ],
         "title": "Body_add_scan_api_transfers__transfer_id__scans_post"
       },
+      "Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post": {
+        "properties": {
+          "audio": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio"
+          }
+        },
+        "type": "object",
+        "required": [
+          "audio"
+        ],
+        "title": "Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post"
+      },
       "Body_id_photo_api_intakes__intake_id__id_photo_post": {
         "properties": {
           "image": {
@@ -2757,6 +2855,122 @@
           "adapters"
         ],
         "title": "HealthResponse"
+      },
+      "HeardRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "HeardRequest"
+      },
+      "HeardVitals": {
+        "properties": {
+          "transcript": {
+            "type": "string",
+            "title": "Transcript"
+          },
+          "spo2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spo2"
+          },
+          "on_oxygen": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Oxygen"
+          },
+          "systolic_bp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Systolic Bp"
+          },
+          "diastolic_bp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diastolic Bp"
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "heart_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heart Rate"
+          },
+          "resp_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resp Rate"
+          },
+          "consciousness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Consciousness"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "transcript"
+        ],
+        "title": "HeardVitals",
+        "description": "Vitals read out of something said. Nothing is recorded until the crew saves them (or says them in a note)."
       },
       "InfraStatus": {
         "properties": {

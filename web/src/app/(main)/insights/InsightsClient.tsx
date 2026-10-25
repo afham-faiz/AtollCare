@@ -270,7 +270,7 @@ export default function () {
                         <span className="block font-[500]">{q.name}</span>
                         <span className="block truncate text-[0.8125rem] text-ink-3">{q.source}</span>
                       </span>
-                      <span className="tnum font-[500]">{q.ms} ms</span>
+                      <span className="tnum shrink-0 font-[500] whitespace-nowrap">{q.ms} ms</span>
                     </li>
                   ))}
                 </ul>

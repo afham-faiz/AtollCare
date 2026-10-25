@@ -17,6 +17,7 @@ export type Alert = S["Alert"];
 export type LatestValue = S["LatestValue"];
 export type News2Result = S["News2Result"];
 export type VitalsRequest = S["VitalsRequest"];
+export type HeardVitals = S["HeardVitals"];
 export type MonitoringSource = S["MonitoringSource"];
 export type TransferStatus = S["TransferStatus"];
 export type DemoCase = S["DemoCase"];

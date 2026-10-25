@@ -206,6 +206,42 @@
   align-items: center;
   gap: 0.75rem;
   margin-left: auto;
+
+  @media (max-width: 39.99rem) {
+    flex: 0 1 auto;
+    min-width: 0;
+    gap: 0.5rem;
+  }
+}
+
+// a phone: while the crew is speaking, reading back a note or being asked something, the words get the whole dock
+@media (max-width: 39.99rem) {
+  .dockRow:has([data-state="listening"], [data-state="saving"], [data-state="result"], [data-state="asking"]) .next {
+    display: none;
+  }
+
+  // the header already says accepted: here it is a way into the hospital's notes
+  .accepted {
+    flex-shrink: 0;
+    justify-content: center;
+    width: 3.5rem;
+    padding: 0;
+  }
+
+  .acceptedText {
+    display: none;
+  }
+
+  .arrive {
+    flex-shrink: 0;
+    width: 3.625rem;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .arriveLabel {
+    display: none;
+  }
 }
 
 .waiting {

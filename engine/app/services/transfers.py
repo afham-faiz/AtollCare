@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 from app.core import alerts as alerts_mod
 from app.core import briefing as briefing_mod
-from app.core import regions
+from app.core import regions, spoken_vitals
 from app.core.clock import fmt_local
 from app.core.forecast import bucket_news2, forecast
 from app.core.news2 import compute as compute_news2
@@ -28,6 +28,7 @@ from app.models import (
     CreateTransferRequest,
     DemoCase,
     Extraction,
+    HeardVitals,
     Intervention,
     MessageRequest,
     Monitoring,
@@ -113,6 +114,12 @@ def describe(r: VitalsReading) -> str:
     if r.consciousness is not None:
         parts.append(f"ACVPU {r.consciousness.value}")
     return ", ".join(parts)
+
+
+def heard_request(h: HeardVitals, at: datetime) -> VitalsRequest:
+    return VitalsRequest(source=VitalsSource.manual, recorded_at=at, spo2=h.spo2, on_oxygen=h.on_oxygen,
+                         systolic_bp=h.systolic_bp, temperature_c=h.temperature_c, heart_rate=h.heart_rate,
+                         resp_rate=h.resp_rate, consciousness=h.consciousness)
 
 
 def profile_for(complaint: str) -> SimProfile:
@@ -229,7 +236,8 @@ class TransferService:
             await self._save(t)
             return VitalsAck(news2=t.news2, alerts=t.alerts, monitoring=t.monitoring)
 
-    async def _ingest(self, t: Transfer, req: VitalsRequest, *, live: bool = True) -> VitalsReading:
+    async def _ingest(self, t: Transfer, req: VitalsRequest, *, live: bool = True,
+                      said: str = "Vitals entered") -> VitalsReading:
         now = self.now()
         data = req.model_dump(exclude={"recorded_at", "hint"})
         reading = VitalsReading(
@@ -247,7 +255,7 @@ class TransferService:
         if reading.source in (VitalsSource.presage, VitalsSource.simulated) and live:
             t.monitoring.last_reading_at = reading.recorded_at
         if reading.source == VitalsSource.manual:
-            await self._note(t, Author.crew, NoteKind.event, "Vitals entered: " + describe(reading), at=reading.recorded_at)
+            await self._note(t, Author.crew, NoteKind.event, f"{said}: " + describe(reading), at=reading.recorded_at)
             if reading.heart_rate is not None:
                 await self._check_camera(t, reading)
         await self._reassess(t)
@@ -390,6 +398,10 @@ class TransferService:
 
     async def add_note(self, transfer_id: UUID, req: NoteRequest, at: datetime | None = None) -> Transfer:
         extraction, by = await self._extract(req.text)
+        # vitals said in a note ("sats 94 on air, BP 120 over 80") are recorded as the crew's own readings
+        heard = spoken_vitals.parse(req.text)
+        if spoken_vitals.found(heard):
+            extraction.observations = list(dict.fromkeys([*spoken_vitals.labels(heard), *extraction.observations]))
         async with self.locks[transfer_id]:
             t = await self.get(transfer_id)
             if req.reply_to and not any(n.id == req.reply_to for n in t.notes):
@@ -399,6 +411,8 @@ class TransferService:
                                     extraction=extraction, extracted_by=by)
             for item in extraction.interventions:
                 t.interventions.append(Intervention(at=note.at, text=item, note_id=note.id))
+            if spoken_vitals.found(heard) and t.status != TransferStatus.closed:
+                await self._ingest(t, heard_request(heard, note.at), said="Vitals from a crew note")
             await self._template_briefing(t, keep_gemini=True)
             await self._save(t)
         self._schedule_briefing(transfer_id, force=True)
@@ -511,6 +525,20 @@ class TransferService:
         if not text:
             raise AppError("empty_transcript", "Didn't catch that — please try again", 422)
         return await self.add_note(transfer_id, NoteRequest(text=text, kind="voice", reply_to=reply_to))
+
+    async def hear_vitals(self, audio: bytes, filename: str, content_type: str) -> HeardVitals:
+        """The vitals sheet's microphone: ElevenLabs Scribe writes it down, the rules read the numbers. Nothing is
+        recorded here; the sheet fills in and the crew saves."""
+        try:
+            result = await self.svc.elevenlabs.transcribe(audio, filename, content_type, None)
+        except Exception as exc:
+            raise AppError("stt_failed", f"Transcription failed ({type(exc).__name__}) — try again or type", 502) from exc
+        if result is None:
+            raise AppError("stt_unavailable", "Server speech-to-text is not configured — use browser dictation", 501)
+        text, _lang = result
+        if not text:
+            raise AppError("empty_transcript", "Didn't catch that — please try again", 422)
+        return spoken_vitals.parse(text)
 
     async def message(self, transfer_id: UUID, req: MessageRequest) -> Transfer:
         async with self.locks[transfer_id]:
