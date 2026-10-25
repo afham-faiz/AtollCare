@@ -2,7 +2,7 @@
 // region and the presenter entry. Transparent: it sits on the canvas, not over it.
 "use client";
 
-import { Building2, Ship, Smartphone, SlidersHorizontal } from "lucide-react";
+import { Building2, House, Ship, Smartphone, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { twMerge } from "tailwind-merge";
@@ -37,13 +37,16 @@ export default function () {
     // on a phone, the companion sees only their own screen: no crew or hospital tabs, no presenter tools
     <header className={twMerge(styles.bar, companion && styles.companion)}>
       <div className={styles.inner}>
-        <Link href={companion ? "/pre-arrival" : "/crew"} className={styles.brand} aria-label={APP_NAME}>
+        <Link href="/" className={styles.brand} aria-label={`${APP_NAME} home`} title="Home">
           <span className={styles.disc}>
             <Mark className="h-[1.125rem] w-[1.125rem]" />
           </span>
           <span className={styles.brandText}>{APP_NAME}</span>
         </Link>
         <nav className={twMerge("glass", styles.roles)} aria-label="Role">
+          <Link href="/" className={twMerge(styles.role, styles.home, pathname === "/" && styles.active)} aria-label="Home" title="Home" aria-current={pathname === "/" ? "page" : undefined}>
+            <House size={17} strokeWidth={1.75} />
+          </Link>
           {ROLES.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
@@ -55,6 +58,11 @@ export default function () {
           })}
         </nav>
         <div className={styles.end}>
+          {companion && (
+            <Link href="/" className={styles.homeEnd} aria-label="Home" title="Home">
+              <House size={17} strokeWidth={1.75} />
+            </Link>
+          )}
           {meta && <span className={styles.region}>{meta.region.name}</span>}
           <button
             type="button"

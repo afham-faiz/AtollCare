@@ -57,7 +57,8 @@ export function Trace({
 }) {
   const W = 240;
   const H = 48;
-  const pts = values.length >= 4 ? project(values, { width: W, height: H, pad: 5 }) : [];
+  // two readings already show which way it went
+  const pts = values.length >= 2 ? project(values, { width: W, height: H, pad: 5 }) : [];
   const last = pts.at(-1);
   return (
     <span className={twMerge(styles.trace, styles[tone], className)} role="img" aria-label={label}>

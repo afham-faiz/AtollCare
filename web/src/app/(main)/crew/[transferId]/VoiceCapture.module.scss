@@ -4,6 +4,12 @@
   align-items: center;
   gap: 1rem;
   min-width: 0;
+
+  // a phone shares its row with the next step: the mic itself never gives way
+  @media (max-width: 39.99rem) {
+    flex-basis: auto;
+    min-width: 3.5rem;
+  }
 }
 
 .record {

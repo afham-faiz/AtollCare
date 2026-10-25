@@ -284,9 +284,15 @@ export default function ({ transferId }: { transferId: string }) {
             )}
             {t.status === "accepted" && t.acceptance && (
               <>
-                <button type="button" className={styles.accepted} onClick={() => setSheet("notes")} title={t.acceptance.message ?? "Notes and messages"}>
+                <button
+                  type="button"
+                  className={styles.accepted}
+                  onClick={() => setSheet("notes")}
+                  title={t.acceptance.message ?? "Notes and messages"}
+                  aria-label={`Accepted by ${t.acceptance.by}. Notes and messages`}
+                >
                   <CheckCircle2 size={18} strokeWidth={1.75} className="shrink-0" />
-                  <span className="min-w-0 text-left">
+                  <span className={twMerge("min-w-0 text-left", styles.acceptedText)}>
                     <span className="block truncate font-[500]">Accepted · {t.acceptance.by}</span>
                     {/* the hospital's own words come first: they're what the crew acts on */}
                     <span className="block truncate text-[0.8125rem] opacity-80">
@@ -298,8 +304,8 @@ export default function ({ transferId }: { transferId: string }) {
                     </span>
                   </span>
                 </button>
-                <ButtonBase size="lg" onClick={() => act("arrive")}>
-                  <Flag size={18} strokeWidth={1.75} /> Arrived
+                <ButtonBase size="lg" className={styles.arrive} onClick={() => act("arrive")} aria-label="Arrived" title="Arrived">
+                  <Flag size={18} strokeWidth={1.75} /> <span className={styles.arriveLabel}>Arrived</span>
                 </ButtonBase>
               </>
             )}

@@ -230,6 +230,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/transfers/vitals/heard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Heard Vitals
+         * @description Read vitals out of a sentence (browser dictation or typed). Records nothing.
+         */
+        post: operations["heard_vitals_api_transfers_vitals_heard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transfers/vitals/heard/voice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Heard Vitals Voice
+         * @description Read vitals out of a recording, transcribed by ElevenLabs. Records nothing.
+         */
+        post: operations["heard_vitals_voice_api_transfers_vitals_heard_voice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transfers/{transfer_id}/vitals/trend": {
         parameters: {
             query?: never;
@@ -712,6 +752,11 @@ export interface components {
             /** Presage */
             presage?: string | null;
         };
+        /** Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post */
+        Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post: {
+            /** Audio */
+            audio: string;
+        };
         /** Body_id_photo_api_intakes__intake_id__id_photo_post */
         Body_id_photo_api_intakes__intake_id__id_photo_post: {
             /** Image */
@@ -1024,6 +1069,34 @@ export interface components {
             /** Db */
             db: string;
             adapters: components["schemas"]["AdapterStatus"];
+        };
+        /** HeardRequest */
+        HeardRequest: {
+            /** Text */
+            text: string;
+        };
+        /**
+         * HeardVitals
+         * @description Vitals read out of something said. Nothing is recorded until the crew saves them (or says them in a note).
+         */
+        HeardVitals: {
+            /** Transcript */
+            transcript: string;
+            /** Spo2 */
+            spo2?: number | null;
+            /** On Oxygen */
+            on_oxygen?: boolean | null;
+            /** Systolic Bp */
+            systolic_bp?: number | null;
+            /** Diastolic Bp */
+            diastolic_bp?: number | null;
+            /** Temperature C */
+            temperature_c?: number | null;
+            /** Heart Rate */
+            heart_rate?: number | null;
+            /** Resp Rate */
+            resp_rate?: number | null;
+            consciousness?: components["schemas"]["Consciousness"] | null;
         };
         /**
          * InfraStatus
@@ -2444,6 +2517,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VitalsAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    heard_vitals_api_transfers_vitals_heard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HeardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeardVitals"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    heard_vitals_voice_api_transfers_vitals_heard_voice_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_heard_vitals_voice_api_transfers_vitals_heard_voice_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeardVitals"];
                 };
             };
             /** @description Validation Error */
